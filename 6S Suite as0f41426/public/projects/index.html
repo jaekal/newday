@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Projects – 6S Tool Suite</title>
+  <link rel="icon" href="/images/favicon.png" type="image/png"/>
+  <!-- Suite design tokens + shared components -->
+  <link rel="stylesheet" href="/styles.css"/>
+  <!-- Projects-specific styles -->
+  <link rel="stylesheet" href="/js/projects/projects.css"/>
+  <!-- Apply saved theme before first paint (external script, CSP-safe) -->
+  <script src="/theme-init.js"></script>
+</head>
+<body>
+  <noscript><div style="padding:1rem;background:var(--danger-bg);color:var(--danger);text-align:center">JavaScript is required.</div></noscript>
+  <div class="sr-only" aria-live="polite" id="liveRegion"></div>
+
+  <!-- ═══════════════════════════════════════════════════
+       TOPBAR
+  ═══════════════════════════════════════════════════ -->
+  <header class="pj-topbar">
+    <div class="pj-topbar__left">
+      <a href="/home" class="pj-home-btn" title="Back to Suite Home" aria-label="Home">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Home
+      </a>
+      <div class="pj-brand">
+        <span class="pj-brand-title">Projects</span>
+        <span class="pj-brand-sub" id="boardMeta">Loading…</span>
+      </div>
+    </div>
+
+    <div class="pj-topbar__right">
+      <!-- Metrics bar (populated after load) -->
+      <div class="pj-metrics" id="metricsBar" aria-live="polite">
+        <span class="pj-metric" id="met-total" title="Total projects"><span class="pj-metric-n" id="m-total">–</span><span class="pj-metric-l">total</span></span>
+        <span class="pj-metric pj-metric--warn" id="met-overdue" title="Overdue" style="display:none"><span class="pj-metric-n" id="m-overdue">0</span><span class="pj-metric-l">overdue</span></span>
+        <span class="pj-metric pj-metric--danger" id="met-blocked" title="Blocked" style="display:none"><span class="pj-metric-n" id="m-blocked">0</span><span class="pj-metric-l">blocked</span></span>
+        <span class="pj-metric" id="met-torque" title="Torque audits" style="display:none"><span class="pj-metric-n" id="m-torque">0</span><span class="pj-metric-l">torque audits</span></span>
+        <span class="pj-metric pj-metric--warn" id="met-torque-review" title="Torque audits needing review" style="display:none"><span class="pj-metric-n" id="m-torque-review">0</span><span class="pj-metric-l">torque review</span></span>
+      </div>
+
+      <!-- View toggle -->
+      <div class="pj-view-toggle" role="group" aria-label="View mode">
+        <button class="pj-view-btn active" id="btn-board" title="Board view (Kanban)" aria-pressed="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="18"/><rect x="14" y="3" width="7" height="12"/></svg>
+          Board
+        </button>
+        <button class="pj-view-btn" id="btn-list" title="List view" aria-pressed="false">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          List
+        </button>
+      </div>
+
+      <button id="btnNew" class="pj-btn-primary" type="button">+ New Project</button>
+      <button id="btnPurge" class="pj-btn-sm pj-btn-danger" type="button"
+              title="Bulk purge tasks by filter"
+              style="font-size:.78rem;padding:.3rem .75rem;display:inline-flex;align-items:center;gap:.3rem">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        Purge…
+      </button>
+
+      <!-- Theme selector -->
+      <label for="themeSelector" class="sr-only">Theme</label>
+      <select id="themeSelector" class="pj-theme-select" aria-label="Theme">
+        <option value="theme-command">Command</option>
+<option value="theme-beacon">Beacon</option>
+<option value="theme-atlas">Atlas</option>
+<option value="theme-carbon">Carbon</option>
+<option value="theme-grove">Grove</option>
+<option value="theme-ember">Ember</option>
+<option value="theme-harbor">Harbor</option>
+<option value="theme-slate">Slate</option>
+<option value="theme-orchid">Orchid</option>
+<option value="theme-dusk">Dusk</option>
+<option value="theme-pulse">Pulse</option>
+<option value="theme-highcontrast">High Contrast</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════
+       FILTER BAR (shared by both views)
+  ═══════════════════════════════════════════════════ -->
+  <div class="pj-filters" id="filterBar" role="search" aria-label="Filter projects">
+    <div class="pj-filters__main">
+      <div class="pj-search-wrap">
+        <svg class="pj-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input id="filterSearch" type="search" class="pj-search-input" placeholder="Search title, description, team…" autocomplete="off" aria-label="Search projects"/>
+      </div>
+
+      <select id="filterBucket" class="pj-select" aria-label="Filter by lane">
+        <option value="">All lanes</option>
+        <option value="todo">To Do</option>
+        <option value="doing">In Progress</option>
+        <option value="blocked">Blocked</option>
+        <option value="done">Done</option>
+      </select>
+
+      <select id="filterCategory" class="pj-select" aria-label="Filter by category">
+        <option value="">All categories</option>
+      </select>
+
+      <select id="filterPriority" class="pj-select" aria-label="Filter by priority">
+        <option value="">All priorities</option>
+        <option value="high">High</option>
+        <option value="medium">Medium</option>
+        <option value="low">Low</option>
+      </select>
+
+      <select id="filterSource" class="pj-select" aria-label="Filter by source">
+        <option value="">All sources</option>
+        <option value="manual">Manual</option>
+        <option value="kiosk">Kiosk ticket</option>
+        <option value="expiration">Calibration</option>
+        <option value="system">System</option>
+      </select>
+    </div>
+
+    <div class="pj-filters__secondary">
+      <!-- Quick filter chips -->
+      <button class="pj-qchip" data-qfilter="overdue" title="Show only overdue tasks">Overdue</button>
+      <button class="pj-qchip" data-qfilter="myCards" title="Cards assigned to me">My Cards</button>
+      <button class="pj-qchip" data-qfilter="kiosk" title="Kiosk-submitted tickets">Kiosk</button>
+      <button class="pj-qchip" data-qfilter="high" title="High priority">High priority</button>
+      <button class="pj-qchip" data-qfilter="torque" title="Show torque calibration audits">Torque Audits</button>
+      <button class="pj-qchip" data-qfilter="torqueNeedsReview" title="Show torque audits still needing import review">Torque Review</button>
+      <button class="pj-qchip pj-qchip--clear" id="btnClearFilters">Clear filters</button>
+
+      <span class="pj-result-count" id="resultCount" aria-live="polite"></span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       BULK ACTION BAR (appears on selection)
+  ═══════════════════════════════════════════════════ -->
+  <div class="pj-bulk-bar" id="bulkBar" hidden aria-live="polite">
+    <button id="btnSelectAllFiltered" class="pj-btn-sm" type="button" title="Select every task matching current filters (all pages)">Select all matching</button>
+    <span id="bulkCount" class="pj-bulk-count"></span>
+    <span class="pj-bulk-sep"></span>
+    <label class="pj-bulk-label">Move to:</label>
+    <select id="bulkMoveSel" class="pj-select pj-select--sm" aria-label="Move selected to">
+      <option value="">Choose lane…</option>
+      <option value="todo">To Do</option>
+      <option value="doing">In Progress</option>
+      <option value="blocked">Blocked</option>
+      <option value="done">Done</option>
+    </select>
+    <button id="bulkMoveBtn" class="pj-btn-sm pj-btn-accent" type="button">Apply</button>
+    <button id="bulkDeleteBtn" class="pj-btn-sm pj-btn-danger" type="button">Delete selected</button>
+    <button id="bulkClearBtn" class="pj-btn-sm" type="button">Deselect all</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       MAIN CONTENT AREA
+  ═══════════════════════════════════════════════════ -->
+  <main class="pj-main" id="mainContent">
+
+    <!-- ─── BOARD VIEW ─── -->
+    <div id="boardView" class="pj-board-wrap">
+      <div class="pj-board" id="kanbanBoard" role="region" aria-label="Kanban board">
+        <!-- lanes injected by JS -->
+      </div>
+    </div>
+
+    <!-- ─── LIST VIEW ─── -->
+    <div id="listView" class="pj-list-wrap" style="display:none">
+      <table class="pj-table" role="grid" aria-label="Projects list">
+        <thead>
+          <tr>
+            <th class="pj-th-check" scope="col"><input type="checkbox" id="selectAll" aria-label="Select all"/></th>
+            <th class="pj-th-sortable" scope="col" data-sort="title">Title <span class="sort-indicator"></span></th>
+            <th scope="col">Lane</th>
+            <th scope="col">Category</th>
+            <th scope="col">Priority</th>
+            <th class="pj-th-sortable" scope="col" data-sort="dueDate">Due <span class="sort-indicator"></span></th>
+            <th scope="col">Assignee</th>
+            <th scope="col">Source</th>
+            <th class="pj-th-sortable" scope="col" data-sort="createdAt">Opened <span class="sort-indicator"></span></th>
+          </tr>
+        </thead>
+        <tbody id="listBody"></tbody>
+      </table>
+
+      <!-- Pagination -->
+      <div class="pj-pager" id="pager" role="navigation" aria-label="Pagination"></div>
+    </div>
+
+    <!-- Loading skeleton -->
+    <div id="loadingState" class="pj-loading" aria-busy="true" aria-label="Loading">
+      <div class="pj-skeleton-board">
+        <div class="pj-skeleton-lane"><div class="pj-skel-hd"></div><div class="pj-skel-card"></div><div class="pj-skel-card pj-skel-card--sm"></div></div>
+        <div class="pj-skeleton-lane"><div class="pj-skel-hd"></div><div class="pj-skel-card"></div></div>
+        <div class="pj-skeleton-lane"><div class="pj-skel-hd"></div><div class="pj-skel-card pj-skel-card--sm"></div><div class="pj-skel-card"></div></div>
+        <div class="pj-skeleton-lane"><div class="pj-skel-hd"></div></div>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div id="emptyState" class="pj-empty" style="display:none" role="status">
+      <div class="pj-empty-icon" aria-hidden="true"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/><path d="M8 10v4"/><path d="M12 10v2"/><path d="M16 10v6"/></svg></div>
+      <div class="pj-empty-title" id="emptyTitle">No projects found</div>
+      <div class="pj-empty-body" id="emptyBody">Try adjusting your filters, or create a new project to get started.</div>
+      <button class="pj-btn-primary" id="emptyNewBtn" type="button">+ New Project</button>
+    </div>
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════
+       DETAIL SLIDE-IN PANEL
+  ═══════════════════════════════════════════════════ -->
+  <div class="pj-panel-overlay" id="panelOverlay" aria-hidden="true"></div>
+  <aside class="pj-detail-panel" id="detailPanel" aria-label="Project detail" role="complementary" aria-hidden="true">
+    <div class="pj-detail-header">
+      <div class="pj-detail-header-left">
+        <span class="pj-detail-source-badge" id="dp-source-badge"></span>
+        <h2 class="pj-detail-title" id="dp-title">Project detail</h2>
+      </div>
+      <div class="pj-detail-header-right">
+        <button class="pj-icon-btn" id="dp-close" aria-label="Close panel" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="pj-detail-body" id="dp-body">
+      <!-- Tab nav -->
+      <div class="pj-detail-tabs" role="tablist">
+        <button class="pj-dtab active" role="tab" aria-selected="true" data-tab="overview">Overview</button>
+        <button class="pj-dtab" role="tab" aria-selected="false" data-tab="toolverify" id="dp-toolverify-tab" style="display:none">Tool Verify</button>
+        <button class="pj-dtab" role="tab" aria-selected="false" data-tab="torqueimport" id="dp-torqueimport-tab" style="display:none">Torque Import</button>
+        <button class="pj-dtab" role="tab" aria-selected="false" data-tab="activity">Activity</button>
+      </div>
+
+      <!-- Overview tab -->
+      <div class="pj-dtab-panel" id="tab-overview">
+        <div class="pj-detail-grid">
+          <div class="pj-dfield span-2">
+            <label class="pj-dlabel">Title</label>
+            <input id="dp-title-input" class="pj-dinput" type="text" placeholder="Project title"/>
+          </div>
+          <div class="pj-dfield">
+            <label class="pj-dlabel">Lane</label>
+            <select id="dp-bucket" class="pj-dinput">
+              <option value="todo">To Do</option>
+              <option value="doing">In Progress</option>
+              <option value="blocked">Blocked</option>
+              <option value="done">Done</option>
+            </select>
+          </div>
+          <div class="pj-dfield">
+            <label class="pj-dlabel">Priority</label>
+            <select id="dp-priority" class="pj-dinput">
+              <option value="">None</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <div class="pj-dfield">
+            <label class="pj-dlabel">Due Date</label>
+            <input id="dp-due" class="pj-dinput" type="date"/>
+          </div>
+          <div class="pj-dfield">
+            <label class="pj-dlabel">Category</label>
+            <input id="dp-category" class="pj-dinput" type="text" placeholder="e.g. Safety"/>
+          </div>
+          <div class="pj-dfield span-2">
+            <label class="pj-dlabel">Description</label>
+            <textarea id="dp-desc" class="pj-dinput pj-dinput-ta" rows="3" placeholder="What needs to be done?"></textarea>
+          </div>
+          <div class="pj-dfield">
+            <label class="pj-dlabel">Owner</label>
+            <input id="dp-owner" class="pj-dinput" type="text" placeholder="Name or ID"/>
+          </div>
+          <div class="pj-dfield">
+            <label class="pj-dlabel">Department</label>
+            <input id="dp-dept" class="pj-dinput" type="text"/>
+          </div>
+          <div class="pj-dfield span-2">
+            <label class="pj-dlabel">Team Members</label>
+            <input id="dp-team" class="pj-dinput" type="text" placeholder="Comma-separated names"/>
+          </div>
+          <div class="pj-dfield span-2" id="dp-blockreason-wrap" style="display:none">
+            <label class="pj-dlabel pj-dlabel--danger">Block reason</label>
+            <input id="dp-blockreason" class="pj-dinput pj-dinput--danger" type="text" placeholder="What is blocking this?"/>
+          </div>
+          <div class="pj-dfield span-2">
+            <label class="pj-dlabel">6S focus</label>
+            <div class="pj-chip-row" id="dp-sixs-chips">
+              <label class="pj-chip-toggle"><input type="checkbox" value="Sort"> Sort</label>
+              <label class="pj-chip-toggle"><input type="checkbox" value="Set in Order"> Set in Order</label>
+              <label class="pj-chip-toggle"><input type="checkbox" value="Shine"> Shine</label>
+              <label class="pj-chip-toggle"><input type="checkbox" value="Standardize"> Standardize</label>
+              <label class="pj-chip-toggle"><input type="checkbox" value="Sustain"> Sustain</label>
+              <label class="pj-chip-toggle"><input type="checkbox" value="Safety"> Safety</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tool Verify tab -->
+      <div class="pj-dtab-panel" id="tab-toolverify" style="display:none">
+        <div class="pj-detail-grid">
+          <div class="pj-dfield span-2">
+            <label class="pj-dlabel">Tool Verify Workspace</label>
+            <div style="border:1px solid var(--border);border-radius:var(--radius);padding:.9rem;background:var(--surface-strong);display:grid;gap:.8rem">
+              <div style="font-size:.84rem;color:var(--fg-muted)">Scan or paste serial numbers, then compare them against the existing inventory for the selected classifications.</div>
+              <div id="dp-tool-verify-classes" style="display:flex;gap:.45rem;flex-wrap:wrap">
+                <button type="button" class="pj-qchip active" data-classification="manual">Manual</button>
+                <button type="button" class="pj-qchip active" data-classification="wired">Wired</button>
+                <button type="button" class="pj-qchip active" data-classification="wireless">Wireless</button>
+              </div>
+              <div>
+                <label class="pj-dlabel" for="dp-tool-verify-scans">Serial Numbers</label>
+                <textarea id="dp-tool-verify-scans" class="pj-dinput pj-dinput-ta" rows="6" placeholder="Scan or paste one serial per line"></textarea>
+              </div>
+              <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+                <button id="dp-tool-verify-run" type="button" class="pj-btn-primary">Verify Scan</button>
+                <button id="dp-tool-verify-clear" type="button" class="pj-btn-ghost">Clear Scans</button>
+                <button id="dp-tool-verify-complete" type="button" class="pj-btn-ghost" disabled>Complete Audit</button>
+              </div>
+              <div id="dp-tool-verify-result"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Torque Import tab -->
+      <div class="pj-dtab-panel" id="tab-torqueimport" style="display:none">
+        <div class="pj-detail-grid">
+          <div class="pj-dfield span-2">
+            <label class="pj-dlabel">DRTQ Import Workspace</label>
+            <div style="border:1px solid var(--border);border-radius:var(--radius);padding:.9rem;background:var(--surface-strong);display:grid;gap:.8rem">
+              <div style="font-size:.84rem;color:var(--fg-muted)">Upload the Delta Regis DRTQ <code>.rtf</code> export from Measure Mode. The audit will record the imported run, its limits, and every peak reading.</div>
+              <div>
+                <label class="pj-dlabel" for="dp-torque-file">DRTQ Export File</label>
+                <input id="dp-torque-file" class="pj-dinput" type="file" accept=".rtf,text/rtf,application/rtf"/>
+              </div>
+              <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+                <button id="dp-torque-run" type="button" class="pj-btn-primary">Import Torque File</button>
+                <button id="dp-torque-clear" type="button" class="pj-btn-ghost">Clear File</button>
+                <button id="dp-torque-export" type="button" class="pj-btn-ghost">Export CSV</button>
+                <button id="dp-torque-complete" type="button" class="pj-btn-ghost" disabled>Complete Audit</button>
+              </div>
+              <div id="dp-torque-result"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity tab -->
+      <div class="pj-dtab-panel" id="tab-activity" style="display:none">
+        <div id="dp-activity-log" class="pj-activity-log">
+          <div class="pj-activity-empty">No activity recorded yet.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pj-detail-footer">
+      <button class="pj-btn-danger-sm" id="dp-delete" type="button">Delete</button>
+      <div style="display:flex;gap:.5rem">
+        <button class="pj-btn-ghost" id="dp-cancel" type="button">Cancel</button>
+        <button class="pj-btn-primary" id="dp-save" type="button">Save Changes</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══════════════════════════════════════════════════
+       BLOCK REASON MODAL (intercept on drag to Blocked)
+  ═══════════════════════════════════════════════════ -->
+  <div class="pj-modal-backdrop" id="blockModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="blockModalTitle">
+    <div class="pj-modal">
+      <h3 id="blockModalTitle" class="pj-modal-title">What's blocking this?</h3>
+      <p class="pj-modal-body">Capturing the block reason helps coordinators resolve issues faster.</p>
+      <select id="blockCategory" class="pj-dinput" style="margin-bottom:.6rem">
+        <option value="">Select reason category…</option>
+        <option value="Waiting on parts">Waiting on parts</option>
+        <option value="Waiting on approval">Waiting on approval</option>
+        <option value="External dependency">External dependency</option>
+        <option value="Waiting on vendor">Waiting on vendor</option>
+        <option value="Resource unavailable">Resource unavailable</option>
+        <option value="Other">Other</option>
+      </select>
+      <input id="blockDetail" type="text" class="pj-dinput" placeholder="Add details (optional)…"/>
+      <div class="pj-modal-actions">
+        <button id="blockSkip" class="pj-btn-ghost" type="button">Skip</button>
+        <button id="blockConfirm" class="pj-btn-primary" type="button">Confirm block</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       NEW PROJECT WIZARD MODAL (multi-step)
+  ═══════════════════════════════════════════════════ -->
+  <div class="pj-modal-backdrop" id="intakeModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="intakeTitle">
+  <div class="pj-modal pj-modal--wide">
+    <div class="pj-modal-header">
+      <h3 id="intakeTitle" class="pj-modal-title">New Project</h3>
+      <button id="intakeClose" class="pj-icon-btn" type="button" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="pj-wizard-body">
+      <div class="pj-wizard-step" id="wstep-1">
+        <div class="pj-detail-grid">
+          <div class="pj-dfield span-2">
+            <label class="pj-dlabel" for="w-template">Template</label>
+            <input id="w-template" class="pj-dinput" type="text" placeholder="Optional for now; project template generation comes next"/>
+          </div>
+          <div class="pj-dfield span-2">
+            <label class="pj-dlabel" for="w-title">Project / Task Title <span style="color:var(--danger)">*</span></label>
+            <input id="w-title" class="pj-dinput" type="text" placeholder="e.g. Prepare monthly 6S purchase order" autocomplete="off" required/>
+          </div>
+          <div class="pj-dfield span-2">
+            <label class="pj-dlabel" for="w-objective">Scope / Objective <span style="color:var(--danger)">*</span></label>
+            <textarea id="w-objective" class="pj-dinput pj-dinput-ta" rows="3" placeholder="What needs to be done, where, and what result is expected?"></textarea>
+          </div>
+          <div class="pj-dfield">
+            <label class="pj-dlabel" for="w-owner">Owner <span style="color:var(--danger)">*</span></label>
+            <input id="w-owner" class="pj-dinput" type="text" placeholder="Auto-fill from login..."/>
+          </div>
+          <div class="pj-dfield">
+            <label class="pj-dlabel" for="w-dept">Area / Line / Building <span style="color:var(--danger)">*</span></label>
+            <input id="w-dept" class="pj-dinput" type="text" placeholder="e.g. SLT / Line 2 / RLT"/>
+          </div>
+          <div class="pj-dfield">
+            <label class="pj-dlabel" for="w-startdate">Start Date</label>
+            <input id="w-startdate" class="pj-dinput" type="date"/>
+          </div>
+          <div class="pj-dfield">
+            <label class="pj-dlabel" for="w-targetdate">Target Date</label>
+            <input id="w-targetdate" class="pj-dinput" type="date"/>
+          </div>
+          <div class="pj-dfield span-2">
+            <label class="pj-dlabel" for="w-desc">Notes</label>
+            <textarea id="w-desc" class="pj-dinput pj-dinput-ta" rows="3" placeholder="Supporting notes, dependencies, or handoff context..."></textarea>
+          </div>
+          <div class="pj-dfield">
+            <label class="pj-dlabel" for="w-priority">Priority</label>
+            <select id="w-priority" class="pj-dinput">
+              <option value="">None</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <div class="pj-dfield">
+            <label class="pj-dlabel" for="w-relatedref">Related Ticket / PO / Build</label>
+            <input id="w-relatedref" class="pj-dinput" type="text" placeholder="e.g. INC-10234, PO-55219, Build 14"/>
+          </div>
+          <div class="pj-dfield span-2">
+            <label class="pj-dlabel" for="w-repeat">Repeat Cadence</label>
+            <select id="w-repeat" class="pj-dinput">
+              <option value="">None</option>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="biweekly">Biweekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="on-demand">On Demand</option>
+            </select>
+            <div style="font-size:.78rem;color:var(--fg-muted);margin-top:.25rem">
+              Use this only when you are intentionally creating a reusable project template.
+            </div>
+          </div>
+          <div class="pj-dfield span-2">
+            <div class="pj-review-box" id="wizardReview">
+              <div class="pj-review-title">What will be created</div>
+              <div id="reviewSummary" class="pj-review-summary"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pj-wizard-footer" style="justify-content:flex-end">
+      <div style="display:flex;gap:.5rem">
+        <button id="wizSaveDraft" class="pj-btn-ghost" type="button">Save Draft</button>
+        <button id="wizNext" class="pj-btn-primary" type="button">Create Project</button>
+      </div>
+    </div>
+    <div class="pj-wizard-err" id="wizardError" style="display:none"></div>
+  </div>
+</div>
+
+  <!-- ═══════════════════════════════════════════════════
+       SCRIPTS
+  ═══════════════════════════════════════════════════ -->
+  <!-- ── Purge Modal ── -->
+  <div id="purgeModalBg" style="display:none;position:fixed;inset:0;background:hsl(0 0% 0%/.55);z-index:9000;align-items:center;justify-content:center" role="dialog" aria-modal="true" aria-labelledby="purgeModalTitle">
+    <div style="background:var(--surface-strong);border-radius:var(--radius);padding:1.5rem;width:90%;max-width:520px;box-shadow:0 20px 48px hsl(0 0% 0%/.35);display:flex;flex-direction:column;gap:1rem">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <h3 id="purgeModalTitle" style="font-size:1.05rem;font-weight:800;color:var(--danger);display:flex;align-items:center;gap:.4rem;margin:0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          Purge Tasks
+        </h3>
+        <button id="btnPurgeClose" style="background:none;border:none;cursor:pointer;color:var(--fg-muted);font-size:1.2rem" aria-label="Close">&#x2715;</button>
+      </div>
+      <p style="font-size:.875rem;color:var(--fg-muted);margin:0">Removes tasks in bulk with a single server write. Audit templates are always preserved. Preview before committing.</p>
+      <div style="display:grid;gap:.65rem">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+          <div>
+            <label style="font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-muted);display:block;margin-bottom:.25rem">Domain</label>
+            <select id="purge-domain" class="pj-select" style="width:100%">
+              <option value="all">All domains</option>
+              <option value="project">Projects only</option>
+              <option value="audit">Audits only</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-muted);display:block;margin-bottom:.25rem">Kind</label>
+            <select id="purge-kind" class="pj-select" style="width:100%">
+              <option value="all">All kinds</option>
+              <option value="project">Manual project</option>
+              <option value="daily">Daily audit</option>
+              <option value="weekly">Weekly audit</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-muted);display:block;margin-bottom:.25rem">Source</label>
+            <select id="purge-source" class="pj-select" style="width:100%">
+              <option value="all">All sources</option>
+              <option value="manual">Manual</option>
+              <option value="expiration">Calibration / Expiration</option>
+              <option value="kiosk">Kiosk ticket</option>
+              <option value="system">System</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-muted);display:block;margin-bottom:.25rem">Lane</label>
+            <select id="purge-bucket" class="pj-select" style="width:100%">
+              <option value="all">All lanes</option>
+              <option value="todo">To Do</option>
+              <option value="doing">In Progress</option>
+              <option value="blocked">Blocked</option>
+              <option value="done">Done</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label style="font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-muted);display:block;margin-bottom:.25rem">Older than</label>
+          <div style="display:flex;align-items:center;gap:.5rem">
+            <input id="purge-days" type="number" min="0" placeholder="Any age"
+              style="flex:1;padding:.42rem .6rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.875rem"/>
+            <span style="font-size:.82rem;color:var(--fg-muted);white-space:nowrap">days (blank = any age)</span>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-muted);margin-bottom:.35rem">Quick presets</div>
+          <div style="display:flex;gap:.35rem;flex-wrap:wrap">
+            <button class="pj-qchip" id="preset-all-done"     type="button">All Done tasks</button>
+            <button class="pj-qchip" id="preset-old-audits"   type="button">Daily audits &gt;7d old</button>
+            <button class="pj-qchip" id="preset-cal-tasks"    type="button">All calibration tasks</button>
+            <button class="pj-qchip" id="preset-everything"   type="button" style="border-color:var(--danger);color:var(--danger)">&#x26A0; Everything</button>
+          </div>
+        </div>
+        <div id="purgePreview" style="display:none;padding:.6rem .75rem;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);font-size:.875rem"></div>
+      </div>
+      <div id="purgeProgress" style="display:none">
+        <div style="font-size:.82rem;color:var(--fg-muted);margin-bottom:.35rem" id="purgeProgressLabel">Purging&#8230;</div>
+        <div style="height:6px;border-radius:99px;background:var(--border);overflow:hidden">
+          <div id="purgeProgressBar" style="height:100%;width:0;background:var(--danger);border-radius:99px;transition:width .3s ease"></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:.5rem;justify-content:flex-end;flex-wrap:wrap">
+        <button id="btnPurgePreview" class="pj-btn-sm" type="button">Preview count</button>
+        <button id="btnPurgeClose2" class="pj-btn-sm" type="button">Cancel</button>
+        <button id="btnPurgeConfirm" class="pj-btn-sm pj-btn-danger" type="button" disabled>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          Purge now
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/suite-icons.js"></script>
+  <script src="/nav.js"></script>
+  <script src="/socket.io/socket.io.js" defer></script>
+  <script type="module" src="/js/projects/projects.js"></script>
+</body>
+</html>
+
+
+

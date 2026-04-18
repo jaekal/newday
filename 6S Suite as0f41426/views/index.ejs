@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en" class="<%= themeClass || 'theme-command' %>">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Asset Catalog</title>
+  <meta name="csrf-token" content="<%= csrfToken || '' %>"/>
+  <link rel="stylesheet" href="/styles.css"/>
+  <link rel="stylesheet" href="/js/notyf.min.css"/>
+  <style>
+    .asset-kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: .85rem;
+      margin: 0 0 1rem;
+    }
+    .asset-kpi {
+      background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 90%, #fff 10%), var(--surface));
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: .95rem 1rem;
+      box-shadow: var(--shadow-sm, none);
+    }
+    .asset-kpi-link {
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    .asset-kpi-link .asset-kpi { transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease; }
+    .asset-kpi-link:hover .asset-kpi {
+      transform: translateY(-1px);
+      border-color: var(--accent);
+      box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 12%, transparent);
+    }
+    .asset-kpi-label {
+      font-size: .76rem;
+      font-weight: 700;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      color: var(--fg-muted);
+    }
+    .asset-kpi-value {
+      margin-top: .35rem;
+      font-size: 1.7rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .asset-kpi-note {
+      margin-top: .35rem;
+      font-size: .8rem;
+      color: var(--fg-muted);
+    }
+
+    /* ── Item type toggle ── */
+    .item-type-row { display: flex; gap: .5rem; margin-bottom: .75rem; }
+    .item-type-btn {
+      padding: .35rem .85rem; border-radius: var(--radius-sm);
+      border: 1px solid var(--border); background: transparent; color: var(--fg-muted);
+      cursor: pointer; font-size: .83rem; transition: background .12s, color .12s, border-color .12s;
+    }
+    .item-type-btn.active {
+      background: var(--accent); color: var(--accent-contrast); border-color: var(--accent);
+    }
+
+    /* ── Calibration status pills in the table ── */
+    .cal-badge { display: inline-flex; align-items: center; gap: .25rem;
+      font-size: .7rem; font-weight: 700; padding: .15rem .5rem;
+      border-radius: 999px; white-space: nowrap; }
+    .cal-ok       { background: var(--ok-bg);     color: var(--ok);     border: 1px solid var(--ok); }
+    .cal-due-soon { background: var(--warn-bg);    color: var(--warn);   border: 1px solid var(--warn); }
+    .cal-overdue  { background: var(--danger-bg);  color: var(--danger); border: 1px solid var(--danger); }
+    .cal-none     { background: var(--surface-strong); color: var(--fg-muted); border: 1px solid var(--border); }
+
+    /* ── Equipment tab in asset table ── */
+    .asset-type-tag {
+      display: inline-flex; align-items: center; gap: .2rem;
+      font-size: .65rem; padding: .1rem .38rem; border-radius: 4px;
+      background: var(--info-bg); color: var(--info); border: 1px solid var(--info);
+      vertical-align: middle; margin-left: .3rem;
+    }
+    .checkedout-row td { background: color-mix(in srgb, var(--info) 6%, var(--surface)) !important; }
+
+    @media (max-width: 900px) {
+      .asset-kpis { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 560px) {
+      .asset-kpis { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <%
+    const role = (user?.role || '').toLowerCase();
+    const canDeleteAssets = ['admin', 'lead', 'management'].includes(role);
+    const assetBaseParams = {
+      q: q || '',
+      category: category || '',
+      auditStatus: auditStatus || '',
+      itemType: itemType || '',
+      equipmentClass: equipmentClass || '',
+      managedSource: managedSource || '',
+      building: building || '',
+      limit: limit || 25,
+      page: 1,
+    };
+  %>
+  <div class="page">
+    <%- include('partials/suite-topbar', {
+      title: '🏷️ Asset Catalog',
+      subtitle: 'Fleet assets · Tools · Equipment · Carts',
+      homeRoute,
+      user
+    }) %>
+
+  <main>
+    <%- include('partials/search-filter-actions', {
+      q, category, auditStatus, allCategories,
+      allEquipmentClasses: typeof allEquipmentClasses !== 'undefined' ? allEquipmentClasses : [],
+      total, limit,
+      status: typeof status !== 'undefined' ? status : '',
+      attention: typeof attention !== 'undefined' ? attention : '',
+      itemType: typeof itemType !== 'undefined' ? itemType : '',
+      equipmentClass: typeof equipmentClass !== 'undefined' ? equipmentClass : '',
+      managedSource: typeof managedSource !== 'undefined' ? managedSource : ''
+    }) %>
+
+    <section class="asset-kpis" aria-label="Asset catalog summary">
+      <a class="asset-kpi-link" href="/asset-catalog?<%= new URLSearchParams({ ...assetBaseParams, status: 'Available', attention: '' }).toString() %>">
+        <article class="asset-kpi">
+          <div class="asset-kpi-label">Available</div>
+          <div class="asset-kpi-value"><%= summary?.available || 0 %></div>
+          <div class="asset-kpi-note">Open assets ready for use in this view.</div>
+        </article>
+      </a>
+      <a class="asset-kpi-link" href="/asset-catalog?<%= new URLSearchParams({ ...assetBaseParams, status: 'in-use-group', attention: '' }).toString() %>">
+        <article class="asset-kpi">
+          <div class="asset-kpi-label">In Use</div>
+          <div class="asset-kpi-value"><%= summary?.inUse || 0 %></div>
+          <div class="asset-kpi-note">Assets marked in use or currently checked out.</div>
+        </article>
+      </a>
+      <a class="asset-kpi-link" href="/asset-catalog?<%= new URLSearchParams({ ...assetBaseParams, status: 'Maintenance', attention: '' }).toString() %>">
+        <article class="asset-kpi">
+          <div class="asset-kpi-label">Maintenance</div>
+          <div class="asset-kpi-value"><%= summary?.maintenance || 0 %></div>
+          <div class="asset-kpi-note">Items needing repair, inspection, or servicing.</div>
+        </article>
+      </a>
+      <a class="asset-kpi-link" href="/asset-catalog?<%= new URLSearchParams({ ...assetBaseParams, status: '', attention: 'calibration' }).toString() %>">
+        <article class="asset-kpi">
+        <div class="asset-kpi-label">Calibration Attention</div>
+        <div class="asset-kpi-value"><%= summary?.calibrationAttention || 0 %></div>
+        <div class="asset-kpi-note">Due soon or overdue by next calibration date.</div>
+        </article>
+      </a>
+    </section>
+
+    <div class="table-wrapper">
+  <table class="asset-table">
+    <thead>
+      <tr>
+        <th><input type="checkbox" id="selectAll" title="Select All"></th>
+        <th class="sortable">Tag #</th>
+        <th class="sortable">Name / Model</th>
+        <th class="sortable">Category / Class</th>
+        <th class="sortable">Location</th>
+        <th class="sortable">Status</th>
+        <th class="sortable">Audit / Cal</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% assets.forEach(function(asset) {
+           var isEquipment = asset.itemType === 'equipment';
+
+           // Status objects are pre-computed by the server (assetsService.js)
+           // so no function calls or template literals appear here.
+           var status   = asset._pmStatus  || { due: false, overdue: false, nextDue: null };
+           var calCls   = asset._calCls    || 'cal-none';
+           var calLabel = asset._calLabel  || 'Not set';
+
+           // Audit status filter (fleet assets only)
+           if (!isEquipment && auditStatus &&
+              ((auditStatus === 'overdue' && !status.overdue) ||
+               (auditStatus === 'due'     && !status.due) ||
+               (auditStatus === 'ok'      && (status.due || status.overdue)))) return;
+      %>
+      <tr class="asset-row <%= isEquipment && asset.status === 'Checked Out' ? 'checkedout-row' : '' %>"
+          data-id="<%= asset.id %>"
+          data-building="<%= asset.building || 'Bldg-350' %>"
+          data-item-type="<%= asset.itemType || 'fleet' %>"
+          data-category="<%= asset.category || '' %>"
+          data-equipment-class="<%= asset.equipmentClass || '' %>"
+          data-tool-classification="<%= asset.toolClassification || '' %>">
+        <td>
+          <input type="checkbox"
+                 class="rowCheckbox"
+                 name="assetIds[]"
+                 value="<%= asset.id %>"
+                 aria-label="Select asset <%= asset.tagNumber %>">
+        </td>
+
+        <td>
+          <a href="#"
+             class="tag-link"
+             data-id="<%= asset.id %>"
+             title="View history for <%= asset.tagNumber %>">
+            <%= asset.tagNumber %>
+          </a>
+          <% if (isEquipment) { %>
+            <span class="asset-type-tag">&#128300; equip</span>
+          <% } %>
+        </td>
+
+        <td>
+          <%= asset.name %>
+          <% if (asset.serialNumber) { %>
+            <div style="font-size:.72rem;color:var(--fg-muted)">S/N: <%= asset.serialNumber %></div>
+          <% } %>
+        </td>
+        <td>
+          <%= asset.category %>
+          <% if (asset.equipmentClass) { %>
+            <div style="font-size:.72rem;color:var(--fg-muted)"><%= asset.equipmentClass %></div>
+          <% } %>
+          <% if (asset.toolClassification || asset.torque) { %>
+            <div style="font-size:.68rem;color:var(--fg-muted)">
+              <% if (asset.toolClassification) { %><span><%= asset.toolClassification %></span><% } %>
+              <% if (asset.toolClassification && asset.torque) { %><span> · </span><% } %>
+              <% if (asset.torque) { %><span><%= asset.torque %></span><% } %>
+            </div>
+          <% } %>
+          <% if (asset.managedSource && asset.itemType === 'equipment') { %>
+            <div style="font-size:.68rem;color:var(--fg-muted)">Source: <%= asset.managedSource %></div>
+          <% } %>
+        </td>
+        <td><%= asset.location %></td>
+
+        <td>
+          <span class="status-badge"><%= asset.status %></span>
+          <% if (isEquipment && asset.checkedOutBy) { %>
+            <div style="font-size:.7rem;color:var(--fg-muted);margin-top:.2rem">
+              by <%= asset.checkedOutBy %>
+            </div>
+          <% } %>
+        </td>
+
+        <td>
+          <% if (isEquipment) { %>
+            <span class="cal-badge <%= calCls %>"><%= calLabel %></span>
+          <% } else if (status.overdue) { %>
+            <span class="badge badge-overdue">Overdue</span>
+          <% } else if (status.due) { %>
+            <span class="badge badge-due">Due Soon</span>
+          <% } else { %>
+            <span class="badge badge-ok">OK</span>
+          <% } %>
+        </td>
+
+        <td class="actions-cell">
+          <div class="btn-group">
+            <button type="button"
+                    class="btn-icon edit-btn"
+                    title="Edit"
+                    data-id="<%= asset.id %>"
+                    data-asset='<%- JSON.stringify(asset) %>'>&#9998;</button>
+
+            <% if (canDeleteAssets) { %>
+              <button type="button"
+                      class="btn-icon delete-btn"
+                      title="Delete"
+                      data-id="<%= asset.id %>"
+                      data-tag="<%= asset.tagNumber %>">&#128465;</button>
+            <% } %>
+
+            <% if (isEquipment) { %>
+              <button type="button"
+                      class="btn-icon"
+                      title="Record calibration"
+                      data-action="record-cal"
+                      data-id="<%= asset.id %>"
+                      data-tag="<%= asset.tagNumber %>"
+                      data-name="<%= asset.name %>"
+                      data-interval="<%= asset.calibrationIntervalDays || '' %>"
+                      style="color:var(--info)">&#128208;</button>
+
+              <% if (asset.status !== 'Checked Out') { %>
+                <button type="button"
+                        class="btn-icon"
+                        title="Check out to tech"
+                        data-action="checkout-equipment"
+                        data-id="<%= asset.id %>"
+                        data-tag="<%= asset.tagNumber %>"
+                        data-name="<%= asset.name %>"
+                        style="color:var(--ok)">&#128228;</button>
+              <% } else { %>
+                <button type="button"
+                        class="btn-icon"
+                        title="Return equipment"
+                        data-action="return-equipment"
+                        data-id="<%= asset.id %>"
+                        data-tag="<%= asset.tagNumber %>"
+                        data-name="<%= asset.name %>"
+                        style="color:var(--warn)">&#128229;</button>
+              <% } %>
+            <% } %>
+          </div>
+        </td>
+      </tr>
+
+      <tr class="audit-row hidden" data-id="<%= asset.id %>">
+        <td colspan="8" class="audit-preview"><em>Loading history...</em></td>
+      </tr>
+      <% }); %>
+    </tbody>
+  </table>
+</div>
+
+
+    <%- include('partials/pagination', {
+      total, limit, page, q, category, auditStatus,
+      status, attention, itemType, equipmentClass, managedSource, building
+    }) %>
+  </main>
+
+  <%- include('partials/footer') %>
+
+  <!-- ═══════════════════════
+       CREATE / EDIT MODAL
+  ═══════════════════════ -->
+  <div id="modalOverlay" class="modal-backdrop" aria-hidden="true">
+    <div id="assetModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"
+         style="max-width:640px">
+      <h3 id="modalTitle">New Asset</h3>
+
+      <div class="modal-tabs">
+        <button type="button" class="modal-tab-btn active" data-tab="form">Details</button>
+        <button type="button" class="modal-tab-btn" data-tab="calibration"
+                id="tabCalibration" style="display:none">Calibration</button>
+      </div>
+
+      <form id="modalForm" class="space-y-4">
+        <!-- ── Details tab ── -->
+        <div id="tab-form" class="tab-content active">
+
+          <!-- Item type selector -->
+          <div style="margin-bottom:.85rem">
+            <label style="display:block;font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.03em;color:var(--fg-muted);margin-bottom:.4rem">
+              Item type
+            </label>
+            <div class="item-type-row">
+              <button type="button" class="item-type-btn active" data-type="fleet" id="typeBtnFleet">
+                🏗 Fleet asset
+              </button>
+              <button type="button" class="item-type-btn" data-type="equipment" id="typeBtnEquipment">
+                🔬 Test equipment
+              </button>
+            </div>
+            <input type="hidden" name="itemType" id="itemType" value="fleet"/>
+          </div>
+
+          <div class="modal-grid">
+            <div>
+              <label for="name">Name</label>
+              <input type="text" name="name" id="name" class="form-input" required>
+            </div>
+            <div>
+              <label for="tagNumber">Tag Number</label>
+              <input type="text" name="tagNumber" id="tagNumber" class="form-input" required>
+            </div>
+            <div id="fieldSerialNumber">
+              <label for="serialNumber">Serial Number</label>
+              <input type="text" name="serialNumber" id="serialNumber" class="form-input"
+                     placeholder="Manufacturer serial number"/>
+            </div>
+            <div id="fieldTorque">
+              <label for="torque">Torque</label>
+              <input type="text" name="torque" id="torque" class="form-input"
+                     placeholder="e.g. 0.6 Nm"/>
+            </div>
+            <%
+              // Category dropdown seeds. Fleet categories come from auditRules
+              // (they drive PM cadence). Equipment categories are a curated
+              // preset. Any DB-discovered categories that aren't already in
+              // either list are appended under "Other" so historical values
+              // are preserved.
+              const fleetCategories = Object.keys(auditRules || {}).sort();
+              const equipmentCategories = [
+                'Floor Tool',
+                'Test Equipment',
+                'ESD Cart',
+                'Dongle',
+                'Adapters',
+                'Power',
+                'Infrastructure',
+              ];
+              const knownCategories = new Set([...fleetCategories, ...equipmentCategories]);
+              const otherCategories = (allCategories || [])
+                .filter((c) => c && !knownCategories.has(c))
+                .sort();
+            %>
+            <div id="fieldCategory">
+              <label for="category">Category</label>
+              <select name="category" id="category" class="form-input">
+                <option value="">Select category</option>
+                <optgroup label="Fleet (PM cadence)" data-context="fleet">
+                  <% fleetCategories.forEach((c) => { %>
+                    <option value="<%= c %>" data-context="fleet"><%= c %></option>
+                  <% }) %>
+                </optgroup>
+                <optgroup label="Equipment" data-context="equipment">
+                  <% equipmentCategories.forEach((c) => { %>
+                    <option value="<%= c %>" data-context="equipment"><%= c %></option>
+                  <% }) %>
+                </optgroup>
+                <% if (otherCategories.length) { %>
+                  <optgroup label="Other" data-context="both">
+                    <% otherCategories.forEach((c) => { %>
+                      <option value="<%= c %>" data-context="both"><%= c %></option>
+                    <% }) %>
+                  </optgroup>
+                <% } %>
+              </select>
+            </div>
+            <div id="fieldEquipmentClass">
+              <label for="equipmentClass">Equipment Class</label>
+              <select name="equipmentClass" id="equipmentClass" class="form-input">
+                <option value="">Select class</option>
+                <option value="Screwdriver" data-torque="true">Screwdriver</option>
+                <option value="Drill" data-torque="true">Drill</option>
+                <option value="Torque Wrench" data-torque="true">Torque Wrench</option>
+                <option value="Dongle">Dongle</option>
+                <option value="3D Tooling">3D Tooling</option>
+                <option value="Test Equipment">Test Equipment</option>
+                <option value="ESD Cart">ESD Cart</option>
+                <option value="Whip">Whip</option>
+                <option value="Tool">Tool</option>
+                <option value="Equipment">Equipment</option>
+              </select>
+            </div>
+            <div id="fieldToolClassification">
+              <label for="toolClassification">Tool Classification</label>
+              <select name="toolClassification" id="toolClassification" class="form-input">
+                <option value="">Select classification</option>
+                <option value="manual">Manual</option>
+                <option value="wired">Wired</option>
+                <option value="wireless">Wireless</option>
+              </select>
+              <small id="toolClassificationHint"
+                     style="display:none;color:var(--danger, #c83a3a);font-size:.75rem;margin-top:.25rem">
+                Drill requires wired or wireless — please choose.
+              </small>
+            </div>
+            <div>
+              <label for="location">Location</label>
+              <input type="text" name="location" id="location" class="form-input">
+            </div>
+            <div>
+              <label for="building">Building</label>
+              <select name="building" id="building" class="form-input">
+                <option value="Bldg-350">Building 350</option>
+                <option value="Bldg-4050">Building 4050</option>
+              </select>
+            </div>
+            <% if (role === 'admin') { %>
+              <div id="fieldManagedSource">
+                <label for="managedSource">Managed Source</label>
+                <select name="managedSource" id="managedSource" class="form-input">
+                  <option value="asset-catalog">Asset Catalog</option>
+                  <option value="manual">Manual</option>
+                  <option value="tools">Tools</option>
+                  <option value="esd-carts">ESD Carts</option>
+                </select>
+              </div>
+            <% } else { %>
+              <input type="hidden" name="managedSource" id="managedSource" value="asset-catalog"/>
+            <% } %>
+            <div class="span-2">
+              <label for="status">Status</label>
+              <select name="status" id="status" class="form-input">
+                <option value="Available">Available</option>
+                <option value="Expired">Expired</option>
+                <option value="Defective">Defective</option>
+                <option value="Maintenance">Maintenance</option>
+                <option value="In Use">In Use</option>
+                <option value="Checked Out">Checked Out</option>
+              </select>
+            </div>
+            <div class="span-2">
+              <label for="description">Description</label>
+              <textarea name="description" id="description" rows="3" class="form-input"></textarea>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="submit" class="btn-primary">💾 Save</button>
+          </div>
+        </div>
+
+        <!-- ── Calibration tab ── -->
+        <div id="tab-calibration" class="tab-content" style="display:none">
+          <div class="modal-grid">
+            <div>
+              <label for="lastCalibrationDate">Last Calibration Date</label>
+              <input type="date" name="lastCalibrationDate" id="lastCalibrationDate" class="form-input"/>
+            </div>
+            <div>
+              <label for="calibrationIntervalDays">Calibration Interval (days)</label>
+              <input type="number" name="calibrationIntervalDays" id="calibrationIntervalDays"
+                     class="form-input" min="1" placeholder="e.g. 365"/>
+              <small style="color:var(--fg-muted);font-size:.75rem">
+                Next due date is computed automatically from last date + interval.
+              </small>
+            </div>
+            <div>
+              <label for="nextCalibrationDue">Next Calibration Due</label>
+              <input type="date" name="nextCalibrationDue" id="nextCalibrationDue"
+                     class="form-input" placeholder="Auto-computed or override"/>
+            </div>
+          </div>
+          <div style="margin-top:.5rem;font-size:.82rem;color:var(--fg-muted);padding:.6rem .75rem;background:var(--info-bg);border-radius:var(--radius-sm);border:1px solid var(--info)">
+            These fields can be maintained directly during edit. To record a new calibration event for an existing equipment item, use the
+            <strong>Record Calibration</strong> button from the asset table row instead — it
+            advances the due date and notifies the Expiration Dashboard automatically.
+          </div>
+          <div class="modal-actions" style="margin-top:1rem">
+            <button type="submit" class="btn-primary">💾 Save</button>
+          </div>
+        </div>
+
+        <!-- ── Preview tab ── -->
+      </form>
+
+      <button id="closeModal" class="btn-secondary" type="button" aria-label="Close">✖️ Close</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════
+       RECORD CALIBRATION MODAL
+  ═══════════════════════ -->
+  <div id="calModalOverlay" class="modal-backdrop" aria-hidden="true">
+    <div id="calModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="calModalTitle"
+         style="max-width:480px">
+      <h3 id="calModalTitle">Record Calibration</h3>
+      <p id="calModalSubtitle" style="font-size:.85rem;color:var(--fg-muted);margin-bottom:.85rem"></p>
+      <form id="calModalForm">
+        <input type="hidden" id="calAssetId" name="assetId"/>
+        <div style="display:grid;gap:.75rem">
+          <label style="display:block">
+            <span style="display:block;font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.03em;color:var(--fg-muted);margin-bottom:.3rem">
+              Calibration Date *
+            </span>
+            <input type="date" name="lastCalibrationDate" id="calLastDate" class="form-input" required/>
+          </label>
+          <label style="display:block">
+            <span style="display:block;font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.03em;color:var(--fg-muted);margin-bottom:.3rem">
+              Interval (days)
+            </span>
+            <input type="number" name="calibrationIntervalDays" id="calInterval"
+                   class="form-input" min="1" placeholder="Leave blank to keep existing"/>
+          </label>
+          <label style="display:block">
+            <span style="display:block;font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.03em;color:var(--fg-muted);margin-bottom:.3rem">
+              Next Due (optional override)
+            </span>
+            <input type="date" name="nextCalibrationDue" id="calNextDue" class="form-input"/>
+          </label>
+        </div>
+        <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem">
+          <button type="button" id="closeCalModal" class="btn-secondary">Cancel</button>
+          <button type="submit" class="btn-primary">✓ Save Calibration</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/nav.js"></script>
+  <script src="/js/notyf.min.js"></script>
+  <script src="/js/building.js"></script>
+  <script src="/js/assetTable.js" type="module"></script>
+  <script src="/js/assetEquipment.js" type="module"></script>
+</div>
+</body>
+</html>
+

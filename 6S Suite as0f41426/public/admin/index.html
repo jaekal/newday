@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>People &amp; Access – 6S Tool Suite</title>
+  <link rel="icon" href="/images/favicon.png" type="image/png"/>
+  <link rel="stylesheet" href="/styles.css"/>
+  <script src="/theme-init.js"></script>
+  <style>
+    body { margin:0; display:flex; flex-direction:column; min-height:100vh; background:var(--bg); color:var(--fg); }
+
+    .um-topbar {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:.65rem 1.25rem; background:var(--surface);
+      border-bottom:1px solid var(--border); gap:.75rem; flex-wrap:wrap;
+    }
+    .um-brand { display:flex; flex-direction:column; gap:.1rem; }
+    .um-brand-title { font-size:1.1rem; font-weight:900; letter-spacing:-.02em; }
+    .um-brand-sub { font-size:.75rem; color:var(--fg-muted); }
+    .um-topbar-actions { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
+    .um-user-chip {
+      display:inline-flex; align-items:center; gap:.35rem;
+      font-size:.82rem; padding:.28rem .65rem; border-radius:999px;
+      background:var(--surface-strong); border:1px solid var(--border);
+    }
+    .um-role-dot { width:7px; height:7px; border-radius:50%; display:inline-block; background:var(--danger); }
+
+    .um-main { flex:1; display:grid; grid-template-columns:220px 1fr; min-height:0; }
+    @media(max-width:700px) { .um-main { grid-template-columns:1fr; } }
+
+    .um-sidebar {
+      background:var(--surface); border-right:1px solid var(--border);
+      padding:1rem .75rem; display:flex; flex-direction:column; gap:.25rem;
+    }
+    .um-sidebar-label {
+      font-size:.68rem; font-weight:800; text-transform:uppercase;
+      letter-spacing:.06em; color:var(--fg-muted); padding:.5rem .5rem .3rem;
+    }
+    .um-nav-btn {
+      display:flex; align-items:center; gap:.55rem;
+      width:100%; padding:.48rem .65rem; border-radius:var(--radius-sm);
+      border:none; background:transparent; color:var(--fg-muted);
+      cursor:pointer; font-size:.875rem; font-weight:500; text-align:left;
+      transition:background .12s, color .12s;
+    }
+    .um-nav-btn:hover { background:var(--surface-strong); color:var(--fg); }
+    .um-nav-btn.active { background:var(--accent); color:var(--accent-contrast); }
+    .um-nav-btn svg { flex-shrink:0; opacity:.7; }
+    .um-nav-btn.active svg { opacity:1; }
+
+    .um-content { padding:1.5rem; overflow:auto; }
+    .um-panel { display:none; }
+    .um-panel.active { display:block; }
+
+    .um-panel-header {
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom:1.25rem; gap:1rem; flex-wrap:wrap;
+    }
+    .um-panel-title { font-size:1.1rem; font-weight:800; display:flex; align-items:center; gap:.5rem; }
+
+    .um-table-wrap { overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); }
+    .um-table { width:100%; border-collapse:collapse; font-size:.875rem; }
+    .um-table thead tr { background:var(--accent); color:var(--accent-contrast); }
+    .um-table thead th {
+      padding:.6rem .85rem; text-align:left; font-size:.75rem;
+      font-weight:700; text-transform:uppercase; letter-spacing:.04em;
+      white-space:nowrap;
+    }
+    .um-table tbody tr { border-bottom:1px solid var(--border); transition:background .1s; }
+    .um-table tbody tr:hover { background:var(--row-hover); }
+    .um-table td { padding:.6rem .85rem; vertical-align:middle; }
+    .um-table td:last-child { white-space:nowrap; }
+
+    .role-pill {
+      display:inline-flex; align-items:center; font-size:.7rem; font-weight:700;
+      padding:.15rem .5rem; border-radius:999px; white-space:nowrap;
+    }
+    .role-admin { background:var(--danger-bg); color:var(--danger); border:1px solid var(--danger); }
+    .role-coordinator { background:var(--info-bg); color:var(--info); border:1px solid var(--info); }
+    .role-lead { background:var(--ok-bg); color:var(--ok); border:1px solid var(--ok); }
+    .role-management { background:var(--warn-bg); color:var(--warn); border:1px solid var(--warn); }
+    .role-user { background:var(--surface-strong); color:var(--fg-muted); border:1px solid var(--border); }
+
+    .um-btn-group { display:inline-flex; gap:.3rem; align-items:center; }
+    .um-btn {
+      display:inline-flex; align-items:center; gap:.3rem;
+      padding:.3rem .65rem; border-radius:var(--radius-sm);
+      border:1px solid var(--border); background:var(--surface-strong);
+      color:var(--fg-muted); cursor:pointer; font-size:.78rem; font-weight:600;
+      transition:background .12s, color .12s, border-color .12s;
+      white-space:nowrap;
+    }
+    .um-btn:hover { background:var(--accent); color:var(--accent-contrast); border-color:var(--accent); }
+.um-btn.danger:hover { background:var(--danger); border-color:var(--danger); color:var(--danger-contrast); }
+    .um-btn-primary {
+      background:var(--accent); color:var(--accent-contrast); border-color:var(--accent);
+      padding:.42rem .9rem; font-size:.875rem;
+    }
+    .um-btn-primary:hover { background:var(--accent-hover); }
+
+    .um-empty { text-align:center; padding:3rem 1rem; color:var(--fg-muted); }
+    .um-empty-icon { margin-bottom:.5rem; display:flex; justify-content:center; color:var(--fg-muted); opacity:.45; }
+    .um-empty-icon svg { width:2.5rem; height:2.5rem; }
+
+    .um-modal-bg {
+      position:fixed; inset:0; background:hsl(0 0% 0% / .5);
+      display:none; align-items:center; justify-content:center; z-index:9000;
+    }
+    .um-modal-bg.open { display:flex; }
+    .um-modal {
+      background:var(--surface-strong); border-radius:var(--radius);
+      padding:1.5rem; width:90%; max-width:440px;
+      box-shadow:0 20px 48px hsl(0 0% 0% / .3);
+      display:flex; flex-direction:column; gap:1rem;
+    }
+    .um-modal h3 { font-size:1.05rem; font-weight:800; margin:0; }
+    .um-field { display:flex; flex-direction:column; gap:.3rem; }
+    .um-field label {
+      font-size:.75rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:.03em; color:var(--fg-muted);
+    }
+    .um-field input, .um-field select {
+      padding:.48rem .7rem; border:1px solid var(--border); border-radius:var(--radius-sm);
+      background:var(--surface); color:var(--fg); font-size:.9rem; transition:border-color .15s;
+    }
+    .um-field input:focus, .um-field select:focus {
+      border-color:var(--accent); outline:none; box-shadow:0 0 0 3px hsl(217 91% 60% / .12);
+    }
+    .um-field .um-hint { font-size:.75rem; color:var(--fg-muted); margin-top:.15rem; }
+    .um-modal-footer { display:flex; justify-content:flex-end; gap:.5rem; }
+    .um-error {
+      font-size:.82rem; color:var(--danger); background:var(--danger-bg);
+      border:1px solid var(--danger); border-radius:var(--radius-sm);
+      padding:.45rem .7rem; display:none;
+    }
+
+    .um-pw-strength { height:3px; border-radius:99px; background:var(--border); margin-top:.3rem; overflow:hidden; }
+    .um-pw-strength-fill { height:100%; width:0; border-radius:99px; transition:width .2s, background .2s; }
+
+    .um-self-notice {
+      font-size:.78rem; padding:.45rem .7rem; border-radius:var(--radius-sm);
+      background:var(--info-bg); border:1px solid var(--info); color:var(--info);
+    }
+
+    .um-session-card {
+      border:1px solid var(--border); border-radius:var(--radius);
+      background:var(--surface); padding:1rem 1.25rem;
+      display:grid; grid-template-columns:1fr 1fr; gap:.6rem .85rem;
+      font-size:.88rem; margin-bottom:1.25rem;
+    }
+    .um-session-card dt {
+      font-size:.72rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:.03em; color:var(--fg-muted);
+    }
+    .um-session-card dd { margin:0; font-weight:600; }
+
+    #umToasts {
+      position:fixed; bottom:1.25rem; right:1.25rem; display:flex;
+      flex-direction:column; gap:.45rem; z-index:9999;
+    }
+    .um-toast {
+      padding:.65rem 1rem; border-radius:var(--radius-sm); font-size:.875rem;
+      font-weight:600; color:var(--accent-contrast); box-shadow:0 6px 18px hsl(0 0% 0% / .2);
+      animation:umSlideIn .2s ease;
+    }
+    .um-toast.ok { background:var(--ok); }
+    .um-toast.err { background:var(--danger); }
+    @keyframes umSlideIn { from{transform:translateY(12px);opacity:0} to{transform:translateY(0);opacity:1} }
+
+    .um-loading { display:flex; align-items:center; gap:.5rem; padding:1rem; color:var(--fg-muted); font-size:.88rem; }
+    .um-spinner { width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .6s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    .um-home-btn {
+      display:inline-flex; align-items:center; gap:.35rem;
+      padding:.32rem .7rem; border:1px solid var(--border); border-radius:var(--radius-sm);
+      background:transparent; color:var(--fg-muted); font-size:.82rem;
+      text-decoration:none; transition:border-color .15s,color .15s;
+    }
+    .um-home-btn svg { flex-shrink:0; }
+    .um-home-btn:hover { border-color:var(--accent); color:var(--accent); }
+  </style>
+</head>
+<body>
+  <header class="um-topbar">
+    <div class="um-brand">
+      <div class="um-brand-title" style="display:flex;align-items:center;gap:.4rem"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> People &amp; Access</div>
+      <div class="um-brand-sub">Suite users · Technician roster · Roles &amp; passwords</div>
+    </div>
+    <div class="um-topbar-actions">
+      <span class="um-user-chip" id="sessionChip" style="display:none">
+        <span class="um-role-dot"></span>
+        <span id="sessionName">—</span>
+        <span id="sessionRole" style="opacity:.55;font-size:.72rem"></span>
+      </span>
+      <select id="themeSelector" style="padding:.3rem .5rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.8rem;min-width:100px" aria-label="Theme">
+        <option value="theme-command">Command</option>
+<option value="theme-beacon">Beacon</option>
+<option value="theme-atlas">Atlas</option>
+<option value="theme-carbon">Carbon</option>
+<option value="theme-grove">Grove</option>
+<option value="theme-ember">Ember</option>
+<option value="theme-harbor">Harbor</option>
+<option value="theme-slate">Slate</option>
+<option value="theme-orchid">Orchid</option>
+<option value="theme-dusk">Dusk</option>
+<option value="theme-pulse">Pulse</option>
+<option value="theme-highcontrast">High Contrast</option>
+      </select>
+      <a href="/home" class="um-home-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Home</a>
+    </div>
+  </header>
+
+  <div class="um-main">
+    <nav class="um-sidebar" aria-label="User management sections">
+      <div class="um-sidebar-label">Sections</div>
+
+      <button class="um-nav-btn active" data-panel="panelUsers" id="navUsers">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        Suite Users
+      </button>
+
+      <button class="um-nav-btn" data-panel="panelTechs" id="navTechs">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        Technicians
+      </button>
+
+      <button class="um-nav-btn" data-panel="panelSelf" id="navSelf">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/></svg>
+        My Account
+      </button>
+
+      <button class="um-nav-btn" data-panel="panelAudit" id="navAudit">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Audit Log
+      </button>
+    </nav>
+
+    <main class="um-content">
+      <div class="um-panel active" id="panelUsers">
+        <div class="um-panel-header">
+          <div class="um-panel-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            Suite Users
+            <span id="userListMeta" style="font-size:.78rem;font-weight:600;color:var(--fg-muted);margin-left:.35rem"></span>
+          </div>
+
+          <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+            <button class="um-btn" id="btnImportUsers" style="display:none">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              Import CSV
+            </button>
+
+            <button class="um-btn um-btn-primary" id="btnAddUser" style="display:none">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              New User
+            </button>
+          </div>
+        </div>
+
+        <div class="um-user-filters" style="display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center">
+          <input type="search" id="userSearch" placeholder="Search username, name, tech ID, building…"
+            aria-label="Search suite users"
+            style="flex:1;min-width:200px;padding:.42rem .7rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.875rem"/>
+          <label for="userRoleFilter" class="visually-hidden">Filter by role</label>
+          <select id="userRoleFilter" aria-label="Filter by role"
+            style="padding:.42rem .7rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.875rem;min-width:9rem">
+            <option value="">All roles</option>
+            <option value="admin">Admin</option>
+            <option value="management">Management</option>
+            <option value="lead">Lead</option>
+            <option value="coordinator">Coordinator</option>
+            <option value="user">User</option>
+          </select>
+          <label for="userBuildingFilter" class="visually-hidden">Filter by building</label>
+          <select id="userBuildingFilter" aria-label="Filter by building"
+            style="padding:.42rem .7rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.875rem;min-width:10rem">
+            <option value="">All buildings</option>
+          </select>
+          <button type="button" class="um-btn" id="userFilterClear" title="Clear search and filters" style="display:none">Clear filters</button>
+        </div>
+
+        <div id="usersLoading" class="um-loading">
+          <div class="um-spinner"></div> Loading users…
+        </div>
+
+        <div class="um-table-wrap" id="usersTableWrap" style="display:none">
+          <table class="um-table" id="usersTable">
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>Display Name</th>
+                <th>Role</th>
+                <th>Tech ID</th>
+                <th>Building</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersBody"></tbody>
+          </table>
+        </div>
+
+        <div class="um-empty" id="usersEmpty" style="display:none">
+          <div class="um-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <div id="usersEmptyMsg">No users found</div>
+        </div>
+      </div>
+
+      <div class="um-panel" id="panelTechs">
+        <div class="um-panel-header">
+          <div class="um-panel-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            Technician Roster
+          </div>
+          <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+            <span id="techCount" style="font-size:.82rem;color:var(--fg-muted)"></span>
+            <button class="um-btn" id="btnTechImportHint" title="Bulk import technicians via CSV">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Import CSV
+            </button>
+            <button class="um-btn um-btn-primary" id="btnAddTech" style="display:none">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Technician
+            </button>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap">
+          <input type="search" id="techSearch" placeholder="Search name or ID…"
+            style="flex:1;min-width:180px;padding:.42rem .7rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.875rem"/>
+          <select id="techShiftFilter"
+            style="padding:.42rem .7rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.875rem">
+            <option value="">All Shifts</option>
+            <option value="1">Shift 1</option>
+            <option value="2">Shift 2</option>
+            <option value="3">Shift 3</option>
+            <option value="WKND">WKND</option>
+          </select>
+          <select id="techBuildingFilter"
+            style="padding:.42rem .7rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.875rem">
+            <option value="">All Buildings</option>
+          </select>
+        </div>
+
+        <div id="techsLoading" class="um-loading">
+          <div class="um-spinner"></div> Loading technicians…
+        </div>
+
+        <div class="um-table-wrap" id="techsTableWrap" style="display:none">
+          <table class="um-table" id="techsTable">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Building</th>
+                <th>Shift</th>
+                <th>Suite Account</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="techsBody"></tbody>
+          </table>
+        </div>
+
+        <div class="um-empty" id="techsEmpty" style="display:none">
+          <div class="um-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
+          <div>No technicians found</div>
+        </div>
+
+        <div id="techPagination" style="display:flex;align-items:center;justify-content:space-between;padding:.5rem 0;font-size:.82rem;flex-wrap:wrap;gap:.5rem">
+          <span id="techPageInfo" style="color:var(--fg-muted)"></span>
+          <div style="display:flex;gap:.3rem" id="techPageBtns"></div>
+        </div>
+
+        <div id="techImportHint" style="display:none;margin-top:1rem;padding:.75rem 1rem;border:1px solid var(--info);border-radius:var(--radius);background:var(--info-bg);font-size:.85rem;color:var(--info)">
+          <strong>Bulk import:</strong> Upload a CSV with columns <code>id, name, role, building, shift</code>
+          to <code>POST /employees/update</code> for each row, or use the existing CSV import in the
+          Screwdriver admin panel at <a href="/screwdriver/admin.html" style="color:var(--info)">admin.html</a>.
+        </div>
+      </div>
+
+      <div class="um-panel" id="panelSelf">
+        <div class="um-panel-header">
+          <div class="um-panel-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/></svg>
+            My Account
+          </div>
+        </div>
+
+        <div id="selfLoading" class="um-loading">
+          <div class="um-spinner"></div> Loading session…
+        </div>
+
+        <div id="selfContent" style="display:none; max-width:480px">
+          <dl class="um-session-card" id="selfCard"></dl>
+
+          <div style="display:flex;flex-direction:column;gap:1rem;">
+            <div style="border:1px solid var(--border);border-radius:var(--radius);padding:1rem;background:var(--surface)">
+              <div style="font-size:.9rem;font-weight:700;margin-bottom:.75rem">Display Name</div>
+              <div class="um-field">
+                <label for="selfName">New display name</label>
+                <input type="text" id="selfName" placeholder="e.g. Jane Smith" autocomplete="off"/>
+              </div>
+              <div class="um-error" id="selfNameErr" style="margin-top:.5rem"></div>
+              <button class="um-btn um-btn-primary" id="btnSelfName" style="margin-top:.75rem;width:100%">Update Name</button>
+            </div>
+
+            <div style="border:1px solid var(--border);border-radius:var(--radius);padding:1rem;background:var(--surface)">
+              <div style="font-size:.9rem;font-weight:700;margin-bottom:.75rem">Change Password</div>
+              <div style="display:flex;flex-direction:column;gap:.65rem">
+                <div class="um-field">
+                  <label for="selfPwCurrent">Current password</label>
+                  <input type="password" id="selfPwCurrent" autocomplete="current-password"/>
+                </div>
+                <div class="um-field">
+                  <label for="selfPwNew">New password</label>
+                  <div style="position:relative;display:flex;align-items:center">
+                    <input type="password" id="selfPwNew" autocomplete="new-password" style="width:100%;padding-right:2.2rem"/>
+                    <button type="button" class="pw-eye" data-target="selfPwNew" tabindex="-1" title="Show/hide"
+                      style="position:absolute;right:.5rem;background:none;border:none;cursor:pointer;color:var(--fg-muted);padding:0;line-height:1">👁</button>
+                  </div>
+                  <div class="um-pw-strength"><div class="um-pw-strength-fill" id="selfPwBar"></div></div>
+                  <span class="um-hint" id="selfPwHint"></span>
+                </div>
+                <div class="um-field">
+                  <label for="selfPwConfirm">Confirm new password</label>
+                  <input type="password" id="selfPwConfirm" autocomplete="new-password"/>
+                </div>
+              </div>
+              <div class="um-error" id="selfPwErr" style="margin-top:.5rem"></div>
+              <button class="um-btn um-btn-primary" id="btnSelfPw" style="margin-top:.75rem;width:100%">Change Password</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="um-panel" id="panelAudit">
+        <div class="um-panel-header">
+          <div class="um-panel-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Audit Log
+          </div>
+          <button class="um-btn" id="btnRefreshAudit">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg>
+            Refresh
+          </button>
+        </div>
+        <div id="auditLoading" class="um-loading">
+          <div class="um-spinner"></div> Loading audit log…
+        </div>
+        <div class="um-table-wrap" id="auditTableWrap" style="display:none">
+          <table class="um-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Action</th>
+                <th>Subject</th>
+                <th>Performed By</th>
+                <th>Changes</th>
+              </tr>
+            </thead>
+            <tbody id="auditBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="um-modal-bg" id="modalAddUser" role="dialog" aria-modal="true" aria-labelledby="modalAddUserTitle">
+    <div class="um-modal">
+      <h3 id="modalAddUserTitle">Create New User</h3>
+      <div class="um-field">
+        <label for="newUsername">Username *</label>
+        <input type="text" id="newUsername" autocomplete="off" placeholder="e.g. jsmith"/>
+      </div>
+      <div class="um-field">
+        <label for="newName">Display Name</label>
+        <input type="text" id="newName" autocomplete="off" placeholder="e.g. Jane Smith"/>
+      </div>
+      <div class="um-field">
+        <label for="newPassword">Password *</label>
+        <div style="position:relative;display:flex;align-items:center">
+          <input type="password" id="newPassword" autocomplete="new-password" style="width:100%;padding-right:2.2rem"/>
+          <button type="button" class="pw-eye" data-target="newPassword" tabindex="-1" title="Show/hide password"
+            style="position:absolute;right:.5rem;background:none;border:none;cursor:pointer;color:var(--fg-muted);padding:0;line-height:1">👁</button>
+        </div>
+        <div class="um-pw-strength"><div class="um-pw-strength-fill" id="newPwBar"></div></div>
+        <span class="um-hint" id="newPwHint"></span>
+      </div>
+      <div class="um-field">
+        <label for="newRole">Role *</label>
+        <select id="newRole">
+          <option value="user">User</option>
+          <option value="lead">Lead</option>
+          <option value="coordinator">Coordinator</option>
+          <option value="management">Management</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div class="um-field">
+        <label for="newTechId">Tech / Employee ID</label>
+        <input type="text" id="newTechId" autocomplete="off" placeholder="e.g. 1090"/>
+      </div>
+      <div class="um-error" id="addUserErr"></div>
+      <div class="um-modal-footer">
+        <button class="um-btn" id="btnCancelAdd">Cancel</button>
+        <button class="um-btn um-btn-primary" id="btnConfirmAdd">Create User</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="um-modal-bg" id="modalImportUsers" role="dialog" aria-modal="true" aria-labelledby="modalImportUsersTitle">
+    <div class="um-modal" style="max-width:760px">
+      <h3 id="modalImportUsersTitle">Import Suite Users</h3>
+
+      <div class="um-field">
+        <label for="importUsersFile">CSV File</label>
+        <input type="file" id="importUsersFile" accept=".csv,text/csv" />
+        <span class="um-hint">
+          Required columns: <code>username,password</code><br>
+          Optional columns: <code>name,role,techId</code>
+        </span>
+      </div>
+
+      <div style="font-size:.8rem;color:var(--fg-muted);padding:.55rem .7rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface)">
+        Example CSV:<br>
+        <code>username,name,password,role,techId</code><br>
+        <code>jsmith,John Smith,TempPass123!,user,1001</code>
+      </div>
+
+      <div id="importUsersSummary" style="font-size:.82rem;color:var(--fg-muted)">
+        Choose a CSV file to preview import rows.
+      </div>
+
+      <div id="importUsersPreview"></div>
+
+      <div class="um-error" id="importUsersErr"></div>
+
+      <div class="um-modal-footer">
+        <button class="um-btn" id="btnCancelImportUsers">Cancel</button>
+        <button class="um-btn um-btn-primary" id="btnConfirmImportUsers">Import Users</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="um-modal-bg" id="modalEditUser" role="dialog" aria-modal="true" aria-labelledby="modalEditUserTitle">
+    <div class="um-modal">
+      <h3 id="modalEditUserTitle">Edit User</h3>
+      <input type="hidden" id="editUsername"/>
+
+      <div class="um-self-notice" id="editSelfNotice" style="display:none">
+        ⚠ You are editing your own account. Role changes will take effect on your next login.
+      </div>
+
+      <div class="um-field" id="editLoginNameField" style="display:none">
+        <label for="editLoginName">Login username</label>
+        <input type="text" id="editLoginName" autocomplete="username" spellcheck="false"/>
+        <span class="um-hint">Admins can change the sign-in name. The user signs in with the new username on next login.</span>
+      </div>
+
+      <div class="um-field">
+        <label for="editName">Display Name</label>
+        <input type="text" id="editName" autocomplete="off"/>
+      </div>
+      <div class="um-field" id="editRoleField">
+        <label for="editRole">Role</label>
+        <select id="editRole">
+          <option value="user">User</option>
+          <option value="lead">Lead</option>
+          <option value="coordinator">Coordinator</option>
+          <option value="management">Management</option>
+          <option value="admin">Admin</option>
+        </select>
+        <span class="um-hint">Only admins can change roles</span>
+      </div>
+      <div class="um-field">
+        <label for="editTechId">Tech / Employee ID</label>
+        <input type="text" id="editTechId" autocomplete="off"/>
+      </div>
+      <div class="um-field">
+        <label for="editPassword">New Password <span style="font-weight:400;text-transform:none;letter-spacing:0">(leave blank to keep current)</span></label>
+        <div style="position:relative;display:flex;align-items:center">
+          <input type="password" id="editPassword" autocomplete="new-password" placeholder="Leave blank to keep current" style="width:100%;padding-right:2.2rem"/>
+          <button type="button" class="pw-eye" data-target="editPassword" tabindex="-1" title="Show/hide password"
+            style="position:absolute;right:.5rem;background:none;border:none;cursor:pointer;color:var(--fg-muted);padding:0;line-height:1">👁</button>
+        </div>
+        <div class="um-pw-strength"><div class="um-pw-strength-fill" id="editPwBar"></div></div>
+      </div>
+      <div class="um-error" id="editUserErr"></div>
+      <div class="um-modal-footer">
+        <button class="um-btn" id="btnCancelEdit">Cancel</button>
+        <button class="um-btn um-btn-primary" id="btnConfirmEdit">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="um-modal-bg" id="modalDeleteUser" role="dialog" aria-modal="true" aria-labelledby="modalDeleteUserTitle">
+    <div class="um-modal">
+      <h3 id="modalDeleteUserTitle" style="color:var(--danger)">Delete User</h3>
+      <p style="font-size:.9rem;color:var(--fg-muted)">
+        Are you sure you want to permanently delete
+        <strong id="deleteUserName" style="color:var(--fg)"></strong>?
+        This cannot be undone.
+      </p>
+      <input type="hidden" id="deleteUsername"/>
+      <div class="um-error" id="deleteUserErr"></div>
+      <div class="um-modal-footer">
+        <button class="um-btn" id="btnCancelDelete">Cancel</button>
+        <button class="um-btn" id="btnConfirmDelete" style="background:var(--danger);color:var(--danger-contrast);border-color:var(--danger)">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="um-modal-bg" id="modalTech" role="dialog" aria-modal="true" aria-labelledby="techModalTitle">
+    <div class="um-modal">
+      <h3 id="techModalTitle">Add Technician</h3>
+      <div class="um-field" id="techIdField">
+        <label for="techId">Employee ID *</label>
+        <input type="text" id="techId" autocomplete="off" placeholder="e.g. 1090"/>
+        <span class="um-hint">Used to match checkout records in the screwdriver tool</span>
+      </div>
+      <div class="um-field">
+        <label for="techName">Full Name *</label>
+        <input type="text" id="techName" autocomplete="off" placeholder="e.g. Jane Smith"/>
+      </div>
+      <div class="um-field">
+        <label for="techRole">Role / Title</label>
+        <input type="text" id="techRole" value="Technician" autocomplete="off" placeholder="e.g. Technician"/>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+        <div class="um-field">
+          <label for="techBuilding">Building</label>
+          <input type="text" id="techBuilding" autocomplete="off" placeholder="e.g. 350"/>
+        </div>
+        <div class="um-field">
+          <label for="techShiftSel">Shift</label>
+          <select id="techShiftSel">
+            <option value="1">Shift 1</option>
+            <option value="2">Shift 2</option>
+            <option value="3">Shift 3</option>
+            <option value="WKND">WKND</option>
+          </select>
+        </div>
+      </div>
+      <div class="um-error" id="techModalErr"></div>
+      <div class="um-modal-footer">
+        <button class="um-btn" id="btnCancelTech">Cancel</button>
+        <button class="um-btn um-btn-primary" id="btnConfirmTech">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="um-modal-bg" id="modalDeleteTech" role="dialog" aria-modal="true" aria-labelledby="modalDeleteTechTitle">
+    <div class="um-modal">
+      <h3 id="modalDeleteTechTitle" style="color:var(--danger)">Remove Technician</h3>
+      <p style="font-size:.9rem;color:var(--fg-muted)">
+        Remove <strong id="deleteTechName" style="color:var(--fg)"></strong> from the technician roster?
+        This only removes them from the tracking list — existing checkout records are preserved.
+      </p>
+      <input type="hidden" id="deleteTechId"/>
+      <div class="um-error" id="deleteTechErr"></div>
+      <div class="um-modal-footer">
+        <button class="um-btn" id="btnCancelDeleteTech">Cancel</button>
+        <button class="um-btn" id="btnConfirmDeleteTech" style="background:var(--danger);color:var(--danger-contrast);border-color:var(--danger)">Remove</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="umToasts" aria-live="polite"></div>
+
+  <script src="/admin/theme-um.js"></script>
+  <script type="module" src="/admin/user-mgmt.js"></script>
+</body>
+</html>
+
+
+

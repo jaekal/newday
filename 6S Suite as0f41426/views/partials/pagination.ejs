@@ -1,0 +1,54 @@
+<% const totalPages = Math.ceil(total / (limit === 'all' ? Math.max(total, 1) : Number(limit || 25))); %>
+<div class="pagination-container">
+  <!-- Limit Selection (NO inline onchange) -->
+  <form id="paginationLimitForm" method="get" action="/asset-catalog" class="pagination-limit-form">
+    <input type="hidden" name="q" value="<%= q || '' %>">
+    <input type="hidden" name="category" value="<%= category || '' %>">
+    <input type="hidden" name="auditStatus" value="<%= auditStatus || '' %>">
+    <input type="hidden" name="status" value="<%= typeof status !== 'undefined' ? status : '' %>">
+    <input type="hidden" name="attention" value="<%= typeof attention !== 'undefined' ? attention : '' %>">
+    <input type="hidden" name="itemType" value="<%= typeof itemType !== 'undefined' ? itemType : '' %>">
+    <input type="hidden" name="equipmentClass" value="<%= typeof equipmentClass !== 'undefined' ? equipmentClass : '' %>">
+    <input type="hidden" name="managedSource" value="<%= typeof managedSource !== 'undefined' ? managedSource : '' %>">
+    <input type="hidden" name="building" value="<%= typeof building !== 'undefined' ? building : '' %>">
+
+    <label for="limit" class="pagination-label">Show:</label>
+    <select name="limit" id="limit" class="pagination-select">
+      <option value="25"  <%= String(limit) === '25'  ? 'selected' : '' %>>25</option>
+      <option value="50"  <%= String(limit) === '50'  ? 'selected' : '' %>>50</option>
+      <option value="100" <%= String(limit) === '100' ? 'selected' : '' %>>100</option>
+      <option value="all" <%= String(limit) === 'all' ? 'selected' : '' %>>All</option>
+    </select>
+  </form>
+
+  <!-- Page Navigation -->
+  <nav class="pagination-nav" aria-label="Pagination">
+    <% let pagesToShow = []; %>
+    <% if (totalPages <= 7) {
+         for (let i = 1; i <= totalPages; i++) pagesToShow.push(i);
+       } else {
+         pagesToShow.push(1);
+         if (page > 4) pagesToShow.push('…');
+         for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) {
+           pagesToShow.push(i);
+         }
+         if (page < totalPages - 3) pagesToShow.push('…');
+         pagesToShow.push(totalPages);
+       }
+    %>
+
+    <% pagesToShow.forEach(p => { %>
+      <% if (p === '…') { %>
+        <span class="pagination-ellipsis">…</span>
+      <% } else if (p === page) { %>
+        <strong class="pagination-current"><%= p %></strong>
+      <% } else { %>
+        <a
+          href="?page=<%= p %>&limit=<%= encodeURIComponent(String(limit || 25)) %>&q=<%= encodeURIComponent(q || '') %>&category=<%= encodeURIComponent(category || '') %>&auditStatus=<%= encodeURIComponent(auditStatus || '') %>&status=<%= encodeURIComponent(typeof status !== 'undefined' ? status : '') %>&attention=<%= encodeURIComponent(typeof attention !== 'undefined' ? attention : '') %>&itemType=<%= encodeURIComponent(typeof itemType !== 'undefined' ? itemType : '') %>&equipmentClass=<%= encodeURIComponent(typeof equipmentClass !== 'undefined' ? equipmentClass : '') %>&managedSource=<%= encodeURIComponent(typeof managedSource !== 'undefined' ? managedSource : '') %>&building=<%= encodeURIComponent(typeof building !== 'undefined' ? building : '') %>"
+          class="pagination-link">
+          <%= p %>
+        </a>
+      <% } %>
+    <% }); %>
+  </nav>
+</div>

@@ -1,0 +1,331 @@
+[
+  {
+    "id": "3f09b0e4-5c7a-4d71-8639-30a3109677e6",
+    "title": "ESD Cart Inspection",
+    "description": "Verify ESD cart ground leads and mats.",
+    "domain": "audit",
+    "kind": "daily",
+    "source": "manual",
+    "bucket": "todo",
+    "shiftMode": "per-shift",
+    "weekMode": "",
+    "shift": 0,
+    "dueDate": "",
+    "createdAt": "2025-08-25T22:44:34.088Z",
+    "updatedAt": "2025-08-28T08:00:01.027Z",
+    "category": "",
+    "meta": {
+      "template": true,
+      "category": ""
+    }
+  },
+  {
+    "id": "60034068-159d-46e6-aa3b-7a413cf416ef",
+    "title": "Toolroom 5S Walkthrough",
+    "description": "Check shadow boards, labeling, and cleanliness.",
+    "domain": "audit",
+    "kind": "daily",
+    "source": "manual",
+    "bucket": "todo",
+    "shiftMode": "once",
+    "weekMode": "",
+    "shift": 0,
+    "dueDate": "",
+    "createdAt": "2025-08-25T22:44:34.088Z",
+    "updatedAt": "2025-08-28T08:00:01.027Z",
+    "category": "",
+    "meta": {
+      "template": true,
+      "category": ""
+    }
+  },
+  {
+    "id": "39bade2a-4b75-40e1-8eb1-9f7cb32f20c9",
+    "title": "Torque Driver Spot-Check",
+    "description": "Random sample torque verification (10% of drivers).",
+    "domain": "audit",
+    "kind": "weekly",
+    "source": "manual",
+    "bucket": "todo",
+    "shiftMode": "",
+    "weekMode": "weekly",
+    "shift": 0,
+    "dueDate": "",
+    "createdAt": "2025-08-25T22:44:34.088Z",
+    "updatedAt": "2025-08-28T08:00:01.027Z",
+    "category": "",
+    "meta": {
+      "template": true,
+      "category": ""
+    }
+  },
+  {
+    "id": "028a6438-b8d9-443b-8999-4e333f690d5a",
+    "title": "PPE Compliance Review",
+    "description": "Audit PPE availability and adherence by cell.",
+    "domain": "audit",
+    "kind": "weekly",
+    "source": "manual",
+    "bucket": "todo",
+    "shiftMode": "",
+    "weekMode": "biweekly",
+    "shift": 0,
+    "dueDate": "",
+    "createdAt": "2025-08-25T22:44:34.088Z",
+    "updatedAt": "2025-08-28T08:00:01.027Z",
+    "category": "",
+    "meta": {
+      "template": true,
+      "category": ""
+    }
+  },
+  {
+    "id": "cf0f8505-e1ff-40d1-8f60-cbf7f56f4379",
+    "title": "Fusebox check",
+    "description": "",
+    "domain": "audit",
+    "kind": "daily",
+    "source": "manual",
+    "bucket": "todo",
+    "shiftMode": "per-shift",
+    "weekMode": "",
+    "shift": 0,
+    "dueDate": "",
+    "createdAt": "2025-08-25T22:46:47.200Z",
+    "updatedAt": "2025-08-28T08:00:01.027Z",
+    "category": "",
+    "meta": {
+      "template": true,
+      "category": ""
+    }
+  },
+  {
+    "id": "f3a5e5b4-4350-439d-bccc-21eaa7f9b019",
+    "title": "Test",
+    "description": "",
+    "domain": "audit",
+    "kind": "daily",
+    "source": "manual",
+    "bucket": "todo",
+    "shiftMode": "once",
+    "weekMode": "",
+    "shift": 0,
+    "dueDate": "",
+    "createdAt": "2025-09-10T20:24:01.241Z",
+    "updatedAt": "2025-09-10T20:24:01.241Z",
+    "category": "",
+    "meta": {
+      "template": true,
+      "category": ""
+    }
+  },
+  {
+    "id": "73b3e8ad-35a7-4fd6-809c-c778b80cc925",
+    "title": "ESD inspection",
+    "description": "check all carts for esd calibration",
+    "domain": "audit",
+    "kind": "daily",
+    "source": "manual",
+    "bucket": "todo",
+    "shiftMode": "once",
+    "weekMode": "",
+    "shift": 0,
+    "dueDate": "",
+    "createdAt": "2026-03-23T19:48:15.994Z",
+    "updatedAt": "2026-03-23T19:48:15.994Z",
+    "category": "",
+    "meta": {
+      "template": true,
+      "category": ""
+    }
+  },
+  {
+    "id": "3b42043c-d5a7-45cf-83e2-8d3122549590",
+    "title": "ESD Cart Inspection (Shift 1)",
+    "description": "Verify ESD cart ground leads and mats.",
+    "domain": "audit",
+    "kind": "daily",
+    "source": "manual",
+    "bucket": "todo",
+    "shiftMode": "per-shift",
+    "weekMode": "",
+    "shift": 1,
+    "dueDate": "2026-03-26",
+    "createdAt": "2026-03-26T08:00:00.454Z",
+    "updatedAt": "2026-03-26T08:00:00.454Z",
+    "category": "",
+    "meta": {
+      "template": false,
+      "category": "",
+      "templateInstance": "3f09b0e4-5c7a-4d71-8639-30a3109677e6"
+    }
+  },
+  {
+    "id": "e578f9f3-0883-42ef-9c40-dc62d067b63f",
+    "title": "ESD Cart Inspection (Shift 2)",
+    "description": "Verify ESD cart ground leads and mats.",
+    "domain": "audit",
+    "kind": "daily",
+    "source": "manual",
+    "bucket": "todo",
+    "shiftMode": "per-shift",
+    "weekMode": "",
+    "shift": 2,
+    "dueDate": "2026-03-26",
+    "createdAt": "2026-03-26T08:00:00.454Z",
+    "updatedAt": "2026-03-26T08:00:00.454Z",
+    "category": "",
+    "meta": {
+      "template": false,
+      "category": "",
+      "templateInstance": "3f09b0e4-5c7a-4d71-8639-30a3109677e6"
+    }
+  },
+  {
+    "id": "d65f6daf-aba9-4608-a34c-3d61c65d5420",
+    "title": "ESD Cart Inspection (Shift 3)",
+    "description": "Verify ESD cart ground leads and mats.",
+    "domain": "audit",
+    "kind": "daily",
+    "source": "manual",
+    "bucket": "todo",
+    "shiftMode": "per-shift",
+    "weekMode": "",
+    "shift": 3,
+    "dueDate": "2026-03-26",
+    "createdAt": "2026-03-26T08:00:00.454Z",
+    "updatedAt": "2026-03-26T08:00:00.454Z",
+    "category": "",
+    "meta": {
+      "template": false,
+      "category": "",
+      "templateInstance": "3f09b0e4-5c7a-4d71-8639-30a3109677e6"
+    }
+  },
+  {
+    "id": "87f70b19-283f-4909-b999-ff330b42e2cb",
+    "title": "Toolroom 5S Walkthrough",
+    "description": "Check shadow boards, labeling, and cleanliness.",
+    "domain": "audit",
+    "kind": "daily",
+    "source": "manual",
+    "bucket": "todo",
+    "shiftMode": "once",
+    "weekMode": "",
+    "shift": 0,
+    "dueDate": "2026-03-26",
+    "createdAt": "2026-03-26T08:00:00.454Z",
+    "updatedAt": "2026-03-26T08:00:00.454Z",
+    "category": "",
+    "meta": {
+      "template": false,
+      "category": "",
+      "templateInstance": "60034068-159d-46e6-aa3b-7a413cf416ef"
+    }
+  },
+  {
+    "id": "545c16f5-63d9-44f0-82c2-aee5228b2e3c",
+    "title": "Fusebox check (Shift 1)",
+    "description": "",
+    "domain": "audit",
+    "kind": "daily",
+    "source": "manual",
+    "bucket": "todo",
+    "shiftMode": "per-shift",
+    "weekMode": "",
+    "shift": 1,
+    "dueDate": "2026-03-26",
+    "createdAt": "2026-03-26T08:00:00.454Z",
+    "updatedAt": "2026-03-26T08:00:00.454Z",
+    "category": "",
+    "meta": {
+      "template": false,
+      "category": "",
+      "templateInstance": "cf0f8505-e1ff-40d1-8f60-cbf7f56f4379"
+    }
+  },
+  {
+    "id": "d5e199bf-7bcf-4578-9e82-400ba5cb9225",
+    "title": "Fusebox check (Shift 2)",
+    "description": "",
+    "domain": "audit",
+    "kind": "daily",
+    "source": "manual",
+    "bucket": "todo",
+    "shiftMode": "per-shift",
+    "weekMode": "",
+    "shift": 2,
+    "dueDate": "2026-03-26",
+    "createdAt": "2026-03-26T08:00:00.454Z",
+    "updatedAt": "2026-03-26T08:00:00.454Z",
+    "category": "",
+    "meta": {
+      "template": false,
+      "category": "",
+      "templateInstance": "cf0f8505-e1ff-40d1-8f60-cbf7f56f4379"
+    }
+  },
+  {
+    "id": "0589e645-4b36-452c-9aa2-c7b75a2a1e7e",
+    "title": "Fusebox check (Shift 3)",
+    "description": "",
+    "domain": "audit",
+    "kind": "daily",
+    "source": "manual",
+    "bucket": "todo",
+    "shiftMode": "per-shift",
+    "weekMode": "",
+    "shift": 3,
+    "dueDate": "2026-03-26",
+    "createdAt": "2026-03-26T08:00:00.454Z",
+    "updatedAt": "2026-03-26T08:00:00.454Z",
+    "category": "",
+    "meta": {
+      "template": false,
+      "category": "",
+      "templateInstance": "cf0f8505-e1ff-40d1-8f60-cbf7f56f4379"
+    }
+  },
+  {
+    "id": "38921fc0-222a-4740-9aa7-0759ce19dc4d",
+    "title": "Test",
+    "description": "",
+    "domain": "audit",
+    "kind": "daily",
+    "source": "manual",
+    "bucket": "todo",
+    "shiftMode": "once",
+    "weekMode": "",
+    "shift": 0,
+    "dueDate": "2026-03-26",
+    "createdAt": "2026-03-26T08:00:00.454Z",
+    "updatedAt": "2026-03-26T08:00:00.454Z",
+    "category": "",
+    "meta": {
+      "template": false,
+      "category": "",
+      "templateInstance": "f3a5e5b4-4350-439d-bccc-21eaa7f9b019"
+    }
+  },
+  {
+    "id": "271c9d94-8773-4dd1-9e86-47ab53a53885",
+    "title": "ESD inspection",
+    "description": "check all carts for esd calibration",
+    "domain": "audit",
+    "kind": "daily",
+    "source": "manual",
+    "bucket": "todo",
+    "shiftMode": "once",
+    "weekMode": "",
+    "shift": 0,
+    "dueDate": "2026-03-26",
+    "createdAt": "2026-03-26T08:00:00.454Z",
+    "updatedAt": "2026-03-26T08:00:00.454Z",
+    "category": "",
+    "meta": {
+      "template": false,
+      "category": "",
+      "templateInstance": "73b3e8ad-35a7-4fd6-809c-c778b80cc925"
+    }
+  }
+]

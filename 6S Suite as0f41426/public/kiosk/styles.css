@@ -1,0 +1,2044 @@
+/* Kiosk styles â€“ uses your suite tokens from /inventory/styles.css */
+:root {
+  --card-bg: var(--box-bg, #fff);
+  --card-border: var(--border, #e5e7eb);
+  --card-shadow: var(--shadow, rgba(0,0,0,.08));
+  --brand: var(--accent, #2563eb);
+  --danger: #ef4444;
+  --ok: #10b981;
+  --muted: var(--muted-fg, #6b7280);
+}
+
+.kiosk-body { background: var(--bg); color: var(--fg); }
+
+/* ---------------- Header & Banner ---------------- */
+
+.kiosk-header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:1rem;
+  padding:1rem 1.25rem;
+  border-bottom:1px solid var(--card-border);
+  background: var(--surface, var(--card-bg));
+}
+.kiosk-header__left { display:flex; align-items:center; gap:.75rem; }
+.kiosk-logo { font-size:2rem; }
+.kiosk-title { font-size:1.5rem; margin:0; }
+.kiosk-subtitle { margin:0; color: var(--muted); font-size:.95rem; }
+
+.user-banner {
+  margin: 0.4rem 0 0.5rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(15, 118, 110, 0.10); /* teal-ish */
+  color: #0f766e;
+  border: 1px solid rgba(15,118,110,0.25);
+}
+.user-banner::before {
+  content: "â—";
+  font-size: 0.6rem;
+  color: #0f766e;
+}
+.user-banner strong {
+  font-weight: 700;
+}
+
+/* Right side (clock / network / buttons) */
+.kiosk-header__right {
+  display:flex;
+  align-items:center;
+  gap:.5rem;
+}
+.kiosk-clock {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.95rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.4rem;
+  background: rgba(148,163,184,0.08);
+}
+.kiosk-net {
+  font-weight:600;
+  font-size:.9rem;
+  padding:.15rem .5rem;
+  border-radius:.5rem;
+}
+.kiosk-net.online {
+  background: rgba(16,185,129,.12);
+  color: var(--ok);
+}
+.kiosk-net.offline {
+  background: rgba(239,68,68,.12);
+  color: var(--danger);
+}
+
+/* ---------------- Main cards ---------------- */
+
+.kiosk-main { padding:1.25rem; }
+.kiosk-grid {
+  display:grid;
+  gap:1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.kiosk-card {
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:.5rem;
+  padding:1rem;
+  border:2px solid var(--card-border);
+  border-radius:1rem;
+  background: var(--card-bg);
+  box-shadow: 0 6px 20px var(--card-shadow);
+  transition:
+    transform .12s ease,
+    box-shadow .12s ease,
+    border-color .12s ease,
+    background .12s ease;
+  text-align:left;
+  cursor: pointer;
+}
+.kiosk-card:focus,
+.kiosk-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--brand);
+  outline: none;
+  background: color-mix(in oklab, var(--card-bg) 80%, var(--brand) 20%);
+}
+.kiosk-card__icon { font-size:1.6rem; }
+.kiosk-card__title { font-weight:800; }
+.kiosk-card__desc { color: var(--muted); font-size:.95rem; }
+
+.kiosk-card--primary {
+  border-color: color-mix(in oklab, var(--brand) 30%, var(--card-border));
+}
+.kiosk-card--accent { border-color:#14b8a6; }
+.kiosk-card--neutral { border-color:#a78bfa; }
+.kiosk-card--danger { border-color:#ef4444; }
+.kiosk-card--inspection { border-color:#0f766e; }
+
+/* ---------------- Footer & Queue Badge ---------------- */
+
+.kiosk-footer {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding: .75rem 1.25rem;
+  border-top:1px solid var(--card-border);
+  color: var(--muted);
+  font-size:.95rem;
+}
+.kiosk-footer kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--card-border);
+  background: rgba(148,163,184,0.12);
+  font-size: 0.8rem;
+}
+
+/* Clickable queue pill */
+.kiosk-queue {
+  font-weight:600;
+  font-size:0.85rem;
+  padding:0.25rem 0.7rem;
+  border-radius:999px;
+  border:1px solid rgba(234,179,8,0.9);
+  background: rgba(234,179,8,0.08);
+  color:#eab308;
+  display:inline-flex;
+  align-items:center;
+  gap:0.25rem;
+  cursor:pointer;
+}
+.kiosk-queue::before {
+  content:"â³";
+  font-size:0.9rem;
+}
+.kiosk-queue:hover {
+  background: rgba(234,179,8,0.16);
+}
+
+/* ---------------- Buttons â€“ match suite theme ---------------- */
+
+.btn {
+  appearance:none;
+  border:1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--fg);
+  padding:.45rem .75rem;
+  border-radius:.6rem;
+  font-weight:700;
+  font-size:0.9rem;
+  transition:
+    transform .08s ease,
+    background .12s ease,
+    border-color .12s ease,
+    box-shadow .12s ease;
+}
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px var(--card-shadow);
+}
+.btn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+.btn-xs {
+  padding:.25rem .55rem;
+  font-size:.8rem;
+}
+.btn-primary {
+  background: var(--brand);
+  color: white;
+  border-color: var(--brand);
+}
+.btn-secondary {
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--kiosk-fg) 14%, transparent),
+      color-mix(in srgb, var(--kiosk-fg) 5%, transparent)
+    ),
+    var(--kiosk-panel-2);
+  border-color: var(--kiosk-line-2);
+  color: var(--kiosk-fg);
+  box-shadow: 0 12px 24px color-mix(in srgb, var(--kiosk-ink) 32%, transparent);
+}
+.btn-danger {
+  background: var(--danger);
+  color:white;
+  border-color: var(--danger);
+}
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--fg);
+}
+
+/* ---------------- Modals ---------------- */
+
+.modal-backdrop {
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background: color-mix(in oklab, black 45%, transparent);
+  z-index: 50;
+}
+.modal-backdrop.active { display:flex; }
+.modal {
+  width: min(92vw, 720px);
+  background: var(--card-bg);
+  color: var(--fg);
+  border: 1px solid var(--card-border);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  box-shadow: 0 30px 60px rgba(0,0,0,.35);
+}
+
+.inspection-modal {
+  width: min(92vw, 820px);
+  max-height: min(88vh, 900px);
+  overflow: auto;
+}
+.buttons-row {
+  display:flex;
+  gap:.5rem;
+  align-items:center;
+}
+
+.buttons-row .btn-secondary,
+.inspection-pane-actions .btn-secondary {
+  min-height: 46px;
+  padding-inline: 1rem;
+  font-weight: 800;
+  letter-spacing: .02em;
+}
+
+.buttons-row .btn-secondary:hover,
+.buttons-row .btn-secondary:focus-visible,
+.inspection-pane-actions .btn-secondary:hover,
+.inspection-pane-actions .btn-secondary:focus-visible {
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--kiosk-accent) 22%, transparent),
+      color-mix(in srgb, var(--kiosk-accent) 8%, transparent)
+    ),
+    var(--kiosk-panel-2);
+  border-color: color-mix(in srgb, var(--kiosk-accent) 48%, transparent);
+  color: var(--kiosk-fg);
+}
+
+/* ---------------- Inline validation ---------------- */
+
+.input-hint {
+  font-size:.85rem;
+  color: var(--muted);
+  margin-top:.25rem;
+}
+.input-hint.error {
+  color: var(--danger);
+}
+input[aria-invalid="true"],
+textarea[aria-invalid="true"] {
+  border-color: var(--danger) !important;
+}
+
+.inspection-rack-sn-block {
+  margin-bottom: 1rem;
+}
+
+.inspection-rack-sn-block input {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.inspection-meta-fieldset {
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.inspection-meta-fieldset:disabled {
+  pointer-events: none;
+}
+
+.inspection-meta-fieldset:disabled .inspection-grid {
+  opacity: 0.55;
+}
+
+.inspection-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.inspection-steps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 0 0 1rem;
+}
+
+.inspection-step {
+  appearance: none;
+  border: 1px solid var(--card-border);
+  background: color-mix(in oklab, var(--card-bg) 94%, var(--brand) 6%);
+  color: var(--fg);
+  padding: 0.7rem 0.9rem;
+  border-radius: 0.8rem;
+  font-weight: 800;
+  text-align: left;
+}
+
+.inspection-step.active {
+  border-color: var(--brand);
+  background: color-mix(in oklab, var(--card-bg) 80%, var(--brand) 20%);
+}
+
+.inspection-step:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.inspection-pane-actions {
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+}
+
+#inspectionBackBtn {
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--kiosk-accent) 22%, transparent),
+      color-mix(in srgb, var(--kiosk-accent) 8%, transparent)
+    ),
+    var(--kiosk-panel-2);
+  border-color: color-mix(in srgb, var(--kiosk-accent) 32%, transparent);
+  color: var(--kiosk-fg);
+}
+
+#inspectionBackBtn:hover,
+#inspectionBackBtn:focus-visible {
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--kiosk-accent) 32%, transparent),
+      color-mix(in srgb, var(--kiosk-accent) 14%, transparent)
+    ),
+    var(--kiosk-panel-2);
+  border-color: color-mix(in srgb, var(--kiosk-accent) 54%, transparent);
+  color: var(--kiosk-fg);
+}
+
+.inspection-field {
+  display: block;
+}
+
+.inspection-field span {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.inspection-locked-value {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--card-border);
+  border-radius: 0.7rem;
+  background: color-mix(in oklab, var(--card-bg) 88%, var(--brand) 12%);
+  color: var(--fg);
+  font-weight: 700;
+}
+
+.inspection-field--full {
+  grid-column: 1 / -1;
+}
+
+.inspection-questions {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.inspection-question {
+  border: 1px solid var(--card-border);
+  border-radius: 0.9rem;
+  padding: 0.9rem;
+  background: color-mix(in oklab, var(--card-bg) 92%, var(--brand) 8%);
+}
+
+.inspection-question__title {
+  font-size: 0.96rem;
+  font-weight: 800;
+  margin-bottom: 0.55rem;
+}
+
+.inspection-choice-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem 1rem;
+  font-size: 0.92rem;
+}
+
+.inspection-choice-row label,
+.inspection-checkbox-grid label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.inspection-followup {
+  margin-top: 0.8rem;
+  padding-top: 0.8rem;
+  border-top: 1px dashed var(--card-border);
+}
+
+/* Only show follow-ups after "No" â€” JS toggles .is-active (avoids [hidden] vs display:flex conflicts) */
+.inspection-followup:not(.is-active) {
+  display: none !important;
+}
+
+.inspection-followup.is-active.inspection-followup--detail {
+  display: flex !important;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.inspection-followup.is-active:not(.inspection-followup--detail) {
+  display: block !important;
+}
+
+.inspection-followup__label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.inspection-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 0.75rem;
+  font-size: 0.92rem;
+}
+
+/* Fixed checkbox column + equal-height cells so rows stay level regardless of label length */
+.inspection-checkbox-grid__cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.65rem;
+  border: 1px solid color-mix(in oklab, var(--card-border) 80%, var(--brand) 20%);
+  background: color-mix(in oklab, var(--card-bg) 95%, var(--brand) 5%);
+  align-items: stretch;
+}
+
+.inspection-checkbox-grid__cols label {
+  display: grid;
+  grid-template-columns: var(--inspection-cb-gutter, 1.25rem) minmax(0, 1fr);
+  column-gap: 0.5rem;
+  align-items: center;
+  min-height: 2.65rem;
+  margin: 0;
+  padding: 0.4rem 0.55rem;
+  border-radius: 0.5rem;
+  border: 1px solid color-mix(in oklab, var(--card-border) 70%, transparent);
+  background: color-mix(in oklab, var(--card-bg) 92%, transparent);
+  font-size: 0.92rem;
+  line-height: 1.25;
+}
+
+.inspection-checkbox-grid__cols label input[type="checkbox"] {
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0;
+  flex-shrink: 0;
+  align-self: center;
+  justify-self: center;
+}
+
+.inspection-checkbox-grid__cols label span.inspection-cb-text {
+  display: block;
+  min-width: 0;
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .inspection-grid,
+  .inspection-steps,
+  .inspection-checkbox-grid,
+  .inspection-checkbox-grid__cols {
+    grid-template-columns: 1fr;
+  }
+
+  .inspection-pane-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* ---------------- Tool preview ---------------- */
+
+.tool-preview {
+  display:flex;
+  align-items:center;
+  gap:.5rem;
+  margin-top:.35rem;
+}
+.tool-preview img {
+  width:48px;
+  height:48px;
+  object-fit:contain;
+  border-radius:.5rem;
+  border:1px solid var(--card-border);
+}
+
+/* ---------------- Tables (Queue + My Items) ---------------- */
+
+.modal table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.modal th,
+.modal td {
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid rgba(148,163,184,0.35);
+  text-align: left;
+  font-size: 0.85rem;
+}
+.modal thead th {
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+}
+.modal tbody tr:nth-child(even) {
+  background: rgba(148,163,184,0.05);
+}
+
+/* Small helper for scroll containers in queue / my items modals */
+.max-h-96 {
+  max-height: 24rem;
+}
+.overflow-x-auto {
+  overflow-x: auto;
+}
+
+/* 2026 kiosk redesign overrides — refined, professional pass.
+   --kiosk-* tokens now inherit from the shared theme tokens defined per
+   theme class (theme-beacon, theme-command, theme-atlas, etc.) so that
+   switching the theme restyles the kiosk background, buttons, and card
+   typography without any kiosk-specific overrides. */
+:root {
+  --kiosk-ink:        var(--bg, #0a1322);
+  --kiosk-ink-2:      var(--bg-elevated, #0b1526);
+  --kiosk-panel:      var(--surface, rgba(15, 23, 42, 0.88));
+  --kiosk-panel-2:    var(--surface-muted, rgba(17, 27, 46, 0.94));
+  --kiosk-panel-3:    var(--surface-strong, rgba(22, 33, 55, 0.96));
+  --kiosk-line:       var(--border, rgba(148, 163, 184, 0.18));
+  --kiosk-line-2:     var(--border-strong, rgba(148, 163, 184, 0.28));
+  --kiosk-fg:         var(--fg, #e5edf7);
+  --kiosk-fg-muted:   var(--fg-muted, rgba(229, 237, 247, 0.64));
+  --kiosk-fg-dim:     var(--fg-subtle, rgba(229, 237, 247, 0.46));
+
+  /* Accent + semantic colors all mirror the active theme. */
+  --kiosk-accent:     var(--accent, #38bdf8);
+  --kiosk-accent-2:   var(--accent-hover, #0ea5e9);
+  --kiosk-accent-ink: var(--accent-contrast, #041224);
+  --kiosk-warm:       var(--warn, #f59e0b);
+  --kiosk-warm-2:     var(--attn, #d97706);
+  --kiosk-positive:   var(--ok, #10b981);
+  --kiosk-danger:     var(--danger, #ef4444);
+
+  --kiosk-shadow:       var(--shadow, 0 18px 40px rgba(2, 6, 15, 0.36));
+  --kiosk-shadow-soft:  var(--shadow-sm, 0 8px 18px rgba(2, 6, 15, 0.22));
+
+  --kiosk-radius-lg: 14px;
+  --kiosk-radius-md: 10px;
+  --kiosk-radius-sm: 8px;
+}
+
+.kiosk-body {
+  min-height: 100vh;
+  margin: 0;
+  color: var(--kiosk-fg);
+  background:
+    radial-gradient(1200px 600px at 85% -10%, color-mix(in srgb, var(--kiosk-accent) 10%, transparent), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, color-mix(in srgb, var(--kiosk-accent) 7%, transparent), transparent 55%),
+    linear-gradient(180deg, var(--kiosk-ink) 0%, var(--kiosk-ink-2) 45%, var(--kiosk-ink) 100%);
+  font-family: 'Manrope', 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.kiosk-body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent 88%);
+}
+
+.kiosk-body::after { content: none; }
+
+.kiosk-shell {
+  position: relative;
+  z-index: 1;
+  width: min(1480px, calc(100% - 28px));
+  margin: 0 auto;
+  padding: 20px 0 28px;
+}
+
+.kiosk-noscript {
+  padding: .75rem;
+  background: color-mix(in srgb, var(--kiosk-danger) 14%, transparent);
+  color: var(--kiosk-danger);
+  text-align: center;
+  font-weight: 700;
+  border-radius: var(--kiosk-radius-sm);
+}
+
+/* Remove heavy blur on most surfaces; keep it only where it reads well. */
+.kiosk-topbar,
+.status-tower,
+.scanner-panel,
+.info-panel,
+.kiosk-footer,
+.modal,
+.kiosk-card,
+.pulse-card,
+.status-banner__item,
+.visual-panel {
+  backdrop-filter: none;
+}
+
+.kiosk-topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 16px 20px;
+  border: 1px solid var(--kiosk-line);
+  border-radius: var(--kiosk-radius-lg);
+  background: var(--kiosk-panel);
+  box-shadow: var(--kiosk-shadow-soft);
+}
+
+.kiosk-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.kiosk-brand__mark {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--kiosk-radius-md);
+  border: 1px solid var(--kiosk-line-2);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--kiosk-accent) 18%, transparent), color-mix(in srgb, var(--kiosk-accent) 4%, transparent)),
+    var(--kiosk-panel-2);
+  color: var(--kiosk-accent);
+  font: 800 1rem/1 'Plus Jakarta Sans', sans-serif;
+  letter-spacing: .14em;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--kiosk-accent) 18%, transparent);
+}
+
+.kiosk-brand__copy {
+  max-width: 980px;
+}
+
+.kiosk-eyebrow,
+.section-heading__eyebrow,
+.info-panel__eyebrow,
+.utility-card__eyebrow,
+.kiosk-card__eyebrow,
+.pulse-card__label,
+.stage-label,
+.status-metric__label {
+  margin: 0 0 .4rem;
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--kiosk-fg-dim);
+}
+
+.kiosk-title {
+  margin: 0;
+  font: 700 clamp(1.6rem, 3vw, 2.4rem)/1 'Plus Jakarta Sans', sans-serif;
+  letter-spacing: -.02em;
+  text-transform: none;
+  color: var(--kiosk-fg);
+}
+
+.kiosk-subtitle {
+  margin: .55rem 0 0;
+  max-width: 72ch;
+  color: var(--kiosk-fg-muted);
+  font-size: .95rem;
+}
+
+.kiosk-topbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: .6rem;
+}
+
+#homeBtn {
+  background: transparent;
+  border: 1px solid var(--kiosk-line-2);
+  color: var(--kiosk-fg);
+  min-height: 38px;
+  padding-inline: .9rem;
+  border-radius: var(--kiosk-radius-sm);
+  box-shadow: none;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
+#homeBtn:hover,
+#homeBtn:focus {
+  background: rgba(56, 189, 248, 0.08);
+  border-color: rgba(56, 189, 248, 0.45);
+  color: var(--kiosk-fg);
+}
+
+.kiosk-reset-btn {
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.32);
+  color: #fca5a5;
+  min-height: 38px;
+  padding-inline: .9rem;
+  border-radius: var(--kiosk-radius-sm);
+  box-shadow: none;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
+.kiosk-reset-btn:hover,
+.kiosk-reset-btn:focus {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.55);
+  color: #fecaca;
+}
+
+.kiosk-theme-select {
+  min-width: 150px;
+  border-radius: var(--kiosk-radius-sm);
+  border: 1px solid var(--kiosk-line-2);
+  background: var(--kiosk-panel-2);
+  color: var(--kiosk-fg);
+  box-shadow: none;
+  padding: .45rem .7rem;
+}
+
+.kiosk-theme-select:hover,
+.kiosk-theme-select:focus-visible {
+  border-color: rgba(56, 189, 248, 0.45);
+  background: var(--kiosk-panel-3);
+  color: var(--kiosk-fg);
+}
+
+.kiosk-theme-select option { background: #0f172a; color: #e5edf7; }
+.kiosk-theme-select optgroup { background: #0f172a; color: #94a3b8; }
+
+.kiosk-body .btn {
+  transition:
+    transform .12s ease,
+    box-shadow .12s ease,
+    background .12s ease,
+    border-color .12s ease,
+    color .12s ease;
+}
+
+.kiosk-body .btn:hover,
+.kiosk-body .btn:focus {
+  transform: none;
+  filter: none;
+}
+
+.kiosk-main {
+  display: grid;
+  gap: 18px;
+  padding-top: 14px;
+}
+
+/* ---------- Status banner ---------- */
+
+.status-banner {
+  display: grid;
+  grid-template-columns: auto minmax(260px, 1.4fr) auto auto;
+  gap: 12px;
+}
+
+.status-banner__item {
+  min-height: 64px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 12px 16px;
+  border-radius: var(--kiosk-radius-md);
+  border: 1px solid var(--kiosk-line);
+  background: var(--kiosk-panel);
+  box-shadow: var(--kiosk-shadow-soft);
+}
+
+.status-banner__item--net { align-items: center; justify-content: center; }
+.status-banner__item--user { padding: 10px 14px; }
+.status-banner .user-banner { margin-top: 0; min-height: 44px; }
+
+.kiosk-stage { display: block; }
+
+/* ---------- Stage intro ---------- */
+
+.stage-intro {
+  position: relative;
+  overflow: hidden;
+  padding: 24px;
+  border: 1px solid var(--kiosk-line);
+  border-radius: var(--kiosk-radius-lg);
+  background:
+    linear-gradient(180deg, rgba(56, 189, 248, 0.05), transparent 40%),
+    var(--kiosk-panel-2);
+  box-shadow: var(--kiosk-shadow);
+}
+
+.stage-intro::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(148, 163, 184, 0.04) 0 1px,
+    transparent 1px 28px
+  );
+  opacity: .6;
+  animation: none;
+  pointer-events: none;
+}
+
+.signal-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.signal-strip span {
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.1), var(--kiosk-accent), rgba(56, 189, 248, 0.1));
+  box-shadow: none;
+  animation: none;
+  opacity: .85;
+}
+
+.signal-strip span:nth-child(2) { opacity: .55; }
+.signal-strip span:nth-child(3) { opacity: .3; }
+
+.stage-copy { position: relative; z-index: 1; text-align: center; }
+
+.stage-copy h2,
+.section-heading h2,
+.info-panel h2,
+.status-tower h3,
+.scanner-panel h3,
+.modal h2 {
+  margin: 0;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  letter-spacing: -.02em;
+  color: var(--kiosk-fg);
+}
+
+.stage-copy h2 {
+  max-width: none;
+  font-size: clamp(1.6rem, 2.8vw, 2.4rem);
+  line-height: 1.05;
+  text-transform: none;
+  font-weight: 700;
+  text-align: center;
+}
+
+.stage-ops-mini {
+  position: relative;
+  z-index: 1;
+  width: min(260px, 48%);
+  margin: 0 auto .4rem;
+  padding: 6px 10px;
+  border-radius: var(--kiosk-radius-sm);
+  border: 1px solid var(--kiosk-line);
+  background: rgba(148, 163, 184, 0.04);
+}
+
+.visual-svg--mini { width: 100%; height: auto; }
+
+.stage-description,
+.section-heading__copy,
+.info-panel li,
+.scanner-panel p,
+.modal-copy {
+  color: var(--kiosk-fg-muted);
+}
+
+.stage-description {
+  max-width: 62ch;
+  margin: .9rem 0 0;
+  font-size: .95rem;
+}
+
+.stage-cta-row,
+.utility-actions,
+.status-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+}
+
+.stage-cta-row {
+  position: relative;
+  z-index: 1;
+  margin-top: 1rem;
+}
+
+.utility-actions--hero {
+  position: relative;
+  z-index: 1;
+  margin-top: .9rem;
+}
+
+/* ---------- CTAs: unified, sharp ---------- */
+
+.kiosk-cta {
+  min-height: 46px;
+  border-radius: var(--kiosk-radius-sm);
+  padding-inline: 1rem;
+  font-size: .9rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  flex: 1 1 200px;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--kiosk-line-2);
+  box-shadow: none;
+  background: var(--kiosk-panel-2);
+  color: var(--kiosk-fg);
+}
+
+.kiosk-cta::before { content: none; }
+
+.kiosk-cta:hover,
+.kiosk-cta:focus {
+  transform: none;
+  filter: none;
+  border-color: rgba(56, 189, 248, 0.5);
+  background: var(--kiosk-panel-3);
+  color: var(--kiosk-fg);
+}
+
+/* ----- Accent-tracking CTA variants -----
+   All seven kiosk action buttons share a single accent hue that shifts
+   with the selected theme. They differ only in shade:
+
+     V1 (lightest)  Tool Checkout + ESD Checkout        — "start" pair
+     V2 (mid)       Tool Return   + ESD Return          — "complete" pair
+     V3 (darker)    Active Checkouts + Test Equipment   — "view active" pair
+     V4 (darkest)   History                             — "archive" solo
+
+   Every variant is a 135deg gradient built from --kiosk-accent mixed with
+   white (for V1) or progressively more black (for V2–V4). */
+
+/* Variant 1 — Tool Checkout / ESD Checkout (lightest) */
+.kiosk-cta--hot,
+.kiosk-cta--esd-checkout {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--kiosk-accent) 70%, white),
+    var(--kiosk-accent)
+  );
+  border-color: var(--kiosk-accent);
+  color: var(--kiosk-accent-ink);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.14);
+}
+
+.kiosk-cta--hot:hover,
+.kiosk-cta--hot:focus,
+.kiosk-cta--esd-checkout:hover,
+.kiosk-cta--esd-checkout:focus {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--kiosk-accent) 82%, white),
+    color-mix(in srgb, var(--kiosk-accent) 92%, white)
+  );
+  border-color: var(--kiosk-accent);
+  color: var(--kiosk-accent-ink);
+}
+
+/* Variant 2 — Tool Return / ESD Return (mid) */
+.kiosk-cta--return,
+.kiosk-cta--esd-return {
+  background: linear-gradient(
+    135deg,
+    var(--kiosk-accent),
+    var(--kiosk-accent-2)
+  );
+  border-color: color-mix(in srgb, var(--kiosk-accent-2) 75%, black);
+  color: var(--kiosk-accent-ink);
+}
+
+.kiosk-cta--return:hover,
+.kiosk-cta--return:focus,
+.kiosk-cta--esd-return:hover,
+.kiosk-cta--esd-return:focus {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--kiosk-accent) 88%, white),
+    var(--kiosk-accent)
+  );
+  border-color: var(--kiosk-accent);
+  color: var(--kiosk-accent-ink);
+}
+
+.stage-pulse-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 1.2rem;
+}
+
+.pulse-card {
+  padding: 14px;
+  border-radius: var(--kiosk-radius-md);
+  border: 1px solid var(--kiosk-line);
+  background: var(--kiosk-panel);
+  min-height: 104px;
+}
+
+.pulse-card strong { font-size: 1rem; line-height: 1.25; color: var(--kiosk-fg); }
+
+/* ---------- Info panels / footer ---------- */
+
+.info-panel,
+.kiosk-footer {
+  border: 1px solid var(--kiosk-line);
+  border-radius: var(--kiosk-radius-lg);
+  background: var(--kiosk-panel);
+  box-shadow: var(--kiosk-shadow-soft);
+}
+
+.info-panel { padding: 18px; }
+
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.kiosk-net {
+  padding: .4rem .75rem;
+  border-radius: var(--kiosk-radius-sm);
+  border: 1px solid var(--kiosk-line-2);
+  background: rgba(148, 163, 184, 0.06);
+  font-size: .85rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.kiosk-net.online {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #6ee7b7;
+}
+
+.kiosk-net.offline {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+}
+
+.user-banner {
+  margin-top: .75rem;
+  padding: .7rem .85rem;
+  border-radius: var(--kiosk-radius-md);
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  color: var(--kiosk-fg);
+  font-size: .92rem;
+  font-weight: 600;
+}
+
+.user-banner::before {
+  content: '';
+  width: .5rem;
+  height: .5rem;
+  border-radius: 999px;
+  background: var(--kiosk-accent);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18);
+}
+
+.status-metric {
+  padding: 12px 14px;
+  border-radius: var(--kiosk-radius-md);
+  background: var(--kiosk-panel-2);
+  border: 1px solid var(--kiosk-line);
+}
+
+.status-metric__label {
+  display: block;
+  margin-bottom: .3rem;
+  color: var(--kiosk-fg-dim);
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.utility-meta-pill__empty {
+  display: none;
+  color: var(--kiosk-fg-muted);
+}
+
+.queue-slot {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+}
+
+#queueBadge[hidden] + #queueEmptyLabel { display: inline-flex; }
+#queueBadge:not([hidden]) + #queueEmptyLabel { display: none; }
+
+.kiosk-clock {
+  padding: 0;
+  background: none;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--kiosk-fg);
+  letter-spacing: .02em;
+}
+
+/* ---------- Utility action buttons (hero row) ---------- */
+
+.utility-actions--tower { margin-top: 14px; }
+
+.utility-actions--hero .btn {
+  flex: 1 1 140px;
+  min-height: 42px;
+  justify-content: center;
+  border-radius: var(--kiosk-radius-sm);
+  font-weight: 700;
+}
+
+.utility-action-btn {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--kiosk-line-2);
+  background: var(--kiosk-panel-2);
+  color: var(--kiosk-fg);
+  box-shadow: none;
+}
+
+.utility-action-btn::before { content: none; }
+
+.utility-action-btn:hover,
+.utility-action-btn:focus {
+  transform: none;
+  filter: none;
+  border-color: rgba(56, 189, 248, 0.45);
+  background: var(--kiosk-panel-3);
+  color: var(--kiosk-fg);
+}
+
+/* ----- Utility row: variants 3 & 4 of the accent-tracking system -----
+   See the CTA block above for the variant ladder.  Active Checkouts and
+   Test Equipment share variant 3 (darker).  History is variant 4, the
+   deepest shade of the active theme's accent. */
+
+/* Variant 3 — Active Checkouts / Test Equipment (darker) */
+.utility-action-btn--checkouts,
+.utility-action-btn--equipment {
+  background: linear-gradient(
+    135deg,
+    var(--kiosk-accent-2),
+    color-mix(in srgb, var(--kiosk-accent-2) 55%, black)
+  );
+  border-color: color-mix(in srgb, var(--kiosk-accent-2) 45%, black);
+  color: #ffffff;
+}
+
+.utility-action-btn--checkouts:hover,
+.utility-action-btn--checkouts:focus,
+.utility-action-btn--equipment:hover,
+.utility-action-btn--equipment:focus {
+  background: linear-gradient(
+    135deg,
+    var(--kiosk-accent-2),
+    color-mix(in srgb, var(--kiosk-accent-2) 70%, black)
+  );
+  border-color: var(--kiosk-accent-2);
+  color: #ffffff;
+}
+
+/* Variant 4 — History (darkest, unique) */
+.utility-action-btn--history {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--kiosk-accent) 30%, black),
+    color-mix(in srgb, var(--kiosk-accent) 14%, black)
+  );
+  border-color: color-mix(in srgb, var(--kiosk-accent) 22%, black);
+  color: #ffffff;
+}
+
+.utility-action-btn--history:hover,
+.utility-action-btn--history:focus {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--kiosk-accent) 40%, black),
+    color-mix(in srgb, var(--kiosk-accent) 20%, black)
+  );
+  border-color: color-mix(in srgb, var(--kiosk-accent) 35%, black);
+  color: #ffffff;
+}
+
+/* Reset (kept for compatibility with any legacy markup): danger gradient. */
+.utility-action-btn--reset {
+  background: linear-gradient(
+    135deg,
+    var(--kiosk-danger),
+    color-mix(in srgb, var(--kiosk-danger) 58%, black)
+  );
+  border-color: color-mix(in srgb, var(--kiosk-danger) 65%, black);
+  color: var(--danger-contrast, #ffffff);
+}
+
+.utility-action-btn--reset:hover,
+.utility-action-btn--reset:focus {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--kiosk-danger) 82%, white),
+    var(--kiosk-danger)
+  );
+  border-color: var(--kiosk-danger);
+  color: var(--danger-contrast, #ffffff);
+}
+
+/* ---------- Action rack / cards ---------- */
+
+.action-rack,
+.support-rack {
+  display: grid;
+  gap: 16px;
+}
+
+.section-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.category-divider {
+  display: grid;
+  gap: 10px;
+  justify-items: stretch;
+  align-self: stretch;
+}
+
+.category-divider__label {
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--kiosk-fg-dim);
+  text-align: center;
+}
+
+.section-heading--loud h2 {
+  font-size: clamp(1.3rem, 2vw, 1.9rem);
+  text-transform: none;
+  font-weight: 700;
+}
+
+.action-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.support-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.kiosk-card {
+  position: relative;
+  overflow: hidden;
+  grid-column: span 3;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .55rem;
+  padding: 18px;
+  border-radius: var(--kiosk-radius-lg);
+  border: 1px solid var(--kiosk-line);
+  background: var(--kiosk-panel);
+  box-shadow: var(--kiosk-shadow-soft);
+  transition:
+    transform .12s ease,
+    box-shadow .12s ease,
+    border-color .12s ease,
+    background .12s ease;
+}
+
+/* Thin accent bar along the top of each card — this is where category color now lives. */
+.kiosk-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--kiosk-accent);
+  opacity: .55;
+  pointer-events: none;
+}
+
+.kiosk-card::after { content: none; }
+
+.kiosk-card:hover,
+.kiosk-card:focus {
+  transform: translateY(-1px);
+  border-color: rgba(56, 189, 248, 0.45);
+  box-shadow: 0 12px 24px rgba(2, 6, 15, 0.28);
+  background: var(--kiosk-panel-2);
+}
+
+.kiosk-card:hover::before,
+.kiosk-card:focus::before { opacity: 1; }
+
+.kiosk-card--featured {
+  grid-column: span 6;
+  min-height: 200px;
+}
+
+.kiosk-card--equipment {
+  grid-column: span 4;
+  min-height: 200px;
+}
+
+.kiosk-card--full {
+  grid-column: 1 / -1;
+}
+
+.kiosk-card--hero {
+  grid-column: span 8;
+  min-height: 240px;
+  background:
+    linear-gradient(180deg, rgba(56, 189, 248, 0.06), transparent 55%),
+    var(--kiosk-panel);
+}
+
+.kiosk-card--hero .kiosk-card__title {
+  font-size: clamp(1.4rem, 2vw, 1.9rem);
+}
+
+.kiosk-card--hero .kiosk-card__desc {
+  max-width: 42ch;
+  font-size: .98rem;
+}
+
+.kiosk-card--hero .kiosk-card__crest {
+  width: 96px;
+  height: 22px;
+}
+
+.kiosk-card__crest {
+  --crest-dot: var(--kiosk-accent);
+  --crest-bg: rgba(56, 189, 248, 0.08);
+  --crest-border: rgba(56, 189, 248, 0.32);
+  --crest-ink: rgba(229, 237, 247, 0.86);
+  width: 74px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid var(--crest-border);
+  background: var(--crest-bg);
+  color: var(--crest-ink);
+  box-shadow: none;
+}
+
+.kiosk-card__crest::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+  background: var(--crest-dot);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--crest-dot) 25%, transparent);
+}
+
+.kiosk-card__crest span {
+  display: block;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: .75;
+}
+
+.kiosk-card__crest span:nth-child(1) { width: 12px; }
+.kiosk-card__crest span:nth-child(2) { width: 20px; }
+.kiosk-card__crest span:nth-child(3) { width: 8px; opacity: .5; }
+
+.kiosk-card__title {
+  font: 700 1.15rem/1.15 'Plus Jakarta Sans', sans-serif;
+  text-transform: none;
+  letter-spacing: -.01em;
+  color: var(--kiosk-fg);
+  position: relative;
+  z-index: 2;
+}
+
+.kiosk-card__crest {
+  position: relative;
+  z-index: 2;
+}
+
+.kiosk-card__desc {
+  color: var(--kiosk-fg-muted);
+  font-size: .94rem;
+}
+
+/* Category watermark — "QUALITY" / "SUPPORT" blended into the bottom of the
+   card. Matches the same Plus Jakarta Sans face, letter-spacing, and
+   cbd5e1→94a3b8 gradient that previously lived in the SVG divider panel. */
+.kiosk-card__watermark {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  transform: translateX(-50%);
+  z-index: 0;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  text-align: center;
+  font-family: 'Plus Jakarta Sans', 'Segoe UI', Arial, sans-serif;
+  font-weight: 600;
+  font-size: clamp(1.6rem, 3.2vw, 2.6rem);
+  line-height: 1;
+  letter-spacing: 6px;
+  /* Gradient uses the theme's foreground tones so the watermark reads
+     correctly on both dark and light themes. */
+  background: linear-gradient(90deg, var(--kiosk-fg) 0%, var(--kiosk-fg-muted) 100%);
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+          color: transparent;
+  opacity: .32;
+  /* Subtle top fade so the word melts upward into the card body */
+  -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,.0) 0%, rgba(0,0,0,.65) 55%, rgba(0,0,0,1) 100%);
+          mask-image: linear-gradient(180deg, rgba(0,0,0,.0) 0%, rgba(0,0,0,.65) 55%, rgba(0,0,0,1) 100%);
+  transition: opacity .15s ease;
+}
+
+.kiosk-card:hover .kiosk-card__watermark,
+.kiosk-card:focus .kiosk-card__watermark {
+  opacity: .45;
+}
+
+.kiosk-card__meta {
+  margin-top: auto;
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--kiosk-fg-dim);
+}
+
+.ticket-sla-hint strong {
+  font-weight: 700;
+}
+
+.ticket-category-blurb {
+  border-left: 2px solid color-mix(in srgb, var(--kiosk-accent) 55%, transparent);
+  padding-left: 0.65rem;
+}
+
+/* Category variants now only change the top accent bar + crest — never the whole card wash. */
+.kiosk-card--hot::before    { background: var(--kiosk-warm); }
+.kiosk-card--hot {
+  --crest-bg: rgba(245, 158, 11, 0.1);
+  --crest-border: rgba(245, 158, 11, 0.35);
+  --crest-ink: rgba(254, 230, 179, 0.9);
+  --crest-dot: var(--kiosk-warm);
+  background: var(--kiosk-panel);
+}
+
+.kiosk-card--return::before { background: var(--kiosk-accent); }
+.kiosk-card--return {
+  background: var(--kiosk-panel);
+}
+
+.kiosk-card--accent::before { background: var(--kiosk-positive); }
+.kiosk-card--accent {
+  --crest-bg: rgba(16, 185, 129, 0.1);
+  --crest-border: rgba(16, 185, 129, 0.35);
+  --crest-ink: rgba(187, 247, 208, 0.9);
+  --crest-dot: var(--kiosk-positive);
+  background: var(--kiosk-panel);
+}
+
+.kiosk-card--accent-alt::before { background: var(--kiosk-accent-2); }
+.kiosk-card--accent-alt {
+  background: var(--kiosk-panel);
+}
+
+.kiosk-card--neutral::before { background: #94a3b8; }
+.kiosk-card--neutral {
+  --crest-bg: rgba(148, 163, 184, 0.08);
+  --crest-border: rgba(148, 163, 184, 0.32);
+  --crest-ink: rgba(226, 232, 240, 0.9);
+  --crest-dot: #cbd5e1;
+  background: var(--kiosk-panel);
+}
+
+.kiosk-card--idea::before { background: var(--kiosk-accent); }
+.kiosk-card--idea {
+  --crest-bg: rgba(56, 189, 248, 0.08);
+  --crest-border: rgba(56, 189, 248, 0.32);
+  --crest-ink: rgba(207, 231, 250, 0.9);
+  --crest-dot: var(--kiosk-accent);
+  background: var(--kiosk-panel);
+}
+
+/* Suggestion Box — speech-bubble + bulb art blended above SUPPORT watermark
+   (multiply knocks white raster backgrounds into the panel instead of a soft-light haze) */
+.kiosk-card__idea-art {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(2.35rem, 11vw, 3.15rem);
+  transform: translateX(-50%);
+  width: min(148px, 62%);
+  max-height: 118px;
+  z-index: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.35;
+  mix-blend-mode: multiply;
+  -webkit-mask-image: radial-gradient(
+    ellipse 85% 85% at 50% 55%,
+    #000 42%,
+    rgba(0, 0, 0, 0.62) 74%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    ellipse 85% 85% at 50% 55%,
+    #000 42%,
+    rgba(0, 0, 0, 0.62) 74%,
+    transparent 100%
+  );
+}
+
+.kiosk-card--idea:hover .kiosk-card__idea-art,
+.kiosk-card--idea:focus .kiosk-card__idea-art {
+  opacity: 0.35;
+}
+
+.kiosk-card__idea-art img {
+  width: 100%;
+  height: auto;
+  max-height: 118px;
+  object-fit: contain;
+  display: block;
+  filter: saturate(1.18) contrast(1.06) brightness(1.06);
+}
+
+/* Keep SUPPORT legible over the artwork */
+.kiosk-card__watermark--idea {
+  z-index: 1;
+}
+
+/* Inspection Report — PASSED/FAILED stamp art above QUALITY watermark */
+.kiosk-card__inspection-art {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(2.35rem, 11vw, 3.15rem);
+  transform: translateX(-50%);
+  width: min(200px, 52%);
+  max-height: 132px;
+  z-index: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.35;
+  mix-blend-mode: multiply;
+  -webkit-mask-image: radial-gradient(
+    ellipse 85% 85% at 50% 55%,
+    #000 42%,
+    rgba(0, 0, 0, 0.62) 74%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    ellipse 85% 85% at 50% 55%,
+    #000 42%,
+    rgba(0, 0, 0, 0.62) 74%,
+    transparent 100%
+  );
+}
+
+.kiosk-card--inspection:hover .kiosk-card__inspection-art,
+.kiosk-card--inspection:focus .kiosk-card__inspection-art {
+  opacity: 0.35;
+}
+
+.kiosk-card__inspection-art img {
+  width: 100%;
+  height: auto;
+  max-height: 132px;
+  object-fit: contain;
+  display: block;
+  filter: saturate(1.18) contrast(1.06) brightness(1.06);
+}
+
+.kiosk-card__watermark--inspection {
+  z-index: 1;
+}
+
+/* Submit Ticket — hand + envelope art above SUPPORT watermark */
+.kiosk-card__ticket-art {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(2.35rem, 11vw, 3.15rem);
+  transform: translateX(-50%);
+  width: min(148px, 62%);
+  max-height: 118px;
+  z-index: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.35;
+  mix-blend-mode: multiply;
+  -webkit-mask-image: radial-gradient(
+    ellipse 85% 85% at 50% 55%,
+    #000 42%,
+    rgba(0, 0, 0, 0.62) 74%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    ellipse 85% 85% at 50% 55%,
+    #000 42%,
+    rgba(0, 0, 0, 0.62) 74%,
+    transparent 100%
+  );
+}
+
+.kiosk-card--danger:hover .kiosk-card__ticket-art,
+.kiosk-card--danger:focus .kiosk-card__ticket-art {
+  opacity: 0.35;
+}
+
+.kiosk-card__ticket-art img {
+  width: 100%;
+  height: auto;
+  max-height: 118px;
+  object-fit: contain;
+  display: block;
+  filter: saturate(1.18) contrast(1.06) brightness(1.06);
+}
+
+.kiosk-card__watermark--ticket {
+  z-index: 1;
+}
+
+.kiosk-card--danger::before { background: var(--kiosk-danger); }
+.kiosk-card--danger {
+  --crest-bg: rgba(239, 68, 68, 0.08);
+  --crest-border: rgba(239, 68, 68, 0.32);
+  --crest-ink: rgba(254, 202, 202, 0.9);
+  --crest-dot: var(--kiosk-danger);
+  background: var(--kiosk-panel);
+}
+
+.kiosk-card--inspection::before { background: var(--kiosk-accent); }
+.kiosk-card--inspection {
+  --crest-bg: rgba(56, 189, 248, 0.08);
+  --crest-border: rgba(56, 189, 248, 0.32);
+  --crest-ink: rgba(207, 231, 250, 0.9);
+  --crest-dot: var(--kiosk-accent);
+  background:
+    linear-gradient(180deg, rgba(56, 189, 248, 0.05), transparent 50%),
+    var(--kiosk-panel);
+}
+
+/* ---------- Visual / divider panels ---------- */
+
+.kiosk-visual-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.visual-panel {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: .9rem;
+  padding: 16px;
+  border-radius: var(--kiosk-radius-lg);
+  border: 1px solid var(--kiosk-line);
+  box-shadow: var(--kiosk-shadow-soft);
+  background: var(--kiosk-panel);
+}
+
+.visual-panel::before { content: none; }
+
+.visual-panel__copy { position: relative; z-index: 1; }
+
+.visual-panel__copy h2 {
+  margin: 0;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: clamp(1.2rem, 1.8vw, 1.6rem);
+  letter-spacing: -.02em;
+  text-transform: none;
+  font-weight: 700;
+}
+
+.visual-panel__copy p:last-child {
+  margin: .6rem 0 0;
+  color: var(--kiosk-fg-muted);
+}
+
+.visual-panel__art {
+  position: relative;
+  z-index: 1;
+  min-height: 200px;
+  display: grid;
+  align-items: end;
+  border-radius: var(--kiosk-radius-md);
+  padding: 10px;
+  background: rgba(148, 163, 184, 0.04);
+  border: 1px solid var(--kiosk-line);
+}
+
+.category-divider .visual-panel {
+  width: 100%;
+  min-height: 100%;
+  padding: 16px;
+  border-radius: var(--kiosk-radius-lg);
+  background: var(--kiosk-panel-2);
+}
+
+.category-divider .visual-panel__art {
+  min-height: 120px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  align-items: center;
+  justify-items: stretch;
+}
+
+.category-divider .visual-svg {
+  width: 100%;
+  height: 120px;
+}
+
+.visual-svg--divider {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.visual-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  filter: none;
+  opacity: .85;
+}
+
+.visual-panel--manufacturing,
+.visual-panel--technology,
+.visual-panel--office {
+  background: var(--kiosk-panel-2);
+}
+
+/* ---------- Footer ---------- */
+
+.kiosk-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 14px 20px;
+}
+
+.kiosk-footer__meta {
+  color: var(--kiosk-fg-muted);
+  text-align: right;
+  font-size: .85rem;
+}
+
+/* ---------- Modals ---------- */
+
+.modal-backdrop { background: rgba(3, 8, 17, 0.72); }
+
+.modal {
+  width: min(92vw, 720px);
+  max-height: min(90vh, 920px);
+  overflow: auto;
+  padding: 22px;
+  border-radius: var(--kiosk-radius-lg);
+  border: 1px solid var(--kiosk-line-2);
+  background: var(--kiosk-panel-3);
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.5);
+  color: var(--kiosk-fg);
+}
+
+.modal-header {
+  display: grid;
+  gap: .3rem;
+  margin-bottom: 1rem;
+}
+
+.modal-copy { margin: .1rem 0 0; }
+
+.modal-stack { display: grid; gap: .9rem; }
+
+.modal-actions-row { justify-content: flex-end; margin-top: .3rem; }
+.modal-actions-row--split { justify-content: space-between; }
+
+.modal-grid-two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .8rem;
+}
+
+.kiosk-field,
+.inspection-field {
+  display: block;
+}
+
+.kiosk-field span,
+.inspection-field span {
+  display: block;
+  margin-bottom: .3rem;
+  font-weight: 700;
+  color: var(--kiosk-fg);
+  font-size: .9rem;
+}
+
+.kiosk-fieldset {
+  margin: 0;
+  padding: 14px;
+  border-radius: var(--kiosk-radius-md);
+  border: 1px solid var(--kiosk-line);
+  background: rgba(148, 163, 184, 0.04);
+}
+
+.kiosk-fieldset legend {
+  padding: 0 .4rem;
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--kiosk-fg-dim);
+}
+
+.kiosk-check-row {
+  display: flex;
+  gap: .5rem;
+  align-items: center;
+  padding: .25rem 0;
+}
+
+.equipment-tab-row {
+  display: inline-flex;
+  gap: .25rem;
+  padding: .25rem;
+  border-radius: var(--kiosk-radius-sm);
+  background: rgba(148, 163, 184, 0.06);
+  border: 1px solid var(--kiosk-line);
+  margin-bottom: 1rem;
+}
+
+.equipment-tab-row .eq-tab {
+  border-radius: 6px;
+  padding: .5rem .85rem;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--kiosk-fg-muted);
+}
+
+.equipment-tab-row .eq-tab.active {
+  background: var(--kiosk-accent);
+  border-color: var(--kiosk-accent-2);
+  color: var(--kiosk-accent-ink);
+  font-weight: 700;
+}
+
+.table-shell {
+  overflow: auto;
+  max-height: 380px;
+  border: 1px solid var(--kiosk-line);
+  border-radius: var(--kiosk-radius-md);
+}
+
+.table-shell table { width: 100%; }
+
+.empty-copy {
+  color: var(--kiosk-fg-muted);
+  margin-bottom: .85rem;
+}
+
+.inspection-modal { width: min(94vw, 960px); }
+.inspection-global-hint { margin-top: .8rem; }
+.inspection-submit-row { margin-top: 1rem; }
+
+/* ---------- Animations (kept minimal) ---------- */
+
+@keyframes stageDrift { from { transform: none; } to { transform: none; } }
+@keyframes signalPulse { 0%, 100% { opacity: .85; } 50% { opacity: .85; } }
+@keyframes kioskSweep { from { transform: none; } to { transform: none; } }
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 1180px) {
+  .status-banner,
+  .kiosk-visual-grid,
+  .stage-pulse-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .section-row { grid-template-columns: 1fr; }
+
+  .kiosk-card { grid-column: span 6; }
+  .kiosk-card--equipment { grid-column: span 6; }
+
+  .support-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 760px) {
+  .kiosk-shell {
+    width: min(100% - 16px, 1480px);
+    padding-top: 10px;
+  }
+
+  .kiosk-topbar,
+  .kiosk-footer,
+  .status-tower,
+  .stage-intro,
+  .info-panel,
+  .modal {
+    padding: 14px;
+    border-radius: var(--kiosk-radius-md);
+  }
+
+  .kiosk-topbar,
+  .section-heading,
+  .kiosk-footer {
+    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .kiosk-title { font-size: clamp(1.4rem, 8vw, 2rem); }
+
+  .stage-copy h2 {
+    max-width: none;
+    font-size: clamp(1.4rem, 8vw, 2rem);
+  }
+
+  .action-grid { grid-template-columns: 1fr; }
+  .support-grid { grid-template-columns: 1fr; }
+
+  .kiosk-card,
+  .kiosk-card--featured,
+  .kiosk-card--hero,
+  .kiosk-card--equipment {
+    grid-column: auto;
+    min-height: 0;
+  }
+
+  .modal-grid-two { grid-template-columns: 1fr; }
+}

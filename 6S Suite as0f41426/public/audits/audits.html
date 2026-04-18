@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Daily &amp; Weekly Audits &#8211; 6S Tool Suite</title>
+  <link rel="icon" href="/images/favicon.png" type="image/png"/>
+  <link rel="stylesheet" href="/styles.css"/>
+  <script src="/theme-init.js"></script>
+  <style>
+    .wrap{max-width:1200px;margin:0 auto;padding:1rem}
+    .board{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-top:1rem}
+    @media(max-width:800px){.board{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:480px){.board{grid-template-columns:1fr}}
+    .col{background:var(--surface);border:1px solid var(--border);border-radius:.6rem;min-height:40vh;padding:.5rem;display:flex;flex-direction:column}
+    .col-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem;padding:.25rem .25rem .4rem;border-bottom:1px solid var(--border)}
+    .col-title{font-weight:800;font-size:.92rem}
+    .col-count{font-size:.75rem;background:var(--surface-strong);border:1px solid var(--border);border-radius:999px;padding:.1rem .4rem;color:var(--fg-muted)}
+    .col-body{flex:1}
+    .card{background:var(--surface-strong);border:1px solid var(--border);border-radius:.5rem;padding:.5rem .55rem;margin:.4rem 0;cursor:pointer;transition:border-color .12s,box-shadow .12s}
+    .card:hover{border-color:var(--accent);box-shadow:0 4px 12px hsl(0 0% 0%/.1)}
+    .card.drag{opacity:.5;cursor:grabbing}
+    .col.drag-over{outline:3px solid var(--accent);outline-offset:2px;background:color-mix(in srgb,var(--surface) 85%,var(--accent) 15%)}
+    .card-title{font-weight:700;font-size:.87rem}
+    .card-tool-pill{display:inline-flex;align-items:center;margin-top:.35rem;padding:.14rem .45rem;border-radius:999px;font-size:.68rem;font-weight:700;border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent)}
+    .card-meta{font-size:.77rem;color:var(--fg-muted);margin-top:.15rem}
+    .card-kind{display:inline-flex;padding:.08rem .4rem;border-radius:999px;font-size:.72rem;font-weight:700;margin-left:.3rem}
+    .kind-daily{background:var(--info-bg);color:var(--info)}
+    .kind-weekly{background:var(--warn-bg);color:var(--warn)}
+    .kind-monthly{background:var(--ok-bg);color:var(--ok)}
+    .toolbar{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1rem;align-items:center}
+    .shift-badge{display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .55rem;border-radius:999px;background:color-mix(in srgb,var(--accent) 12%,transparent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);color:var(--accent);font-size:.76rem;font-weight:700}
+    .page-version{display:inline-flex;align-items:center;padding:.2rem .5rem;border-radius:999px;border:1px solid var(--border);background:var(--surface-strong);color:var(--fg-muted);font-size:.7rem;font-weight:700}
+    /* Modal */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:600;padding:1rem}
+    .modal-backdrop.open{display:flex}
+    .modal{background:var(--surface);border:1px solid var(--border);border-radius:.75rem;width:min(560px,95vw);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+    .modal-header{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.1rem;border-bottom:1px solid var(--border)}
+    .modal-header h2{font-size:1rem;font-weight:800;margin:0}
+    .modal-body{flex:1;overflow-y:auto;padding:1rem 1.1rem}
+    .modal-footer{padding:.75rem 1.1rem;border-top:1px solid var(--border);display:flex;gap:.5rem;justify-content:space-between;align-items:center}
+    /* Shift picker */
+    .shift-picker{display:flex;gap:.4rem;margin-bottom:1rem;flex-wrap:wrap}
+    .shift-btn{flex:1;min-width:80px;padding:.45rem;border-radius:.4rem;border:1.5px solid var(--border);background:var(--surface-strong);color:var(--fg-muted);font-size:.82rem;font-weight:700;cursor:pointer;transition:all .12s;text-align:center}
+    .shift-btn.active{border-color:var(--accent);background:var(--accent);color:var(--accent-contrast)}
+    /* Template list */
+    .tpl-group{margin-bottom:1rem}
+    .tpl-group-hd{display:flex;align-items:center;justify-content:space-between;font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-muted);padding:.25rem 0;border-bottom:1px solid var(--border);margin-bottom:.4rem}
+    .tpl-check-all{font-size:.72rem;color:var(--accent);cursor:pointer;font-weight:600;text-transform:none;letter-spacing:0}
+    .tpl-row{display:flex;align-items:flex-start;gap:.55rem;padding:.4rem .35rem;border-radius:.35rem;cursor:pointer;transition:background .1s}
+    .tpl-row:hover{background:var(--surface-strong)}
+    .tpl-row input[type=checkbox]{width:1rem;height:1rem;margin-top:.15rem;flex-shrink:0;cursor:pointer;accent-color:var(--accent)}
+    .tpl-row label{cursor:pointer;flex:1}
+    .tpl-name{font-size:.88rem;font-weight:600}
+    .tpl-desc{font-size:.77rem;color:var(--fg-muted);margin-top:.1rem}
+    .tpl-badges{display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.28rem}
+    .tpl-badge{display:inline-flex;align-items:center;padding:.14rem .45rem;border-radius:999px;font-size:.68rem;font-weight:700;border:1px solid var(--border);background:var(--surface);color:var(--fg-muted)}
+    .empty-templates{text-align:center;padding:2rem;color:var(--fg-muted);font-size:.88rem}
+    .selected-count{font-size:.82rem;color:var(--fg-muted)}
+    /* Detail panel */
+    .detail-panel{position:fixed;top:0;right:-440px;width:440px;max-width:100vw;height:100vh;background:var(--surface-strong);border-left:1px solid var(--border);box-shadow:-4px 0 24px hsl(0 0% 0%/.18);display:flex;flex-direction:column;z-index:500;transition:right .25s ease}
+    .detail-panel.open{right:0}
+    .detail-panel-header{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1rem;border-bottom:1px solid var(--border);gap:.5rem}
+    .detail-panel-body{flex:1;overflow-y:auto;padding:1rem}
+    .detail-panel-footer{padding:.75rem 1rem;border-top:1px solid var(--border);display:flex;gap:.5rem;justify-content:flex-end}
+    .detail-field{margin-bottom:.75rem}
+    .detail-field label{font-size:.83rem;color:var(--fg-muted);display:block;margin-bottom:.2rem}
+    .detail-field p{font-size:.9rem}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:499;display:none}
+    .overlay.open{display:block}
+    .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem;text-align:center;gap:.35rem}
+    .empty-state__icon{font-size:1.8rem}
+    .empty-state__title{font-weight:700;font-size:.92rem}
+    .empty-state__body{font-size:.82rem;color:var(--fg-muted)}
+    .tool-verify{margin-top:1rem;padding:1rem;border:1px solid var(--border);border-radius:.75rem;background:var(--surface)}
+    .tool-verify[hidden]{display:none}
+    .tool-verify-head{display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;margin-bottom:.75rem}
+    .tool-verify-title{font-size:.92rem;font-weight:800}
+    .tool-verify-sub{font-size:.78rem;color:var(--fg-muted);margin-top:.18rem}
+    .chip-row{display:flex;gap:.45rem;flex-wrap:wrap;margin:.55rem 0 .8rem}
+    .chip{border:1px solid var(--border);background:var(--surface-strong);color:var(--fg-muted);padding:.34rem .6rem;border-radius:999px;font-size:.75rem;font-weight:700;cursor:pointer}
+    .chip.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 15%,var(--surface));color:var(--accent)}
+    .tool-verify-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem}
+    @media(max-width:640px){.tool-verify-grid{grid-template-columns:1fr}}
+    .verify-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem;margin-top:.85rem}
+    .verify-card{padding:.7rem;border:1px solid var(--border);border-radius:.65rem;background:var(--surface-strong)}
+    .verify-card strong{display:block;font-size:1.05rem}
+    .verify-card span{font-size:.77rem;color:var(--fg-muted)}
+    .verify-status{margin-top:.8rem;padding:.7rem .8rem;border-radius:.65rem;font-size:.82rem;font-weight:700}
+    .verify-status.ok{background:var(--ok-bg);color:var(--ok)}
+    .verify-status.warn{background:var(--warn-bg);color:var(--warn)}
+    .verify-list-wrap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem;margin-top:.85rem}
+    @media(max-width:640px){.verify-list-wrap{grid-template-columns:1fr}}
+    .verify-list{padding:.7rem;border:1px solid var(--border);border-radius:.65rem;background:var(--surface-strong)}
+    .verify-list h4{margin:0 0 .45rem;font-size:.8rem}
+    .verify-list ul{margin:0;padding-left:1rem;max-height:140px;overflow:auto}
+    .verify-list li{font-size:.8rem;margin:.15rem 0}
+    .verify-meta{margin-top:.75rem;font-size:.75rem;color:var(--fg-muted)}
+    .tool-verify-actions{display:flex;justify-content:flex-end;gap:.5rem;margin-top:.75rem;flex-wrap:wrap}
+  </style>
+</head>
+<body>
+<div class="overlay" id="panelOverlay"></div>
+<div class="wrap">
+  <header class="suite-topbar" style="margin-bottom:1rem">
+    <div class="brand">
+      <div class="brand-title">&#x1F4C4; Daily &amp; Weekly Audits</div>
+      <div class="brand-subtitle">Run shift checklists and track completion</div>
+    </div>
+    <div class="suite-actions">
+      <span class="shift-badge" id="shiftBadge" style="display:none"></span>
+      <a href="/home" class="home-button">&#x1F3E0; Home</a>
+      <label for="themeSelector" class="visually-hidden">Theme</label>
+      <select id="themeSelector" class="theme-select" aria-label="Theme">
+        <option value="theme-command">Command</option>
+<option value="theme-beacon">Beacon</option>
+<option value="theme-atlas">Atlas</option>
+<option value="theme-carbon">Carbon</option>
+<option value="theme-grove">Grove</option>
+<option value="theme-ember">Ember</option>
+<option value="theme-harbor">Harbor</option>
+<option value="theme-slate">Slate</option>
+<option value="theme-orchid">Orchid</option>
+<option value="theme-dusk">Dusk</option>
+<option value="theme-pulse">Pulse</option>
+<option value="theme-highcontrast">High Contrast</option>
+      </select>
+    </div>
+  </header>
+  <div class="toolbar">
+    <button id="btnGenerate" class="btn-primary" type="button">&#x1F4CB; Generate Tasks&#x2026;</button>
+    <button id="btnNewTemplate" class="btn-secondary" style="display:none" type="button">+ New Template</button>
+    <span class="page-version">Audits Build: TV2</span>
+    <label for="kindFilter" class="visually-hidden">Filter by kind</label>
+    <select id="kindFilter" style="width:auto">
+      <option value="">All types</option>
+      <option value="daily">Daily</option>
+      <option value="weekly">Weekly</option>
+      <option value="monthly">Monthly</option>
+    </select>
+  </div>
+  <div id="board-skeleton" class="board" aria-hidden="true">
+    <div class="col"><div class="skeleton skeleton-row skeleton-row--short" style="margin:.5rem 0"></div><div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row skeleton-row--med"></div></div>
+    <div class="col"><div class="skeleton skeleton-row skeleton-row--short" style="margin:.5rem 0"></div><div class="skeleton skeleton-row"></div></div>
+    <div class="col"><div class="skeleton skeleton-row skeleton-row--short" style="margin:.5rem 0"></div></div>
+    <div class="col"><div class="skeleton skeleton-row skeleton-row--short" style="margin:.5rem 0"></div><div class="skeleton skeleton-row skeleton-row--med"></div></div>
+  </div>
+  <div class="board" id="board" style="display:none">
+    <section class="col" data-bucket="todo">
+      <div class="col-header"><span class="col-title">To Do</span><span class="col-count" data-col-count="todo">0</span></div>
+      <div class="col-body" id="lane-todo"></div>
+      <div class="empty-state" id="empty-todo" style="display:none"><div class="empty-state__icon">&#x1F5D2;&#xFE0F;</div><div class="empty-state__title">No audits to do</div><div class="empty-state__body">Click "Generate Tasks&#x2026;" to create today's audit instances.</div></div>
+    </section>
+    <section class="col" data-bucket="doing">
+      <div class="col-header"><span class="col-title">Doing</span><span class="col-count" data-col-count="doing">0</span></div>
+      <div class="col-body" id="lane-doing"></div>
+      <div class="empty-state" id="empty-doing" style="display:none"><div class="empty-state__icon">&#x25B6;&#xFE0F;</div><div class="empty-state__title">Nothing in progress</div></div>
+    </section>
+    <section class="col" data-bucket="blocked">
+      <div class="col-header"><span class="col-title">&#x26D4; Blocked</span><span class="col-count" data-col-count="blocked">0</span></div>
+      <div class="col-body" id="lane-blocked"></div>
+      <div class="empty-state" id="empty-blocked" style="display:none"><div class="empty-state__icon">&#x2705;</div><div class="empty-state__title">Nothing blocked</div></div>
+    </section>
+    <section class="col" data-bucket="done">
+      <div class="col-header"><span class="col-title">Done</span><span class="col-count" data-col-count="done">0</span></div>
+      <div class="col-body" id="lane-done"></div>
+      <div class="empty-state" id="empty-done" style="display:none"><div class="empty-state__icon">&#x1F3AF;</div><div class="empty-state__title">No completed audits yet</div></div>
+    </section>
+  </div>
+</div>
+
+<!-- Generate Modal -->
+<div class="modal-backdrop" id="generateModal" role="dialog" aria-modal="true" aria-labelledby="genModalTitle">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="genModalTitle">&#x1F4CB; Generate Audit Tasks</h2>
+      <button id="genModalClose" class="btn-icon" type="button" aria-label="Close">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:1.1rem">
+        <div style="font-size:.8rem;font-weight:700;margin-bottom:.4rem;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.05em">Your Shift</div>
+        <div class="shift-picker" id="shiftPicker">
+          <button class="shift-btn" data-shift="1" type="button">Shift 1</button>
+          <button class="shift-btn" data-shift="2" type="button">Shift 2</button>
+          <button class="shift-btn" data-shift="3" type="button">Shift 3</button>
+        </div>
+        <div id="shiftNote" style="font-size:.77rem;color:var(--fg-muted)">Select your shift &#8212; per-shift templates will only be generated for that shift.</div>
+      </div>
+      <div style="margin-bottom:1rem">
+        <div style="font-size:.8rem;font-weight:700;margin-bottom:.4rem;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.05em">
+          Audit Owner
+        </div>
+        <input
+          id="ownerInput"
+          type="text"
+          placeholder="Defaults to logged-in user, but can be reassigned"
+          style="width:100%;padding:.45rem .6rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg)"
+        />
+        <div style="font-size:.77rem;color:var(--fg-muted);margin-top:.3rem">
+          This person becomes the current owner and can continue progress later.
+        </div>
+      </div>
+      <hr style="border:none;border-top:1px solid var(--border);margin:.75rem 0"/>
+      <div id="tplListWrap"><div style="font-size:.82rem;color:var(--fg-muted);text-align:center;padding:1.5rem">Loading templates&#x2026;</div></div>
+    </div>
+    <div class="modal-footer">
+      <span class="selected-count" id="genSelectedCount">0 selected</span>
+      <div style="display:flex;gap:.5rem">
+        <button id="genModalCancel" class="btn-secondary" type="button">Cancel</button>
+        <button id="genModalSubmit" class="btn-primary" type="button">Generate Selected</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- New Template Modal -->
+<div class="modal-backdrop" id="newTplModal" role="dialog" aria-modal="true" aria-labelledby="newTplTitle">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="newTplTitle">+ New Audit Template</h2>
+      <button id="newTplClose" class="btn-icon" type="button" aria-label="Close">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-field"><label for="tplTitle">Title *</label><input id="tplTitle" type="text" placeholder="e.g. ESD Cart Inspection" style="width:100%;padding:.4rem .55rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg)"/></div>
+      <div class="detail-field"><label for="tplDesc">Description</label><textarea id="tplDesc" rows="2" placeholder="Optional checklist guidance..." style="width:100%;padding:.4rem .55rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg)"></textarea></div>
+      <div class="detail-field"><label for="tplKind">Frequency *</label>
+        <select id="tplKind" style="width:100%;padding:.4rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg)">
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+      </div>
+      <div id="tplShiftModeWrap" class="detail-field"><label for="tplShiftMode">Shift mode *</label>
+        <select id="tplShiftMode" style="width:100%;padding:.4rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg)">
+          <option value="once">Once per day (all shifts share)</option>
+          <option value="per-shift">Per shift (each shift gets its own instance)</option>
+        </select>
+      </div>
+      <div id="tplWeekModeWrap" class="detail-field" style="display:none"><label for="tplWeekMode">Recurrence *</label>
+        <select id="tplWeekMode" style="width:100%;padding:.4rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg)">
+          <option value="weekly">Every week</option>
+          <option value="biweekly">Every two weeks</option>
+        </select>
+      </div>
+      <p id="newTplErr" style="color:var(--danger);font-size:.83rem;display:none"></p>
+    </div>
+    <div class="modal-footer" style="justify-content:flex-end">
+      <button id="newTplCancel" class="btn-secondary" type="button">Cancel</button>
+      <button id="newTplSave" class="btn-primary" type="button">Create Template</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail panel -->
+<aside class="detail-panel" id="detailPanel" aria-label="Audit detail" role="complementary">
+  <div class="detail-panel-header">
+    <strong id="dp-title" style="font-size:1rem">Audit Detail</strong>
+    <button id="dp-close" class="btn-icon" type="button" aria-label="Close panel">&#x2715;</button>
+  </div>
+  <div class="detail-panel-body">
+    <div class="detail-field"><label>Kind</label><p id="dp-kind">&#x2014;</p></div>
+    <div class="detail-field"><label>Shift / Frequency</label><p id="dp-shift">&#x2014;</p></div>
+    <div class="detail-field"><label>Due Date</label><p id="dp-due">&#x2014;</p></div>
+    <div class="detail-field"><label>Status</label><p id="dp-status">&#x2014;</p></div>
+    <div class="detail-field" id="dp-desc-wrap" style="display:none"><label>Description</label><p id="dp-desc">&#x2014;</p></div>
+    <div class="detail-field"><label>Current Owner</label><p id="dp-owner-view">&#x2014;</p></div>
+    <div class="detail-field">
+      <label for="dp-owner-input">Reassign Owner</label>
+      <input
+        id="dp-owner-input"
+        type="text"
+        placeholder="Enter suite user name or ID"
+        style="width:100%;padding:.45rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg)"
+      />
+    </div>
+    <div class="detail-field"><label>Initiated By</label><p id="dp-initiated-by">&#x2014;</p></div>
+    <hr style="border:none;border-top:1px solid var(--border);margin:1rem 0"/>
+    <div class="detail-field"><label for="dp-notes">Notes (optional)</label>
+      <textarea id="dp-notes" rows="3" style="width:100%;padding:.45rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg)" placeholder="Add completion notes..."></textarea>
+    </div>
+    <section class="tool-verify" id="toolVerifyModule" hidden>
+      <div class="tool-verify-head">
+        <div>
+          <div class="tool-verify-title">Tool Verify: Screwdriver and Drill Audit</div>
+          <div class="tool-verify-sub">Scan serial numbers and compare them against the expected inventory for this building.</div>
+        </div>
+      </div>
+      <label for="toolVerifyScans" style="font-size:.8rem;font-weight:700;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.05em">Tool Classification</label>
+      <div class="chip-row" id="toolVerifyClasses">
+        <button type="button" class="chip active" data-classification="manual">Manual</button>
+        <button type="button" class="chip active" data-classification="wired">Wired</button>
+        <button type="button" class="chip active" data-classification="wireless">Wireless</button>
+      </div>
+      <div class="tool-verify-grid">
+        <div>
+          <label for="toolVerifyScans">Scanned Serial Numbers</label>
+          <textarea id="toolVerifyScans" rows="8" style="width:100%;padding:.45rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg)" placeholder="Paste or scan serials here. One per line or separated by commas/spaces."></textarea>
+        </div>
+        <div>
+          <label>Verification Result</label>
+          <div id="toolVerifyResult" style="font-size:.82rem;color:var(--fg-muted);padding:.7rem;border:1px dashed var(--border);border-radius:.65rem;min-height:160px;background:var(--surface)">
+            Run verification to compare scanned tools against the expected inventory list.
+          </div>
+        </div>
+      </div>
+      <div class="tool-verify-actions">
+        <button id="toolVerifyComplete" class="btn-secondary" type="button" disabled>Complete Audit</button>
+        <button id="toolVerifyRun" class="btn-primary" type="button">Verify Scan</button>
+      </div>
+    </section>
+  </div>
+  <div class="detail-panel-footer">
+    <button id="dp-delete" class="btn-danger" type="button">Delete</button>
+    <button id="dp-save"   class="btn-primary" type="button">Save &amp; Close</button>
+  </div>
+</aside>
+
+<script src="/nav.js"></script>
+<script type="module" src="/audits/audits.js?v=20260330-toolverify-2"></script>
+</body>
+</html>
+
+
+

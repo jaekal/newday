@@ -1,0 +1,50 @@
+[
+  {
+    "time": "2025-06-21T19:20:22.959Z",
+    "action": "deleteEmployee",
+    "employeeId": "1023",
+    "performedBy": "Luis V"
+  },
+  {
+    "time": "2025-06-21T19:24:20.938Z",
+    "action": "deleteEmployee",
+    "employeeId": "1019",
+    "performedBy": "Luis V"
+  },
+  {
+    "time": "2025-06-21T19:24:28.325Z",
+    "action": "deleteEmployee",
+    "employeeId": "1150",
+    "performedBy": "Luis V"
+  },
+  {
+    "time": "2025-06-21T19:24:48.039Z",
+    "action": "deleteEmployee",
+    "employeeId": "1161",
+    "performedBy": "Luis V"
+  },
+  {
+    "time": "2025-06-21T19:24:55.939Z",
+    "action": "deleteEmployee",
+    "employeeId": "1234",
+    "performedBy": "Luis V"
+  },
+  {
+    "time": "2025-06-21T23:15:01.279Z",
+    "action": "editTool",
+    "serialNumber": "1201",
+    "changes": [
+      "torque: NA → "
+    ],
+    "performedBy": "Luis V"
+  },
+  {
+    "time": "2025-06-21T23:15:29.867Z",
+    "action": "editTool",
+    "serialNumber": "1201",
+    "changes": [
+      "torque:  → -0.5"
+    ],
+    "performedBy": "Luis V"
+  }
+]

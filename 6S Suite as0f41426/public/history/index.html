@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>My History - 6S Tool Suite</title>
+  <link rel="icon" href="/images/favicon.png" type="image/png"/>
+  <link rel="stylesheet" href="/styles.css"/>
+  <script src="/theme-init.js"></script>
+  <style>
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 1rem; }
+    .section-card { background: var(--surface); border: 1px solid var(--border); border-radius: .75rem; padding: 1rem; margin-bottom: 1.25rem; box-shadow: var(--shadow); }
+    .section-title { font-size: 1rem; font-weight: 800; margin-bottom: .75rem; display: flex; align-items: center; gap: .5rem; }
+    table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    th, td { padding: .5rem .6rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+    th { font-size: .78rem; font-weight: 700; color: var(--fg-muted); text-transform: uppercase; letter-spacing: .04em; }
+    tbody tr:hover { background: var(--row-hover); }
+    tbody tr.history-row { cursor: pointer; }
+    .pill { display: inline-flex; padding: .15rem .5rem; border-radius: 999px; font-size: .75rem; font-weight: 700; }
+    .pill-out { background: var(--warn-bg); color: var(--warn); }
+    .pill-returned { background: var(--ok-bg); color: var(--ok); }
+    .pill-checkout { background: var(--status-checked); color: var(--accent-contrast); }
+    .duration-warn { color: var(--warn); font-weight: 700; }
+    .duration-danger { color: var(--danger); font-weight: 700; }
+    .user-card { display: flex; align-items: center; gap: .85rem; padding: .75rem 1rem; background: var(--surface-strong); border-radius: .6rem; border: 1px solid var(--border); margin-bottom: 1.25rem; }
+    .user-avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--accent); color: var(--accent-contrast); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 800; flex-shrink: 0; }
+    .user-name { font-size: 1.05rem; font-weight: 700; }
+    .user-meta { font-size: .83rem; color: var(--fg-muted); }
+    .detail-copy { color: var(--fg-muted); font-size: .82rem; }
+    .detail-modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.48); display: none; align-items: center; justify-content: center; z-index: 70; }
+    .detail-modal-backdrop.open { display: flex; }
+    .detail-modal { width: min(96vw, 900px); max-height: 88vh; overflow: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 1rem; box-shadow: var(--shadow); padding: 1rem; }
+    .detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin: 1rem 0; }
+    .detail-block { border: 1px solid var(--border); border-radius: .75rem; padding: .75rem; background: var(--surface-strong); }
+    .detail-block label { display: block; font-size: .75rem; color: var(--fg-muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: .35rem; }
+    .detail-section { border: 1px solid var(--border); border-radius: .75rem; padding: .8rem; margin-bottom: .75rem; }
+    .detail-section h4 { margin: 0 0 .4rem; font-size: .95rem; }
+    .detail-section p { margin: .25rem 0; }
+    @media (max-width: 900px) { .detail-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="suite-topbar" style="margin-bottom:1rem">
+      <div class="brand">
+        <div class="brand-title">My History</div>
+        <div class="brand-subtitle">Active assignments, checkout activity, and kiosk submissions</div>
+      </div>
+      <div class="suite-actions">
+        <a href="/home" class="home-button">Home</a>
+        <a href="/kiosk/" class="btn-secondary" style="padding:.45rem .85rem;border-radius:.4rem;text-decoration:none;font-size:.88rem;border:1px solid var(--border)">Kiosk</a>
+        <label for="themeSelector" class="visually-hidden">Theme</label>
+        <select id="themeSelector" class="theme-select" aria-label="Theme">
+          <option value="theme-command">Command</option>
+<option value="theme-beacon">Beacon</option>
+<option value="theme-atlas">Atlas</option>
+<option value="theme-carbon">Carbon</option>
+<option value="theme-grove">Grove</option>
+<option value="theme-ember">Ember</option>
+<option value="theme-harbor">Harbor</option>
+<option value="theme-slate">Slate</option>
+<option value="theme-orchid">Orchid</option>
+<option value="theme-dusk">Dusk</option>
+<option value="theme-pulse">Pulse</option>
+<option value="theme-highcontrast">High Contrast</option>
+        </select>
+      </div>
+    </header>
+
+    <div class="user-card" id="userCard" style="display:none">
+      <div class="user-avatar" id="userAvatar">?</div>
+      <div>
+        <div class="user-name" id="userName">Loading...</div>
+        <div class="user-meta" id="userMeta"></div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-title">Current Assignments</div>
+      <div id="currentOut-skeleton" aria-hidden="true">
+        <div class="skeleton skeleton-row"></div>
+        <div class="skeleton skeleton-row skeleton-row--med"></div>
+      </div>
+      <div id="currentOut" style="display:none">
+        <table>
+          <thead><tr><th>Type</th><th>Identifier</th><th>Assigned</th><th>Duration</th></tr></thead>
+          <tbody id="currentOutBody"></tbody>
+        </table>
+        <div id="currentOutEmpty" class="empty-state" style="display:none">
+          <div class="empty-state__icon">OK</div>
+          <div class="empty-state__title">Nothing currently assigned</div>
+          <div class="empty-state__body">You have no active tools, carts, or equipment assigned.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-title">Recent Checkout Activity <span style="font-size:.78rem;color:var(--fg-muted);font-weight:400">(last 30 days)</span></div>
+      <div id="history-skeleton" aria-hidden="true">
+        <div class="skeleton skeleton-row"></div>
+        <div class="skeleton skeleton-row skeleton-row--med"></div>
+        <div class="skeleton skeleton-row skeleton-row--short"></div>
+      </div>
+      <div id="historyTable" style="display:none">
+        <table>
+          <thead><tr><th>Type</th><th>Identifier</th><th>Action</th><th>When</th><th>Details</th></tr></thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+        <div id="historyEmpty" class="empty-state" style="display:none">
+          <div class="empty-state__icon">Log</div>
+          <div class="empty-state__title">No checkout activity in the last 30 days</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-title">Kiosk Submissions</div>
+      <div id="tickets-skeleton" aria-hidden="true">
+        <div class="skeleton skeleton-row"></div>
+        <div class="skeleton skeleton-row skeleton-row--med"></div>
+      </div>
+      <div id="ticketsTable" style="display:none">
+        <table>
+          <thead><tr><th>Title</th><th>Type</th><th>Status</th><th>Submitted</th><th>Details</th></tr></thead>
+          <tbody id="ticketsBody"></tbody>
+        </table>
+        <div id="ticketsEmpty" class="empty-state" style="display:none">
+          <div class="empty-state__icon">Note</div>
+          <div class="empty-state__title">No kiosk submissions yet</div>
+          <div class="empty-state__body">Inspection reports, tickets, and suggestions will appear here.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="historyDetailModal" class="detail-modal-backdrop" aria-hidden="true">
+    <div class="detail-modal" role="dialog" aria-modal="true" aria-labelledby="historyDetailTitle">
+      <div style="display:flex;justify-content:space-between;gap:1rem;align-items:start">
+        <div>
+          <h2 id="historyDetailTitle" style="margin:0 0 .35rem">Activity Detail</h2>
+          <div class="user-meta" id="historyDetailSubtitle"></div>
+        </div>
+        <button id="historyDetailClose" class="btn btn-secondary" type="button">Close</button>
+      </div>
+      <div class="detail-grid" id="historyDetailMeta"></div>
+      <div id="historyDetailContent"></div>
+    </div>
+  </div>
+
+  <script src="/nav.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="module" src="/history/history.js"></script>
+</body>
+</html>
+
+
+
+

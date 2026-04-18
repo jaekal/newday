@@ -1,0 +1,35 @@
+[
+  {
+    "id": 101,
+    "tagNumber": "PB-01",
+    "name": "Power Box A",
+    "category": "Power",
+    "location": "Row A",
+    "status": "In Service",
+    "description": "480V power distribution box",
+    "pmDueDate": "2025-02-01",
+    "expiration": ""
+  },
+  {
+    "id": 102,
+    "tagNumber": "BB-22",
+    "name": "Bus Bar B",
+    "category": "Infrastructure",
+    "location": "Row B",
+    "status": "In Service",
+    "description": "Main bus bar section",
+    "pmDueDate": "",
+    "expiration": "2025-03-15"
+  },
+  {
+    "id": 103,
+    "tagNumber": "PW-15",
+    "name": "Power Whip 15ft",
+    "category": "Adapters",
+    "location": "Cage 3",
+    "status": "Spare",
+    "description": "C13/C14 whip",
+    "pmDueDate": "2025-01-28",
+    "expiration": ""
+  }
+]

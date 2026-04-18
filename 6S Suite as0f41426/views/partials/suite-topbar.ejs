@@ -1,0 +1,50 @@
+
+<header class="suite-topbar">
+  <div class="brand">
+    <div class="brand-title"><%= title || '🔧 6S Tool Suite' %></div>
+    <% if (subtitle) { %>
+      <div class="brand-subtitle"><%= subtitle %></div>
+    <% } %>
+  </div>
+
+  <div class="suite-actions">
+
+    <% if (typeof homeRoute !== 'undefined' && homeRoute) { %>
+      <a href="<%= homeRoute %>" class="home-button" title="Back to Suite Home">🏠 Home</a>
+    <% } %>
+
+    <% if (user) { %>
+      <span class="chip chip--user" title="Signed in as <%= user?.role || '' %>">
+        <%= user?.name || user?.id %>
+        <% if (user?.role) { %>
+          <span class="chip chip--role chip--role-<%= (user.role||'').toLowerCase() %>"><%= user.role %></span>
+        <% } %>
+      </span>
+      <%# Link to technician history page %>
+      <a href="/history/" class="btn-icon" title="My checkout history" aria-label="My history" style="text-decoration:none">👤</a>
+    <% } %>
+
+    <%# Notification bell (bell.js mounts itself into .suite-actions) — placeholder so bell lands before the select %>
+    <span id="suite-notif-mount-anchor"></span>
+
+    <label for="themeSelector" class="visually-hidden">Theme</label>
+    <select id="themeSelector" class="theme-select" aria-label="Select theme">
+      <option value="theme-command">Command</option>
+<option value="theme-atlas">Atlas</option>
+<option value="theme-carbon">Carbon</option>
+<option value="theme-grove">Grove</option>
+<option value="theme-ember">Ember</option>
+<option value="theme-harbor">Harbor</option>
+<option value="theme-slate">Slate</option>
+<option value="theme-orchid">Orchid</option>
+<option value="theme-dusk">Dusk</option>
+<option value="theme-pulse">Pulse</option>
+<option value="theme-highcontrast">High Contrast</option>
+    </select>
+
+  </div>
+</header>
+
+<%# Core nav script — theme sync, shortcut overlay, role stamping %>
+<script src="/nav.js"></script>
+

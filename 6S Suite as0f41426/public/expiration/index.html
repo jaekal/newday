@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Calibration &amp; Expiration – 6S Tool Suite</title>
+  <link rel="icon" href="/images/favicon.png" type="image/png"/>
+  <link rel="stylesheet" href="/styles.css"/>
+  <script src="/theme-init.js"></script>
+  <style>
+    :root { --drawer-w: 430px; }
+    body {
+      display:flex; flex-direction:column; min-height:100vh; margin:0;
+      background:var(--bg); color:var(--fg);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      font-size:clamp(.86rem,.6vw+.7rem,.95rem);
+    }
+
+    .sr-only {
+      position:absolute; width:1px; height:1px; overflow:hidden;
+      clip:rect(0 0 0 0); white-space:nowrap;
+    }
+
+    .ce-topbar {
+      display:flex; align-items:center; justify-content:space-between; gap:.75rem;
+      padding:.7rem 1rem; background:var(--surface); border-bottom:1px solid var(--border); flex-wrap:wrap;
+    }
+    .ce-topbar__left, .ce-topbar__right { display:flex; align-items:center; gap:.65rem; flex-wrap:wrap; }
+    .ce-home-btn, .ce-btn, .ce-ghost-btn, .ce-link-btn {
+      display:inline-flex; align-items:center; justify-content:center; gap:.4rem;
+      padding:.42rem .78rem; border-radius:var(--radius-sm);
+      border:1px solid var(--border); background:var(--surface-strong); color:var(--fg);
+      text-decoration:none; cursor:pointer; font-size:.84rem;
+      transition:border-color .15s, background .15s, color .15s, transform .08s;
+    }
+    .ce-home-btn:hover, .ce-btn:hover, .ce-ghost-btn:hover, .ce-link-btn:hover {
+      border-color:var(--accent); color:var(--accent); text-decoration:none;
+    }
+    .ce-btn:active, .ce-ghost-btn:active, .ce-home-btn:active, .ce-link-btn:active { transform:translateY(1px); }
+    .ce-btn-primary {
+      background:var(--accent); color:var(--accent-contrast); border-color:var(--accent);
+    }
+    .ce-btn-primary:hover { background:var(--accent-hover); color:var(--accent-contrast); }
+    .ce-danger-btn {
+      background:var(--danger-bg); color:var(--danger); border-color:var(--danger);
+    }
+    .ce-danger-btn:hover { background:var(--danger); color:var(--danger-contrast); }
+    .ce-brand-title { font-size:1.15rem; font-weight:800; }
+    .ce-brand-sub { font-size:.78rem; color:var(--fg-muted); }
+    .ce-theme-sel, .ce-sel, .ce-input, .ce-textarea {
+      border:1px solid var(--border); border-radius:var(--radius-sm);
+      background:var(--surface); color:var(--fg);
+      padding:.48rem .62rem; font-size:.84rem;
+    }
+    .ce-input, .ce-textarea { width:100%; box-sizing:border-box; }
+    .ce-textarea { min-height:90px; resize:vertical; }
+
+    .ce-kpi-bar {
+      display:grid; grid-template-columns:repeat(6, minmax(0, 1fr));
+      gap:.55rem; padding:.75rem 1rem; background:var(--surface); border-bottom:1px solid var(--border);
+    }
+    @media (max-width:1000px) {
+      .ce-kpi-bar { grid-template-columns:repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width:620px) {
+      .ce-kpi-bar { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+    }
+    .ce-kpi {
+      border:1px solid var(--border); border-radius:.7rem; background:var(--surface-strong);
+      padding:.65rem .75rem; cursor:pointer; transition:border-color .15s, transform .08s;
+      min-height:70px; display:flex; flex-direction:column; justify-content:center;
+    }
+    .ce-kpi:hover { border-color:var(--accent); }
+    .ce-kpi.active { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset; }
+    .ce-kpi-n { font-size:1.15rem; font-weight:800; }
+    .ce-kpi-l { font-size:.73rem; color:var(--fg-muted); margin-top:.12rem; }
+    .ce-kpi--overdue { background:var(--danger-bg); border-color:var(--danger); }
+    .ce-kpi--overdue .ce-kpi-n { color:var(--danger); }
+    .ce-kpi--due7 { background:var(--warn-bg); border-color:var(--warn); }
+    .ce-kpi--due7 .ce-kpi-n { color:var(--warn); }
+    .ce-kpi--due30 { background:color-mix(in srgb, var(--warn-bg) 45%, var(--surface-strong)); }
+    .ce-kpi--ok { background:var(--ok-bg); border-color:var(--ok); }
+    .ce-kpi--ok .ce-kpi-n { color:var(--ok); }
+
+    .ce-toolbar {
+      display:flex; flex-wrap:wrap; gap:.6rem; align-items:end;
+      padding:.8rem 1rem; background:var(--surface); border-bottom:1px solid var(--border);
+    }
+    .ce-field { display:flex; flex-direction:column; gap:.28rem; min-width:120px; }
+    .ce-field label { font-size:.74rem; color:var(--fg-muted); font-weight:700; }
+    .ce-field--grow { flex:1 1 260px; min-width:240px; }
+    .ce-toolbar-spacer { flex:1 1 auto; }
+
+    .ce-bulkbar {
+      display:none; align-items:center; gap:.55rem; flex-wrap:wrap;
+      padding:.7rem 1rem; background:var(--info-bg); border-bottom:1px solid var(--border);
+    }
+    .ce-bulkbar.open { display:flex; }
+    .ce-bulk-pill {
+      display:inline-flex; align-items:center; gap:.35rem;
+      padding:.28rem .56rem; border-radius:999px; background:var(--surface-strong);
+      border:1px solid var(--border); font-size:.78rem; font-weight:700;
+    }
+
+    .ce-tabs {
+      display:flex; gap:4px; padding:.5rem 1rem; background:var(--surface); border-bottom:1px solid var(--border);
+    }
+    .ce-tab {
+      display:inline-flex; align-items:center; gap:.35rem;
+      padding:.45rem .9rem; border-radius:var(--radius-sm);
+      border:1px solid transparent; background:transparent; color:var(--fg-muted);
+      cursor:pointer; font-size:.88rem; font-weight:700;
+    }
+    .ce-tab:hover { background:var(--surface-strong); color:var(--fg); }
+    .ce-tab.active { background:var(--accent); color:var(--accent-contrast); border-color:var(--accent); }
+
+    .ce-main {
+      flex:1; overflow:auto; padding:1rem;
+    }
+
+    .ce-panel {
+      border:1px solid var(--border);
+      background:var(--surface);
+      border-radius:.9rem;
+      overflow:hidden;
+      box-shadow:var(--shadow);
+    }
+
+    .ce-table-wrap { overflow:auto; }
+    .ce-table {
+      width:100%; border-collapse:collapse; min-width:1100px;
+    }
+    .ce-table th, .ce-table td {
+      padding:.75rem .7rem; border-bottom:1px solid var(--border); text-align:left; vertical-align:top;
+    }
+    .ce-table th {
+      font-size:.75rem; text-transform:uppercase; letter-spacing:.04em; color:var(--fg-muted);
+      background:var(--surface-strong); position:sticky; top:0; z-index:2;
+    }
+    .ce-row:hover { background:var(--row-hover); }
+    .ce-check { width:16px; height:16px; }
+    .ce-item-title { font-weight:700; font-size:.9rem; }
+    .ce-item-sub { font-size:.78rem; color:var(--fg-muted); margin-top:.12rem; }
+    .ce-badge {
+      display:inline-flex; align-items:center; gap:.3rem;
+      padding:.18rem .5rem; border-radius:999px; font-size:.72rem; font-weight:800;
+      border:1px solid transparent; white-space:nowrap;
+    }
+    .ce-badge--tool { background:var(--info-bg); color:var(--accent); border-color:var(--accent); }
+    .ce-badge--equipment { background:var(--warn-bg); color:var(--warn); border-color:var(--warn); }
+    .ce-badge--asset { background:var(--surface-strong); color:var(--fg); border-color:var(--border); }
+    .ce-badge--overdue { background:var(--danger-bg); color:var(--danger); border-color:var(--danger); }
+    .ce-badge--due-7, .ce-badge--due-30 { background:var(--warn-bg); color:var(--warn); border-color:var(--warn); }
+    .ce-badge--ok { background:var(--ok-bg); color:var(--ok); border-color:var(--ok); }
+    .ce-badge--missing { background:var(--surface-strong); color:var(--fg-muted); border-color:var(--border); }
+    .ce-badge--out-of-service { background:var(--danger-bg); color:var(--danger); border-color:var(--danger); }
+    .ce-badge--awaiting-vendor { background:var(--warn-bg); color:var(--warn); border-color:var(--warn); }
+
+    .ce-days {
+      font-weight:800;
+    }
+    .ce-days.is-overdue { color:var(--danger); }
+    .ce-days.is-due { color:var(--warn); }
+    .ce-days.is-ok { color:var(--ok); }
+    .ce-days.is-missing { color:var(--fg-muted); }
+
+    .ce-actions {
+      display:flex; gap:.35rem; flex-wrap:wrap;
+    }
+    .ce-mini-btn {
+      padding:.3rem .55rem; font-size:.75rem; border-radius:.45rem;
+      border:1px solid var(--border); background:var(--surface-strong); color:var(--fg); cursor:pointer;
+    }
+    .ce-mini-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+    .ce-empty {
+      display:flex; flex-direction:column; align-items:center; gap:.65rem;
+      padding:3rem 1rem; color:var(--fg-muted); text-align:center;
+    }
+    .ce-empty-icon { opacity:.48; color:var(--fg-muted); display:flex; justify-content:center; }
+    .ce-empty-icon svg { width:2.6rem; height:2.6rem; }
+
+    .ce-board {
+      display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:.8rem;
+    }
+    @media (max-width:1100px) { .ce-board { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+    @media (max-width:700px) { .ce-board { grid-template-columns:1fr; } }
+
+    .ce-col {
+      border:1px solid var(--border); background:var(--surface); border-radius:.9rem; overflow:hidden;
+    }
+    .ce-col-head {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:.7rem .8rem; background:var(--surface-strong); border-bottom:1px solid var(--border); font-weight:800;
+    }
+    .ce-col-list {
+      display:flex; flex-direction:column; gap:.55rem; padding:.75rem;
+      min-height:240px;
+    }
+    .ce-card {
+      border:1px solid var(--border); border-radius:.75rem; background:var(--surface-strong);
+      padding:.65rem .7rem; cursor:pointer; transition:border-color .15s;
+    }
+    .ce-card:hover { border-color:var(--accent); }
+    .ce-card-head {
+      display:flex; justify-content:space-between; gap:.5rem; align-items:flex-start;
+    }
+    .ce-card-title { font-weight:700; font-size:.88rem; }
+    .ce-card-meta { font-size:.76rem; color:var(--fg-muted); margin-top:.22rem; }
+
+    .ce-cal-wrap {
+      display:grid; gap:1rem;
+    }
+    .ce-cal-nav {
+      display:flex; justify-content:center; align-items:center; gap:.8rem;
+    }
+    .ce-cal-nav h2 { min-width:220px; text-align:center; margin:0; font-size:1.06rem; }
+    .ce-month-grid {
+      display:grid; grid-template-columns:repeat(7,1fr); gap:4px;
+    }
+    .ce-day-head {
+      text-align:center; font-size:.75rem; color:var(--fg-muted); font-weight:800; padding:.3rem 0;
+    }
+    .ce-day {
+      border:1px solid var(--border); border-radius:.55rem; min-height:92px; background:var(--surface);
+      padding:.35rem; box-sizing:border-box;
+    }
+    .ce-day.other { opacity:.35; }
+    .ce-day.today { border-color:var(--accent); background:var(--info-bg); }
+    .ce-day-num { font-size:.78rem; font-weight:800; margin-bottom:.25rem; }
+    .ce-event {
+      display:block; margin-bottom:3px; padding:.12rem .3rem; border-radius:.3rem; font-size:.7rem; font-weight:700;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer;
+    }
+    .ce-event--overdue { background:var(--danger-bg); color:var(--danger); border-left:2px solid var(--danger); }
+    .ce-event--due-7, .ce-event--due-30 { background:var(--warn-bg); color:var(--warn); border-left:2px solid var(--warn); }
+    .ce-event--ok { background:var(--ok-bg); color:var(--ok); border-left:2px solid var(--ok); }
+    .ce-event--missing { background:var(--surface-strong); color:var(--fg-muted); border-left:2px solid var(--border); }
+
+    .ce-skeleton {
+      background:linear-gradient(90deg, var(--surface-strong) 25%, var(--bg) 50%, var(--surface-strong) 75%);
+      background-size:300% 100%;
+      animation:shimmer 1.2s infinite;
+      border-radius:.65rem;
+      height:72px;
+      margin-bottom:.6rem;
+    }
+    @keyframes shimmer {
+      0% { background-position:100% 0; }
+      100% { background-position:0 0; }
+    }
+
+    .ce-drawer-backdrop {
+      position:fixed; inset:0; background:rgba(0,0,0,.28); z-index:1100;
+      opacity:0; pointer-events:none; transition:opacity .18s;
+    }
+    .ce-drawer-backdrop.open { opacity:1; pointer-events:auto; }
+
+    .ce-drawer {
+      position:fixed; top:0; right:0; width:min(var(--drawer-w), 100vw); height:100vh;
+      background:var(--surface); border-left:1px solid var(--border); z-index:1110;
+      transform:translateX(100%); transition:transform .2s ease; display:flex; flex-direction:column;
+      box-shadow:-12px 0 30px rgba(0,0,0,.18);
+    }
+    .ce-drawer.open { transform:translateX(0); }
+
+    .ce-drawer-head {
+      display:flex; justify-content:space-between; align-items:flex-start; gap:.75rem;
+      padding:1rem; border-bottom:1px solid var(--border); background:var(--surface-strong);
+    }
+    .ce-drawer-title { font-size:1rem; font-weight:800; }
+    .ce-drawer-sub { font-size:.78rem; color:var(--fg-muted); margin-top:.18rem; }
+    .ce-close {
+      border:none; background:transparent; color:var(--fg-muted); cursor:pointer; font-size:1.15rem;
+    }
+
+    .ce-drawer-body {
+      padding:1rem; overflow:auto; display:flex; flex-direction:column; gap:1rem;
+    }
+
+    .ce-section {
+      border:1px solid var(--border); border-radius:.85rem; background:var(--surface-strong); overflow:hidden;
+    }
+    .ce-section-head {
+      padding:.7rem .8rem; font-weight:800; border-bottom:1px solid var(--border); background:var(--surface);
+    }
+    .ce-section-body {
+      padding:.8rem;
+    }
+
+    .ce-grid-2 {
+      display:grid; grid-template-columns:1fr 1fr; gap:.7rem;
+    }
+    @media (max-width:620px) { .ce-grid-2 { grid-template-columns:1fr; } }
+
+    .ce-info-row {
+      display:flex; justify-content:space-between; gap:.6rem; padding:.35rem 0; border-bottom:1px dashed var(--border);
+      font-size:.82rem;
+    }
+    .ce-info-row:last-child { border-bottom:none; }
+    .ce-info-row span { color:var(--fg-muted); }
+
+    .ce-history {
+      display:flex; flex-direction:column; gap:.6rem;
+    }
+    .ce-history-item {
+      border:1px solid var(--border); border-radius:.65rem; padding:.6rem .7rem; background:var(--surface);
+    }
+    .ce-history-top {
+      display:flex; justify-content:space-between; gap:.5rem; font-size:.76rem; color:var(--fg-muted);
+      margin-bottom:.25rem;
+    }
+    .ce-history-action { font-weight:800; color:var(--fg); text-transform:capitalize; }
+
+    .ce-form-actions {
+      display:flex; gap:.5rem; flex-wrap:wrap;
+    }
+
+    .ce-foot-note {
+      font-size:.75rem; color:var(--fg-muted);
+    }
+  </style>
+</head>
+<body>
+  <div id="liveRegion" class="sr-only" aria-live="polite"></div>
+
+  <header class="ce-topbar">
+    <div class="ce-topbar__left">
+      <a href="/home" class="ce-home-btn" aria-label="Home"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Home</a>
+      <div>
+        <div class="ce-brand-title">Calibration &amp; Expiration</div>
+        <div class="ce-brand-sub" id="ceMeta">Loading workspace…</div>
+      </div>
+    </div>
+    <div class="ce-topbar__right">
+      <button id="btnExport" class="ce-btn" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export CSV</button>
+      <button id="btnRefresh" class="ce-btn ce-btn-primary" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> Refresh</button>
+      <label for="themeSelector" class="sr-only">Theme</label>
+      <select id="themeSelector" class="ce-theme-sel" aria-label="Theme">
+        <option value="theme-command">Command</option>
+<option value="theme-beacon">Beacon</option>
+<option value="theme-atlas">Atlas</option>
+<option value="theme-carbon">Carbon</option>
+<option value="theme-grove">Grove</option>
+<option value="theme-ember">Ember</option>
+<option value="theme-harbor">Harbor</option>
+<option value="theme-slate">Slate</option>
+<option value="theme-orchid">Orchid</option>
+<option value="theme-dusk">Dusk</option>
+<option value="theme-pulse">Pulse</option>
+<option value="theme-highcontrast">High Contrast</option>
+      </select>
+    </div>
+  </header>
+
+  <section class="ce-kpi-bar" id="kpiBar" aria-label="Summary">
+    <div class="ce-kpi ce-kpi--overdue" data-kpi="overdue" tabindex="0" role="button">
+      <div class="ce-kpi-n" id="kpiOverdue">0</div>
+      <div class="ce-kpi-l">Overdue</div>
+    </div>
+    <div class="ce-kpi ce-kpi--due7" data-kpi="due-7" tabindex="0" role="button">
+      <div class="ce-kpi-n" id="kpiDue7">0</div>
+      <div class="ce-kpi-l">Due in 7 days</div>
+    </div>
+    <div class="ce-kpi ce-kpi--due30" data-kpi="due-30" tabindex="0" role="button">
+      <div class="ce-kpi-n" id="kpiDue30">0</div>
+      <div class="ce-kpi-l">Due in 30 days</div>
+    </div>
+    <div class="ce-kpi ce-kpi--ok" data-kpi="ok" tabindex="0" role="button">
+      <div class="ce-kpi-n" id="kpiOk">0</div>
+      <div class="ce-kpi-l">OK</div>
+    </div>
+    <div class="ce-kpi" data-kpi="missing" tabindex="0" role="button">
+      <div class="ce-kpi-n" id="kpiMissing">0</div>
+      <div class="ce-kpi-l">Needs setup</div>
+    </div>
+    <div class="ce-kpi" data-kpi="completedThisWeek" tabindex="0" role="button">
+      <div class="ce-kpi-n" id="kpiCompletedWeek">0</div>
+      <div class="ce-kpi-l">Completed this week</div>
+    </div>
+  </section>
+
+  <section class="ce-toolbar">
+    <div class="ce-field ce-field--grow">
+      <label for="searchItems">Search</label>
+      <input id="searchItems" class="ce-input" type="search" placeholder="Search serial, tag, name, location, owner…"/>
+    </div>
+
+    <div class="ce-field">
+      <label for="selDays">Window</label>
+      <select id="selDays" class="ce-sel">
+        <option value="30">30 days</option>
+        <option value="60">60 days</option>
+        <option value="90" selected>90 days</option>
+        <option value="120">120 days</option>
+        <option value="180">180 days</option>
+        <option value="365">12 months</option>
+      </select>
+    </div>
+
+    <div class="ce-field">
+      <label for="selType">Type</label>
+      <select id="selType" class="ce-sel">
+        <option value="">All items</option>
+        <option value="tool">Tools</option>
+        <option value="equipment">Equipment</option>
+        <option value="asset">Assets</option>
+      </select>
+    </div>
+
+    <div class="ce-field">
+      <label for="selStatus">Status</label>
+      <select id="selStatus" class="ce-sel">
+        <option value="">All statuses</option>
+        <option value="overdue">Overdue</option>
+        <option value="due-7">Due in 7 days</option>
+        <option value="due-30">Due in 30 days</option>
+        <option value="ok">OK</option>
+        <option value="missing">Needs setup</option>
+        <option value="out-of-service">Out of Service</option>
+        <option value="awaiting-vendor">Awaiting Vendor</option>
+      </select>
+    </div>
+
+    <div class="ce-field">
+      <label for="selLocation">Location</label>
+      <select id="selLocation" class="ce-sel">
+        <option value="">All locations</option>
+      </select>
+    </div>
+
+    <div class="ce-field">
+      <label for="selOwner">Owner</label>
+      <select id="selOwner" class="ce-sel">
+        <option value="">All owners</option>
+      </select>
+    </div>
+
+    <div class="ce-field">
+      <label for="selSort">Sort</label>
+      <select id="selSort" class="ce-sel">
+        <option value="due-asc">Soonest due first</option>
+        <option value="most-overdue">Most overdue first</option>
+        <option value="due-desc">Farthest due first</option>
+        <option value="location">Location</option>
+        <option value="label">Name / Label</option>
+        <option value="updated-desc">Recently updated</option>
+      </select>
+    </div>
+
+    <div class="ce-field">
+      <label>&nbsp;</label>
+      <label style="display:flex; align-items:center; gap:.42rem; font-size:.82rem;">
+        <input id="chkOnlyMine" type="checkbox"/>
+        Only mine
+      </label>
+    </div>
+
+    <div class="ce-toolbar-spacer"></div>
+
+    <div class="ce-foot-note" id="ceCount">0 items</div>
+  </section>
+
+  <section class="ce-bulkbar" id="bulkBar">
+    <span class="ce-bulk-pill"><span id="bulkCount">0</span> selected</span>
+    <select id="bulkAction" class="ce-sel">
+      <option value="">Bulk action…</option>
+      <option value="reschedule">Reschedule due date</option>
+      <option value="out-of-service">Mark out of service</option>
+    </select>
+    <input id="bulkDueDate" class="ce-input" type="date" style="width:auto; min-width:150px;" />
+    <button id="btnApplyBulk" class="ce-btn ce-btn-primary" type="button">Apply</button>
+    <button id="btnClearBulk" class="ce-ghost-btn" type="button">Clear Selection</button>
+  </section>
+
+  <section class="ce-tabs" role="tablist" aria-label="Views">
+    <button class="ce-tab active" data-view="list" role="tab" aria-selected="true">List</button>
+    <button class="ce-tab" data-view="board" role="tab" aria-selected="false">Board</button>
+    <button class="ce-tab" data-view="calendar" role="tab" aria-selected="false">Calendar</button>
+  </section>
+
+  <main class="ce-main">
+    <div id="loadingSkel">
+      <div class="ce-skeleton"></div>
+      <div class="ce-skeleton"></div>
+      <div class="ce-skeleton"></div>
+    </div>
+
+    <div id="emptyView" class="ce-empty" style="display:none">
+      <div class="ce-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
+      <div style="font-size:1rem; font-weight:800;">Nothing matches the current filters</div>
+      <div>Try widening the date window or clearing a filter.</div>
+    </div>
+
+    <div id="listView" style="display:none">
+      <div class="ce-panel">
+        <div class="ce-table-wrap">
+          <table class="ce-table">
+            <thead>
+              <tr>
+                <th style="width:40px;"><input id="chkAllRows" class="ce-check" type="checkbox" aria-label="Select all"/></th>
+                <th>Item</th>
+                <th>Type</th>
+                <th>Location</th>
+                <th>Last Completed</th>
+                <th>Next Due</th>
+                <th>Days</th>
+                <th>Owner</th>
+                <th>Status</th>
+                <th style="min-width:190px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="boardView" style="display:none"></div>
+
+    <div id="calendarView" style="display:none">
+      <div class="ce-panel" style="padding:1rem;">
+        <div class="ce-cal-wrap">
+          <div class="ce-cal-nav">
+            <button id="btnPrevMonth" class="ce-btn" type="button">◀</button>
+            <h2 id="monthLabel">Month</h2>
+            <button id="btnNextMonth" class="ce-btn" type="button">▶</button>
+          </div>
+          <div class="ce-month-grid" id="calHeaders"></div>
+          <div class="ce-month-grid" id="calCells"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="drawerBackdrop" class="ce-drawer-backdrop"></div>
+
+  <aside id="itemDrawer" class="ce-drawer" aria-hidden="true">
+    <div class="ce-drawer-head">
+      <div>
+        <div class="ce-drawer-title" id="drawerTitle">Item details</div>
+        <div class="ce-drawer-sub" id="drawerSub">—</div>
+      </div>
+      <button id="btnCloseDrawer" class="ce-close" type="button" aria-label="Close">✕</button>
+    </div>
+
+    <div class="ce-drawer-body">
+      <section class="ce-section">
+        <div class="ce-section-head">Overview</div>
+        <div class="ce-section-body" id="drawerOverview"></div>
+      </section>
+
+      <section class="ce-section">
+        <div class="ce-section-head">Quick actions</div>
+        <div class="ce-section-body">
+          <div class="ce-form-actions" style="margin-bottom:.75rem;">
+            <button id="btnMarkComplete" class="ce-btn ce-btn-primary" type="button">Mark complete</button>
+            <button id="btnReschedule" class="ce-btn" type="button">Reschedule</button>
+            <button id="btnOutOfService" class="ce-danger-btn" type="button">Out of service</button>
+          </div>
+          <div class="ce-foot-note">
+            “Mark complete” will update the last completed date and calculate the next due date if an interval is set.
+          </div>
+        </div>
+      </section>
+
+      <section class="ce-section">
+        <div class="ce-section-head">Edit details</div>
+        <div class="ce-section-body">
+          <form id="drawerForm">
+            <div class="ce-grid-2">
+              <div class="ce-field">
+                <label for="fLocation">Location</label>
+                <input id="fLocation" name="location" class="ce-input" type="text"/>
+              </div>
+              <div class="ce-field">
+                <label for="fOwner">Owner / Assigned To</label>
+                <input id="fOwner" name="owner" class="ce-input" type="text"/>
+              </div>
+              <div class="ce-field">
+                <label for="fLastCompletedDate">Last completed</label>
+                <input id="fLastCompletedDate" name="lastCompletedDate" class="ce-input" type="date"/>
+              </div>
+              <div class="ce-field">
+                <label for="fIntervalDays">Interval (days)</label>
+                <input id="fIntervalDays" name="intervalDays" class="ce-input" type="number" min="1" step="1"/>
+              </div>
+              <div class="ce-field">
+                <label for="fDueDate">Next due</label>
+                <input id="fDueDate" name="dueDate" class="ce-input" type="date"/>
+              </div>
+              <div class="ce-field">
+                <label for="fRawStatus">Status</label>
+                <select id="fRawStatus" name="rawStatus" class="ce-sel">
+                  <option value="">Auto from due date</option>
+                  <option value="Active">Active</option>
+                  <option value="Awaiting Vendor">Awaiting Vendor</option>
+                  <option value="Out of Service">Out of Service</option>
+                </select>
+              </div>
+              <div class="ce-field">
+                <label for="fVendor">Vendor</label>
+                <input id="fVendor" name="vendor" class="ce-input" type="text"/>
+              </div>
+              <div class="ce-field">
+                <label for="fCertificateNumber">Certificate #</label>
+                <input id="fCertificateNumber" name="certificateNumber" class="ce-input" type="text"/>
+              </div>
+            </div>
+
+            <div class="ce-field" style="margin-top:.7rem;">
+              <label for="fReason">Reason for change</label>
+              <input id="fReason" name="reason" class="ce-input" type="text" placeholder="Why was this updated?"/>
+            </div>
+
+            <div class="ce-field" style="margin-top:.7rem;">
+              <label for="fNotes">Notes</label>
+              <textarea id="fNotes" name="notes" class="ce-textarea" placeholder="Optional notes"></textarea>
+            </div>
+
+            <div class="ce-form-actions" style="margin-top:.8rem;">
+              <button id="btnSaveDrawer" class="ce-btn ce-btn-primary" type="submit">Save changes</button>
+              <button id="btnResetDrawer" class="ce-ghost-btn" type="button">Reset</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section class="ce-section">
+        <div class="ce-section-head">History</div>
+        <div class="ce-section-body">
+          <div id="drawerHistory" class="ce-history"></div>
+        </div>
+      </section>
+    </div>
+  </aside>
+
+  <script src="/nav.js"></script>
+  <script src="/socket.io/socket.io.js" defer></script>
+  <script type="module" src="/js/expiration/expiration.js"></script>
+</body>
+</html>
+
+
+

@@ -1,0 +1,231 @@
+<!-- public/cf/management/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Management — Command Floor</title>
+  <meta name="csrf-token" content=""/>
+  <link rel="icon" href="/images/favicon.png" type="image/png"/>
+  <link rel="stylesheet" href="/styles.css"/>
+  <link rel="stylesheet" href="/cf/cf.css"/>
+  <script src="/theme-init.js"></script>
+  <style>
+    .cf-bento-4 .cf-span-2 { grid-column: span 2; }
+    .cf-mgmt-chart-wrap { position: relative; width: 100%; min-height: 220px; }
+    .cf-mgmt-chart-wrap canvas { display: block; width: 100%; height: 220px; }
+    .cf-mgmt-legend { display: flex; flex-wrap: wrap; gap: .5rem 1rem; font-size: 11px; color: var(--cf-muted); margin-top: 8px; }
+    .cf-mgmt-legend span { display: inline-flex; align-items: center; gap: .35rem; }
+    .cf-mgmt-legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+    .cf-mgmt-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .cf-mgmt-table th { text-align: left; font-weight: 600; color: var(--cf-muted); padding: 6px 8px; border-bottom: 1px solid var(--cf-surface2); }
+    .cf-mgmt-table td { padding: 6px 8px; border-bottom: 1px solid #F1F5F9; vertical-align: top; }
+    .cf-mgmt-table tr:last-child td { border-bottom: none; }
+    .cf-mgmt-table a { color: var(--cf-cyan2); text-decoration: none; }
+    .cf-mgmt-table a:hover { text-decoration: underline; }
+    .cf-mgmt-activity-list { max-height: 280px; overflow: auto; margin: 0; padding: 0; list-style: none; }
+    .cf-mgmt-activity-list li { padding: 8px 12px; border-bottom: 1px solid #F1F5F9; font-size: 12px; }
+    .cf-mgmt-activity-list li:last-child { border-bottom: none; }
+    .cf-mgmt-activity-meta { font-size: 10px; color: var(--cf-faint); margin-top: 2px; }
+    .cf-mgmt-stat-row { display: flex; flex-wrap: wrap; gap: 12px; padding: 12px; }
+    .cf-mgmt-stat { flex: 1; min-width: 120px; background: var(--cf-surface); border-radius: 8px; padding: 10px 12px; }
+    .cf-mgmt-stat-n { font-family: var(--cf-ibm); font-size: 22px; font-weight: 600; color: var(--cf-text); }
+    .cf-mgmt-stat-l { font-size: 11px; color: var(--cf-muted); margin-top: 2px; }
+  </style>
+</head>
+<body style="margin:0;padding:0;background:#F0F4F8">
+
+<div class="cf-shell" id="cfShell">
+
+  <!-- ════════════ RAIL ════════════ -->
+  <nav class="cf-rail" id="cfRailNav" data-active="/cf/management" aria-label="Command Floor navigation"></nav>
+
+  <!-- ════════════ MAIN ════════════ -->
+  <div class="cf-main">
+
+    <!-- Topbar -->
+    <header class="cf-topbar">
+      <span class="cf-topbar-title">Management</span>
+      <span class="cf-topbar-crumb" id="topbarCrumb">/ Operations overview</span>
+      <div class="cf-topbar-right">
+        <div class="cf-avatar" id="cfAvatar" aria-label="User menu">?</div>
+      </div>
+    </header>
+
+    <!-- Building selector -->
+    <div style="display:flex;align-items:center;gap:.5rem;padding:.4rem 1rem;border-bottom:1px solid #E2E8F0;background:#fff">
+      <span style="font-size:.7rem;color:#94A3B8">Viewing:</span>
+      <span id="buildingBadgeSlot"></span>
+    </div>
+    <script src="/js/building.js"></script>
+
+    <!-- Bento -->
+    <div class="cf-bento cf-bento-4" id="cfBento">
+
+      <!-- KPI 1: Tools checked out -->
+      <a class="cf-kpi cf-fade-up-1" id="mgmt-tools-link" href="/cf/tools" style="text-decoration:none;color:inherit">
+        <div class="cf-kpi-label">Tools checked out</div>
+        <div class="cf-kpi-value cyan" id="mgmt-tools-out">—</div>
+        <div class="cf-kpi-footer">
+          <span class="cf-kpi-sub">live screwdriver activity</span>
+          <div class="cf-kpi-bar"><div class="cf-kpi-bar-fill cyan" id="bar-mgmt-tools"></div></div>
+        </div>
+      </a>
+
+      <!-- KPI 2: Open audits -->
+      <a class="cf-kpi cf-fade-up-2" id="mgmt-audits-link" href="/projects?domain=audit" style="text-decoration:none;color:inherit">
+        <div class="cf-kpi-label">Open audits</div>
+        <div class="cf-kpi-value orange" id="mgmt-audits-open">—</div>
+        <div class="cf-kpi-footer">
+          <span class="cf-kpi-sub">recurring tasks in progress</span>
+          <div class="cf-kpi-bar"><div class="cf-kpi-bar-fill warn" id="bar-mgmt-audits"></div></div>
+        </div>
+      </a>
+
+      <!-- KPI 3: Overdue projects -->
+      <a class="cf-kpi cf-fade-up-3" id="mgmt-projects-link" href="/projects?qfilter=overdue" style="text-decoration:none;color:inherit">
+        <div class="cf-kpi-label">Overdue projects</div>
+        <div class="cf-kpi-value red" id="mgmt-projects-overdue">—</div>
+        <div class="cf-kpi-footer">
+          <span class="cf-kpi-sub">work past its due date</span>
+          <div class="cf-kpi-bar"><div class="cf-kpi-bar-fill red" id="bar-mgmt-projects"></div></div>
+        </div>
+      </a>
+
+      <!-- KPI 4: Calibration attention -->
+      <a class="cf-kpi cf-fade-up-4" id="mgmt-cal-link" href="/expiration" style="text-decoration:none;color:inherit">
+        <div class="cf-kpi-label">Calibration attention</div>
+        <div class="cf-kpi-value ok" id="mgmt-cal-overdue">—</div>
+        <div class="cf-kpi-footer">
+          <span class="cf-kpi-sub" id="mgmt-cal-note">upcoming expirations</span>
+          <div class="cf-kpi-bar"><div class="cf-kpi-bar-fill cyan" id="bar-mgmt-cal"></div></div>
+        </div>
+      </a>
+
+      <!-- Operations quick links -->
+      <div class="cf-panel cf-span-all cf-fade-up-5" id="mgmtQuickLinks" style="grid-row:2">
+        <div class="cf-panel-header">
+          <span class="cf-panel-title">Operations quick links</span>
+          <span class="cf-panel-count" id="mgmtStamp">live</span>
+        </div>
+        <div class="cf-management-grid">
+          <a class="cf-mgmt-card" href="/expiration">
+            <div class="cf-mgmt-label">Expiration dashboard</div>
+            <div class="cf-mgmt-value">→</div>
+            <div class="cf-mgmt-note">Calibration and PM due-date triage.</div>
+          </a>
+          <a class="cf-mgmt-card" href="/projects">
+            <div class="cf-mgmt-label">Project board</div>
+            <div class="cf-mgmt-value">→</div>
+            <div class="cf-mgmt-note">Kanban for audits, tickets, and work items.</div>
+          </a>
+          <a class="cf-mgmt-card" href="/asset-catalog">
+            <div class="cf-mgmt-label">Asset catalog</div>
+            <div class="cf-mgmt-value">→</div>
+            <div class="cf-mgmt-note">Fleet + equipment records with audit history.</div>
+          </a>
+          <a class="cf-mgmt-card" href="/inventory/Inventory.html">
+            <div class="cf-mgmt-label">Full inventory</div>
+            <div class="cf-mgmt-value">→</div>
+            <div class="cf-mgmt-note">SKU master, safety levels, reorder queue.</div>
+          </a>
+          <a class="cf-mgmt-card" href="/audits/audits.html">
+            <div class="cf-mgmt-label">Audit workbench</div>
+            <div class="cf-mgmt-value">→</div>
+            <div class="cf-mgmt-note">Run, review, and sign off inspection audits.</div>
+          </a>
+          <a class="cf-mgmt-card" href="/management">
+            <div class="cf-mgmt-label">Management portal</div>
+            <div class="cf-mgmt-value">→</div>
+            <div class="cf-mgmt-note">Admin settings, roles, suite configuration.</div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Project pipeline trend + bucket mix -->
+      <div class="cf-panel cf-span-3 cf-fade-up" id="mgmtTrendPanel" style="grid-row:auto">
+        <div class="cf-panel-header">
+          <span class="cf-panel-title">Project pipeline trend</span>
+          <span class="cf-panel-count">14 days · snapshot</span>
+        </div>
+        <div style="padding:12px 16px 16px">
+          <div class="cf-mgmt-chart-wrap"><canvas id="mgmtTrendCanvas" aria-label="14-day project bucket trend"></canvas></div>
+          <div class="cf-mgmt-legend" id="mgmtTrendLegend">
+            <span><i style="background:#64748B"></i>To do</span>
+            <span><i style="background:#0096B4"></i>In progress</span>
+            <span><i style="background:#E36414"></i>Blocked</span>
+            <span><i style="background:#22C55E"></i>Done</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="cf-panel cf-col-4 cf-fade-up" id="mgmtBucketPanel" style="grid-row:auto">
+        <div class="cf-panel-header">
+          <span class="cf-panel-title">Pipeline mix</span>
+          <span class="cf-panel-count" id="mgmtBucketTotal">—</span>
+        </div>
+        <div style="padding:12px 16px 16px">
+          <div class="cf-mgmt-chart-wrap" style="min-height:180px"><canvas id="mgmtBucketCanvas" aria-label="Current bucket totals"></canvas></div>
+          <p style="margin:8px 0 0;font-size:11px;color:var(--cf-faint)">Open counts by Kanban lane for the selected building.</p>
+        </div>
+      </div>
+
+      <!-- Suite activity trend + feed -->
+      <div class="cf-panel cf-span-2 cf-fade-up" id="mgmtActSparkPanel" style="grid-row:auto">
+        <div class="cf-panel-header">
+          <span class="cf-panel-title">Suite activity trend</span>
+          <span class="cf-panel-count">non-page views · 14d</span>
+        </div>
+        <div style="padding:12px 16px 16px">
+          <div class="cf-mgmt-chart-wrap" style="min-height:160px"><canvas id="mgmtActivitySparkCanvas" aria-label="Suite activity by day"></canvas></div>
+          <p style="margin:8px 0 0;font-size:11px;color:var(--cf-faint)">Derived from the suite audit log (writes and actions).</p>
+        </div>
+      </div>
+
+      <div class="cf-panel cf-span-2 cf-fade-up" id="mgmtActFeedPanel" style="grid-row:auto">
+        <div class="cf-panel-header">
+          <span class="cf-panel-title">Recent activity</span>
+          <a class="cf-panel-count" href="/admin/activity" id="mgmtActAdminLink" style="text-decoration:none;color:var(--cf-cyan2)">Full log →</a>
+        </div>
+        <ul class="cf-mgmt-activity-list" id="mgmtActivityList"></ul>
+      </div>
+
+      <!-- Kiosk suggestions + project pressure -->
+      <div class="cf-panel cf-span-2 cf-fade-up" id="mgmtSugPanel" style="grid-row:auto">
+        <div class="cf-panel-header">
+          <span class="cf-panel-title">Kiosk suggestions</span>
+          <span class="cf-panel-count" id="mgmtSugBoardLink" style="color:var(--cf-faint);font-weight:500">Command Floor only</span>
+        </div>
+        <div style="padding:0 0 8px">
+          <table class="cf-mgmt-table" id="mgmtSugTable">
+            <thead><tr><th>When</th><th>Summary</th><th>Status</th></tr></thead>
+            <tbody id="mgmtSugBody"></tbody>
+          </table>
+          <p style="padding:8px 12px 12px;margin:0;font-size:11px;color:var(--cf-faint)">Suggestions are stored for Command Floor review only. Submit Ticket items become project cards.</p>
+        </div>
+      </div>
+
+      <div class="cf-panel cf-span-2 cf-fade-up" id="mgmtPressurePanel" style="grid-row:auto">
+        <div class="cf-panel-header">
+          <span class="cf-panel-title">Project &amp; audit pressure</span>
+          <span class="cf-panel-count">live</span>
+        </div>
+        <div class="cf-mgmt-stat-row" id="mgmtPressureStats"></div>
+        <div style="padding:0 12px 12px">
+          <table class="cf-mgmt-table" id="mgmtDelayedTable">
+            <thead><tr><th>Due</th><th>Delayed project</th><th>Lane</th></tr></thead>
+            <tbody id="mgmtDelayedBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="/nav.js" defer></script>
+<script src="/socket.io/socket.io.js" defer></script>
+<script type="module" src="/cf/cf-nav.js"></script>
+<script type="module" src="/cf/management/management.js"></script>
+</body>
+</html>

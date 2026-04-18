@@ -1,0 +1,401 @@
+<!-- public/esd/index.html -->
+<!DOCTYPE html>
+<html lang="en"><!-- theme applied by nav.js -->
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ESD Carts – 6S Tool Suite</title>
+  <meta name="csrf-token" content=""/>
+  <link rel="icon" href="/images/favicon.png" type="image/png" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script>
+    (function(){
+      var t = localStorage.getItem('themeSelector') || 'theme-command';
+      document.documentElement.className = t;
+    })();
+  </script>
+  <style>
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: .75rem;
+      padding: 1rem;
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: .75rem;
+      align-items: end;
+    }
+
+    .status-pill {
+      display: inline-block;
+      padding: .15rem .5rem;
+      border-radius: 999px;
+      font-size: .8rem;
+      border: 1px solid var(--border);
+    }
+
+    .pill-available {
+      background: var(--ok-bg);
+      color: var(--ok);
+      border-color: var(--ok);
+    }
+
+    .pill-checked {
+      background: var(--warn-bg);
+      color: var(--warn);
+      border-color: var(--warn);
+    }
+
+    .empty-row td {
+      text-align: center;
+      color: var(--fg-muted);
+      padding: 1.5rem;
+      font-size: .9rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: .55rem .5rem;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      font-size: .9rem;
+      vertical-align: middle;
+    }
+
+    th {
+      font-weight: 700;
+      color: var(--fg-muted);
+      font-size: .8rem;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+    }
+
+    tbody tr:hover {
+      background: var(--row-hover);
+    }
+
+    .actions-cell {
+      white-space: nowrap;
+    }
+
+    .btn-row {
+      display: inline-flex;
+      gap: .45rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-small {
+      padding: .35rem .6rem;
+      border-radius: .5rem;
+      border: 1px solid var(--border);
+      background: var(--surface-2, transparent);
+      color: var(--fg);
+      cursor: pointer;
+      font-size: .82rem;
+    }
+
+    .btn-small:hover {
+      filter: brightness(0.98);
+    }
+
+    .btn-danger {
+      border-color: rgba(220, 38, 38, 0.35);
+      color: #b91c1c;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: .75rem;
+      margin-bottom: .75rem;
+      flex-wrap: wrap;
+    }
+
+    .muted {
+      color: var(--fg-muted);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .edit-panel-title {
+      margin: 0 0 .75rem;
+      font-size: 1.05rem;
+    }
+
+    .inline-note {
+      font-size: .82rem;
+      color: var(--fg-muted);
+      margin-top: .35rem;
+    }
+
+    .esd-checklist-panel {
+      border: 1px solid var(--border);
+      border-radius: .5rem;
+      padding: .65rem .75rem;
+      margin: .6rem 0;
+      background: var(--surface-strong, var(--surface));
+    }
+    .esd-checklist-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .5rem;
+      flex-wrap: wrap;
+      margin-bottom: .45rem;
+    }
+    .esd-checklist-title {
+      font-size: .78rem;
+      font-weight: 700;
+      color: var(--fg-muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .esd-checklist-actions { display: flex; gap: .35rem; flex-wrap: wrap; }
+    .esd-checklist-actions button {
+      font-size: .72rem;
+      padding: .2rem .45rem;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--fg);
+      cursor: pointer;
+    }
+    .esd-checklist {
+      display: flex;
+      flex-direction: column;
+      gap: .35rem;
+      font-size: .85rem;
+    }
+    .esd-checklist label {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .35rem .45rem;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      background: var(--surface);
+    }
+    .esd-checklist label:has(input:checked) {
+      background: var(--ok-bg);
+      border-color: var(--ok);
+    }
+    .esd-op-profile {
+      font-size: .84rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: .5rem;
+      margin-bottom: .35rem;
+    }
+    .esd-op-profile code {
+      font-family: ui-monospace, monospace;
+      font-size: .9em;
+      padding: .1rem .35rem;
+      border-radius: 4px;
+      background: var(--surface-strong);
+      border: 1px solid var(--border);
+    }
+    .esd-op-override {
+      display: flex;
+      align-items: center;
+      gap: .35rem;
+      font-size: .8rem;
+      color: var(--fg-muted);
+      cursor: pointer;
+      user-select: none;
+      margin-bottom: .35rem;
+    }
+    #operatorId[readonly] {
+      opacity: .92;
+      cursor: not-allowed;
+      background: var(--surface-strong);
+    }
+    .esd-comment {
+      width: 100%;
+      min-height: 3.25rem;
+      resize: vertical;
+      box-sizing: border-box;
+      padding: .45rem .5rem;
+      border-radius: .5rem;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--fg);
+      font-family: inherit;
+      font-size: .84rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- Suite Topbar -->
+    <header class="suite-topbar" style="margin-bottom:1rem">
+      <div class="brand">
+        <div class="brand-title" style="display:flex;align-items:center;gap:.4rem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> ESD Carts</div>
+        <div class="brand-subtitle">Check carts in/out and view current holders</div>
+      </div>
+      <div class="suite-actions">
+        <a href="/home" class="home-button" style="display:inline-flex;align-items:center;gap:.35rem"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Home</a>
+        <button
+          type="button"
+          class="btn-icon"
+          title="Keyboard shortcuts (?)"
+          onclick="document.dispatchEvent(new KeyboardEvent('keydown',{key:'?',bubbles:true}))"
+        >⌨</button>
+        <label for="themeSelector" class="visually-hidden">Theme</label>
+        <select id="themeSelector" class="theme-select" aria-label="Theme">
+          <option value="theme-command">Command</option>
+<option value="theme-beacon">Beacon</option>
+<option value="theme-atlas">Atlas</option>
+<option value="theme-carbon">Carbon</option>
+<option value="theme-grove">Grove</option>
+<option value="theme-ember">Ember</option>
+<option value="theme-harbor">Harbor</option>
+<option value="theme-slate">Slate</option>
+<option value="theme-orchid">Orchid</option>
+<option value="theme-dusk">Dusk</option>
+<option value="theme-pulse">Pulse</option>
+<option value="theme-highcontrast">High Contrast</option>
+        </select>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div style="font-weight:700;margin-bottom:.65rem;font-size:.95rem">Check cart in / out</div>
+      <div class="row" style="grid-template-columns:1fr;align-items:stretch">
+        <div>
+          <label for="cartId" style="display:block;font-size:.88rem;margin-bottom:.25rem">Cart ID</label>
+          <input id="cartId" placeholder="e.g., CART-01" style="width:100%;box-sizing:border-box;padding:.45rem .5rem;border-radius:.5rem;border:1px solid var(--border)" />
+        </div>
+      </div>
+
+      <div style="margin:.65rem 0 .4rem">
+        <span style="font-size:.88rem;font-weight:600">Operator</span>
+        <div class="esd-op-profile">
+          <span>Profile ID:</span> <code id="profileOpDisplay">—</code>
+          <span id="profileOpWarn" style="font-size:.78rem;color:var(--warn);display:none">No tech ID on your account — use override.</span>
+        </div>
+        <label class="esd-op-override"><input type="checkbox" id="operatorOverride"/> Override operator ID (logged)</label>
+        <label for="operatorId" style="display:block;font-size:.82rem;margin-bottom:.2rem">Effective operator ID</label>
+        <input id="operatorId" placeholder="Loaded from your profile" readonly style="width:100%;box-sizing:border-box;padding:.45rem .5rem;border-radius:.5rem;border:1px solid var(--border)" />
+      </div>
+
+      <div style="margin-bottom:.55rem">
+        <label for="checkoutComment" style="display:block;font-size:.88rem;margin-bottom:.25rem">Comment <span style="font-weight:400;color:var(--fg-muted)">(optional)</span></label>
+        <textarea id="checkoutComment" class="esd-comment" maxlength="2000" placeholder="Shift note, area, or other context…" rows="2"></textarea>
+      </div>
+
+      <div class="esd-checklist-panel">
+        <div class="esd-checklist-head">
+          <span class="esd-checklist-title">Pre-checkout checklist</span>
+          <div class="esd-checklist-actions">
+            <button type="button" id="btnCheckAll">Check all</button>
+            <button type="button" id="btnCheckNone">Clear all</button>
+          </div>
+        </div>
+        <div class="esd-checklist" id="esdChecklist">
+          <label><input type="checkbox" id="chk-wrist"/> Wrist strap tested</label>
+          <label><input type="checkbox" id="chk-mat"/> Mat grounded</label>
+          <label><input type="checkbox" id="chk-damage"/> No visible damage</label>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:.35rem">
+        <div>
+          <button id="btnCheckout" class="btn-primary" style="width:100%">Check Out</button>
+        </div>
+        <div>
+          <button id="btnCheckin" class="btn-secondary" style="width:100%">Check In</button>
+        </div>
+      </div>
+      <p id="checklistHint" style="font-size:.75rem;color:var(--fg-muted);margin:.45rem 0 0">Complete the checklist to enable checkout</p>
+      <p id="msg" style="margin-top:.5rem;font-size:.88rem;color:var(--fg-muted);min-height:1.2em"></p>
+    </section>
+
+    <section id="editPanel" class="panel hidden">
+      <div class="panel-header">
+        <div>
+          <h2 class="edit-panel-title">Edit Cart</h2>
+          <div class="muted">Update cart ID, status, and holder.</div>
+        </div>
+        <button id="btnCancelEdit" type="button" class="btn-small">Cancel</button>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="editOriginalId" style="display:block;font-size:.88rem;margin-bottom:.25rem">Current Cart ID</label>
+          <input id="editOriginalId" readonly />
+        </div>
+        <div>
+          <label for="editCartId" style="display:block;font-size:.88rem;margin-bottom:.25rem">New Cart ID</label>
+          <input id="editCartId" placeholder="e.g., CART-01" />
+        </div>
+        <div>
+          <label for="editStatus" style="display:block;font-size:.88rem;margin-bottom:.25rem">Status</label>
+          <select id="editStatus">
+            <option value="available">Available</option>
+            <option value="checked_out">Checked Out</option>
+          </select>
+        </div>
+        <div>
+          <label for="editHolder" style="display:block;font-size:.88rem;margin-bottom:.25rem">Holder</label>
+          <input id="editHolder" placeholder="Leave blank if available" />
+          <div class="inline-note">When status is Available, holder will be cleared automatically.</div>
+        </div>
+      </div>
+
+      <div style="margin-top:.85rem; display:flex; gap:.6rem; flex-wrap:wrap;">
+        <button id="btnSaveEdit" type="button" class="btn-primary">Save Changes</button>
+        <button id="btnCancelEditBottom" type="button" class="btn-secondary">Cancel</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2 style="margin:0;font-size:1.1rem">Current Carts</h2>
+        <div class="muted" id="manageHint">Edit/remove actions require admin or lead access.</div>
+      </div>
+
+      <table id="cartsTable" aria-live="polite">
+        <thead>
+          <tr>
+            <th>Cart</th>
+            <th>Status</th>
+            <th>Holder</th>
+            <th>Updated</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="empty-row"><td colspan="5">Loading…</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/csrf.js"></script>
+  <script src="/nav.js"></script>
+  <script type="module" src="/esd/main.js"></script>
+</body>
+</html>
+
+

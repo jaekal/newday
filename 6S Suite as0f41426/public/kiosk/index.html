@@ -1,0 +1,802 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Technician Kiosk - Shop Floor</title>
+  <link rel="icon" href="/images/favicon.png" type="image/png"/>
+  <meta name="csrf-token" content="">
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/styles.css"/>
+  <link rel="stylesheet" href="/kiosk/styles.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css"/>
+  <script src="/theme-init.js"></script>
+</head>
+<body class="kiosk-body">
+  <noscript><div class="kiosk-noscript">Kiosk requires JavaScript enabled.</div></noscript>
+  <div class="visually-hidden" aria-live="polite" id="liveRegion"></div>
+  <div class="kiosk-shell">
+    <header class="kiosk-topbar">
+      <div class="kiosk-brand">
+        <div class="kiosk-brand__mark" aria-hidden="true">6S</div>
+        <div class="kiosk-brand__copy">
+          <h1 class="kiosk-title">Build With Purpose</h1>
+        </div>
+      </div>
+      <div class="kiosk-topbar__actions">
+        <a href="/home" class="btn btn-ghost btn-xs" id="homeBtn" title="Back to Suite Home">Suite Home</a>
+        <button id="endSessionBtn" class="btn btn-ghost btn-xs kiosk-reset-btn" type="button" title="Clear session inputs">Reset Session</button>
+        <label for="themeSelector" class="visually-hidden">Theme</label>
+        <select id="themeSelector" class="theme-select kiosk-theme-select" aria-label="Theme">
+          <option value="theme-command">Command</option>
+          <option value="theme-beacon">Beacon</option>
+          <option value="theme-atlas">Atlas</option>
+          <option value="theme-carbon">Carbon</option>
+          <option value="theme-grove">Grove</option>
+          <option value="theme-ember">Ember</option>
+          <option value="theme-harbor">Harbor</option>
+          <option value="theme-slate">Slate</option>
+          <option value="theme-orchid">Orchid</option>
+          <option value="theme-dusk">Dusk</option>
+          <option value="theme-pulse">Pulse</option>
+          <option value="theme-highcontrast">High Contrast</option>
+        </select>
+      </div>
+    </header>
+
+    <main class="kiosk-main">
+      <section class="status-banner" aria-label="Session details">
+        <div class="status-banner__item status-banner__item--net">
+          <div id="netStatus" class="kiosk-net online" role="status" aria-live="polite">Online</div>
+        </div>
+        <div class="status-banner__item status-banner__item--user">
+          <div id="userBanner" class="user-banner">Loading user...</div>
+        </div>
+        <div class="status-banner__item">
+          <span class="status-metric__label">Local Time</span>
+          <strong id="clock" class="kiosk-clock" aria-live="polite">--:--</strong>
+        </div>
+        <div class="status-banner__item">
+          <span class="status-metric__label">Offline Queue</span>
+          <div class="queue-slot">
+            <div class="kiosk-queue" id="queueBadge" hidden role="button" tabindex="0" title="View queued offline submissions" aria-label="Queued offline submissions">
+              Queued <span id="queueCount">0</span>
+            </div>
+            <span class="utility-meta-pill__empty" id="queueEmptyLabel">Nothing waiting</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="kiosk-stage" aria-label="Kiosk overview">
+        <div class="stage-intro">
+          <div class="signal-strip" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <div class="stage-ops-mini" aria-hidden="true">
+            <svg viewBox="0 0 220 104" class="visual-svg visual-svg--mini">
+              <defs>
+                <linearGradient id="factoryGlowMini" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%"  stop-color="#38bdf8" stop-opacity="0.35"/>
+                  <stop offset="50%" stop-color="#38bdf8" stop-opacity="0.9"/>
+                  <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.35"/>
+                </linearGradient>
+              </defs>
+              <rect x="18" y="68" width="184" height="2" rx="1" fill="rgba(148,163,184,.22)"/>
+              <rect x="28" y="38" width="28" height="30" rx="3" fill="rgba(148,163,184,.06)" stroke="rgba(148,163,184,.28)"/>
+              <rect x="66" y="28" width="34" height="40" rx="3" fill="rgba(148,163,184,.06)" stroke="rgba(148,163,184,.28)"/>
+              <rect x="110" y="42" width="30" height="26" rx="3" fill="rgba(148,163,184,.06)" stroke="rgba(148,163,184,.28)"/>
+              <rect x="150" y="22" width="42" height="46" rx="3" fill="rgba(148,163,184,.06)" stroke="rgba(148,163,184,.28)"/>
+              <path d="M38 38V20h9v18M82 28V12h10v16M124 42V26h8v16M166 22V8h10v14" stroke="url(#factoryGlowMini)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+              <circle cx="50"  cy="74" r="3" fill="#38bdf8" opacity="0.9"/>
+              <circle cx="93"  cy="74" r="3" fill="#38bdf8" opacity="0.7"/>
+              <circle cx="136" cy="74" r="3" fill="#38bdf8" opacity="0.55"/>
+              <circle cx="176" cy="74" r="3" fill="#38bdf8" opacity="0.4"/>
+            </svg>
+          </div>
+          <div class="stage-copy">
+            <h2>Build With Purpose</h2>
+          </div>
+          <div class="stage-cta-row">
+            <button class="btn btn-primary kiosk-cta kiosk-cta--hot" data-modal-open="toolCheckoutModal" type="button">Tool Checkout</button>
+            <button class="btn btn-secondary kiosk-cta kiosk-cta--return" data-modal-open="toolReturnModal" type="button">Tool Return</button>
+            <button class="btn btn-secondary kiosk-cta kiosk-cta--esd-checkout" data-modal-open="cartCheckoutModal" type="button">ESD Checkout</button>
+            <button class="btn btn-secondary kiosk-cta kiosk-cta--esd-return" data-modal-open="cartReturnModal" type="button">ESD Return</button>
+          </div>
+          <div class="utility-actions utility-actions--hero">
+            <button id="myItemsBtn" class="btn btn-primary utility-action-btn utility-action-btn--checkouts" type="button" title="View items you currently have checked out">Active Checkouts</button>
+            <a href="/history/" class="btn btn-secondary utility-action-btn utility-action-btn--history" id="historyBtn" title="View history">History</a>
+            <button class="btn btn-secondary utility-action-btn utility-action-btn--equipment" data-modal-open="equipmentCheckoutModal" type="button" title="Log test equipment usage">Test Equipment</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="action-rack" aria-label="Kiosk actions">
+        <div class="action-grid action-grid--single" aria-label="Kiosk actions">
+          <button class="kiosk-card kiosk-card--inspection kiosk-card--full" data-modal-open="inspectionModal" type="button">
+            <div class="kiosk-card__inspection-art" aria-hidden="true">
+              <img src="/kiosk/images/inspection-stamps-art.png" alt="" width="200" height="160" decoding="async" loading="lazy"/>
+            </div>
+            <span class="kiosk-card__crest kiosk-card__crest--inspection" aria-hidden="true"><span></span><span></span><span></span></span>
+            <span class="kiosk-card__title">Inspection Report</span>
+            <span class="kiosk-card__watermark kiosk-card__watermark--inspection" aria-hidden="true">QUALITY</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="support-rack" aria-label="Support actions">
+        <div class="support-grid" aria-label="Support actions">
+          <button class="kiosk-card kiosk-card--idea" data-modal-open="suggestModal" type="button">
+            <div class="kiosk-card__idea-art" aria-hidden="true">
+              <img src="/kiosk/images/suggestion-box-art.png" alt="" width="180" height="135" decoding="async" loading="lazy"/>
+            </div>
+            <span class="kiosk-card__crest kiosk-card__crest--idea" aria-hidden="true"><span></span><span></span><span></span></span>
+            <span class="kiosk-card__title">Suggestion Box</span>
+            <span class="kiosk-card__watermark kiosk-card__watermark--idea" aria-hidden="true">SUPPORT</span>
+          </button>
+
+          <button class="kiosk-card kiosk-card--danger" data-modal-open="ticketModal" type="button">
+            <div class="kiosk-card__ticket-art" aria-hidden="true">
+              <img src="/kiosk/images/submit-ticket-art.png" alt="" width="180" height="135" decoding="async" loading="lazy"/>
+            </div>
+            <span class="kiosk-card__crest kiosk-card__crest--ticket" aria-hidden="true"><span></span><span></span><span></span></span>
+            <span class="kiosk-card__title">Submit Ticket</span>
+            <span class="kiosk-card__watermark kiosk-card__watermark--ticket" aria-hidden="true">SUPPORT</span>
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- ===================== MODALS ===================== -->
+
+  <!-- Tool Checkout -->
+  <div id="toolCheckoutModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="toolCheckoutTitle">
+      <h2 id="toolCheckoutTitle" style="font-size:1.4rem;font-weight:800;margin-bottom:.5rem">Tool Checkout</h2>
+      <p style="margin-bottom:.75rem;font-size:.9rem;color:var(--fg-muted)">
+        Tech ID is bound to your login. Just scan or enter the tool serial.
+      </p>
+      <form id="toolCheckoutForm" autocomplete="off">
+        <label style="display:block;margin-bottom:.75rem">
+          <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Tool Serial / Code</span>
+          <!-- name="code" required by main.js: bindToolCheckout() reads form.code -->
+          <input type="text" name="code" id="checkoutSerial"
+                 placeholder="Scan or type serial..." required autocomplete="off" autofocus/>
+          <!-- Preview and error elements required by main.js -->
+          <div class="tool-preview" id="coPreview" hidden>
+            <img alt="" id="coPreviewImg"/>
+            <span id="coPreviewText" class="input-hint"></span>
+          </div>
+          <div class="input-hint error" id="coError" hidden></div>
+        </label>
+        <div class="buttons-row" style="margin-top:1rem;justify-content:flex-end;gap:.5rem">
+          <button type="button" class="btn btn-secondary" data-modal-close="toolCheckoutModal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Check Out</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tool Return -->
+  <div id="toolReturnModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="toolReturnTitle">
+      <h2 id="toolReturnTitle" style="font-size:1.4rem;font-weight:800;margin-bottom:.5rem">Tool Return</h2>
+      <p style="margin-bottom:.75rem;font-size:.9rem;color:var(--fg-muted)">
+        Tech ID is bound to your login. Just scan or enter the tool serial.
+      </p>
+      <form id="toolReturnForm" autocomplete="off">
+        <label style="display:block;margin-bottom:.75rem">
+          <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Tool Serial / Code</span>
+          <!-- name="code" required by main.js: bindToolReturn() reads form.code -->
+          <input type="text" name="code" id="returnSerial"
+                 placeholder="Scan or type serial..." required autocomplete="off"/>
+          <!-- Preview and error elements required by main.js -->
+          <div class="tool-preview" id="riPreview" hidden>
+            <img alt="" id="riPreviewImg"/>
+            <span id="riPreviewText" class="input-hint"></span>
+          </div>
+          <div class="input-hint error" id="riError" hidden></div>
+        </label>
+        <div class="buttons-row" style="margin-top:1rem;justify-content:flex-end;gap:.5rem">
+          <button type="button" class="btn btn-secondary" data-modal-close="toolReturnModal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Return</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ESD Cart Checkout -->
+  <div id="cartCheckoutModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cartCheckoutTitle">
+      <h2 id="cartCheckoutTitle" style="font-size:1.4rem;font-weight:800;margin-bottom:.5rem">ESD Cart Checkout</h2>
+      <form id="cartCheckoutForm" autocomplete="off">
+        <label style="display:block;margin-bottom:.75rem">
+          <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Cart ID</span>
+          <input type="text" id="cartCheckoutId" name="cartId" placeholder="e.g. CART-01" required autocomplete="off"/>
+        </label>
+
+        <!-- ESD Pre-checkout Checklist (6S compliance) -->
+        <fieldset style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:.75rem;margin-bottom:.75rem">
+          <legend style="font-size:.85rem;font-weight:700;padding:0 .35rem">ESD Pre-checkout Checklist</legend>
+          <label style="display:flex;gap:.5rem;align-items:center;margin:.35rem 0;font-size:.9rem">
+            <input type="checkbox" id="esd-wrist" required/> Wrist strap tested &amp; functional
+          </label>
+          <label style="display:flex;gap:.5rem;align-items:center;margin:.35rem 0;font-size:.9rem">
+            <input type="checkbox" id="esd-mat" required/> Mat properly grounded
+          </label>
+          <label style="display:flex;gap:.5rem;align-items:center;margin:.35rem 0;font-size:.9rem">
+            <input type="checkbox" id="esd-damage"/> Cart has no visible damage
+          </label>
+        </fieldset>
+
+        <p id="cartCheckoutHint" class="input-hint"></p>
+        <div class="buttons-row" style="margin-top:1rem;justify-content:flex-end;gap:.5rem">
+          <button type="button" class="btn btn-secondary" data-modal-close="cartCheckoutModal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Check Out Cart</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ESD Cart Return -->
+  <div id="cartReturnModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cartReturnTitle">
+      <h2 id="cartReturnTitle" style="font-size:1.4rem;font-weight:800;margin-bottom:.5rem">ESD Cart Return</h2>
+      <form id="cartReturnForm" autocomplete="off">
+        <label style="display:block;margin-bottom:.75rem">
+          <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Cart ID</span>
+          <input type="text" id="cartReturnId" name="cartId" placeholder="e.g. CART-01" required autocomplete="off"/>
+        </label>
+        <p id="cartReturnHint" class="input-hint"></p>
+        <div class="buttons-row" style="margin-top:1rem;justify-content:flex-end;gap:.5rem">
+          <button type="button" class="btn btn-secondary" data-modal-close="cartReturnModal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Return Cart</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+<!-- Equipment Checkout / Return -->
+  <div id="equipmentCheckoutModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="equipmentTitle">
+      <h2 id="equipmentTitle" style="font-size:1.4rem;font-weight:800;margin-bottom:.5rem">
+        Test Equipment
+      </h2>
+
+      <!-- Tab row -->
+      <div style="display:flex;gap:4px;margin-bottom:1rem">
+        <button type="button" class="inv-btn eq-tab active" data-eq-tab="checkout"
+                style="padding:.35rem .75rem;font-size:.85rem">Checkout</button>
+        <button type="button" class="inv-btn eq-tab" data-eq-tab="return"
+                style="padding:.35rem .75rem;font-size:.85rem">Return</button>
+      </div>
+
+      <!-- Checkout pane -->
+      <div id="eqCheckoutPane">
+        <p style="margin-bottom:.75rem;font-size:.9rem;color:var(--fg-muted)">
+          Enter the equipment tag number to check it out to your Tech ID.
+        </p>
+        <form id="equipmentCheckoutForm" autocomplete="off">
+          <label style="display:block;margin-bottom:.75rem">
+            <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Equipment Tag #</span>
+            <input type="text" id="eqCheckoutTag" placeholder="e.g. EQ-042" required autocomplete="off"/>
+          </label>
+          <p id="eqCheckoutHint" class="input-hint"></p>
+          <div class="buttons-row" style="margin-top:1rem;justify-content:flex-end;gap:.5rem">
+            <button type="button" class="btn btn-secondary" data-modal-close="equipmentCheckoutModal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Check Out</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Return pane -->
+      <div id="eqReturnPane" style="display:none">
+        <p style="margin-bottom:.75rem;font-size:.9rem;color:var(--fg-muted)">
+          Enter the equipment tag number to return it.
+        </p>
+        <form id="equipmentReturnForm" autocomplete="off">
+          <label style="display:block;margin-bottom:.75rem">
+            <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Equipment Tag #</span>
+            <input type="text" id="eqReturnTag" placeholder="e.g. EQ-042" required autocomplete="off"/>
+          </label>
+          <label style="display:block;margin-bottom:.75rem">
+            <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Condition</span>
+            <select id="eqReturnCondition" style="width:100%;padding:.5rem .6rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg)">
+              <option value="Good">Good - no issues</option>
+              <option value="Needs Inspection">Needs inspection</option>
+              <option value="Damaged">Damaged</option>
+            </select>
+          </label>
+          <p id="eqReturnHint" class="input-hint"></p>
+          <div class="buttons-row" style="margin-top:1rem;justify-content:flex-end;gap:.5rem">
+            <button type="button" class="btn btn-secondary" data-modal-close="equipmentCheckoutModal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Return</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- Suggestion Box -->
+  <div id="suggestModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="suggestTitle">
+      <h2 id="suggestTitle" style="font-size:1.4rem;font-weight:800;margin-bottom:.5rem">Suggestion Box</h2>
+      <form id="suggestForm" autocomplete="off">
+        <label style="display:block;margin-bottom:.75rem">
+          <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Title</span>
+          <input type="text" id="suggestTitle2" name="title"
+                 placeholder="Brief description" required autocomplete="off"/>
+        </label>
+        <label style="display:block;margin-bottom:.75rem">
+          <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Details (optional)</span>
+          <textarea id="suggestBody" name="body" rows="4"
+                    placeholder="Describe your idea..." style="width:100%"></textarea>
+        </label>
+        <div class="buttons-row" style="justify-content:flex-end;gap:.5rem">
+          <button type="button" class="btn btn-secondary" data-modal-close="suggestModal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Submit Suggestion</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Submit Ticket -->
+  <div id="ticketModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ticketTitle">
+      <h2 id="ticketTitle" style="font-size:1.4rem;font-weight:800;margin-bottom:.5rem">Submit Ticket</h2>
+      <!-- ticketTechIdLabel required by main.js: bindTicket() populates this -->
+      <p style="margin-bottom:.75rem;font-size:.9rem;color:var(--fg-muted)">
+        Tickets from this kiosk are automatically logged under your Tech ID:
+        <strong id="ticketTechIdLabel">-</strong>
+      </p>
+      <p style="margin:0 0 .75rem;font-size:.85rem;color:var(--fg-muted);line-height:1.45">
+        Opens a <strong style="color:var(--fg)">project request</strong> on the board. Use <strong style="color:var(--fg)">Suggestion Box</strong> for ideas or feedback (Command Floor only).
+      </p>
+      <form id="ticketForm" autocomplete="off">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.5rem">
+          <label style="display:block">
+            <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Category</span>
+            <select id="ticketCategorySelect" name="category" required style="width:100%;padding:.55rem .6rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.95rem">
+              <option value="Materials">Materials</option>
+              <option value="Equipment">Equipment</option>
+              <option value="Facilities">Facilities</option>
+              <option value="IT">IT</option>
+              <option value="Safety">Safety</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
+          <label style="display:block">
+            <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Priority</span>
+            <select id="ticketPriority" name="priority" style="width:100%;padding:.55rem .6rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.95rem">
+              <option value="Normal">Normal</option>
+              <option value="Urgent">Urgent</option>
+              <option value="Critical">Critical</option>
+            </select>
+          </label>
+        </div>
+        <p class="ticket-sla-hint" style="margin:0 0 .65rem;font-size:.75rem;line-height:1.45;color:var(--fg-muted)">
+          Priority: <strong style="color:var(--fg)">Normal</strong> = standard queue ·
+          <strong style="color:var(--fg)">Urgent</strong> = needs attention today ·
+          <strong style="color:var(--fg)">Critical</strong> = safety or major line impact
+        </p>
+        <p id="ticketCategoryBlurb" class="ticket-category-blurb" style="margin:0 0 .65rem;font-size:.82rem;line-height:1.45;color:var(--fg-muted)"></p>
+
+        <!-- Materials & Equipment: parts / stock requests -->
+        <div class="ticket-cat-panel" data-ticket-cats="Materials Equipment" hidden>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+            <label style="display:block;grid-column:1/-1">
+              <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Row / slot</span>
+              <input type="text" data-ticket-key="rowSlot" maxlength="120" placeholder="Row or slot where material is needed" autocomplete="off"
+                     style="width:100%;padding:.5rem .55rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.95rem"/>
+            </label>
+            <label style="display:block">
+              <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Rack</span>
+              <input type="text" data-ticket-key="rackRef" maxlength="120" placeholder="Rack SN or location" autocomplete="off"
+                     style="width:100%;padding:.5rem .55rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.95rem"/>
+            </label>
+            <label style="display:block">
+              <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Order / WO #</span>
+              <input type="text" data-ticket-key="orderRef" maxlength="120" placeholder="Order or work order ref" autocomplete="off"
+                     style="width:100%;padding:.5rem .55rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.95rem"/>
+            </label>
+            <label style="display:block;grid-column:1/-1">
+              <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Area <span style="opacity:.65">(optional)</span></span>
+              <input type="text" data-ticket-key="whereArea" maxlength="120" placeholder="e.g. floor, bay, or zone" autocomplete="off"
+                     style="width:100%;padding:.5rem .55rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.95rem"/>
+            </label>
+          </div>
+        </div>
+
+        <!-- Facilities: leaks, power, building systems -->
+        <div class="ticket-cat-panel" data-ticket-cats="Facilities" hidden>
+          <div style="margin-bottom:.75rem">
+            <label style="display:block">
+              <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Building / area / room</span>
+              <input type="text" data-ticket-key="whereArea" maxlength="120" placeholder="Where to send facilities (room, bay, panel)" autocomplete="off"
+                     style="width:100%;padding:.5rem .55rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.95rem"/>
+            </label>
+          </div>
+        </div>
+
+        <!-- IT: workstation / device / accessory -->
+        <div class="ticket-cat-panel" data-ticket-cats="IT" hidden>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+            <label style="display:block;grid-column:1/-1">
+              <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Device or accessory</span>
+              <input type="text" data-ticket-key="deviceLabel" maxlength="120" placeholder="PC name, dock, monitor, badge printer, etc." autocomplete="off"
+                     style="width:100%;padding:.5rem .55rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.95rem"/>
+            </label>
+            <label style="display:block;grid-column:1/-1">
+              <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Desk / station / area <span style="opacity:.65">(optional)</span></span>
+              <input type="text" data-ticket-key="whereArea" maxlength="120" placeholder="Where you’re working from" autocomplete="off"
+                     style="width:100%;padding:.5rem .55rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.95rem"/>
+            </label>
+          </div>
+        </div>
+
+        <!-- Safety -->
+        <div class="ticket-cat-panel" data-ticket-cats="Safety" hidden>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+            <label style="display:block;grid-column:1/-1">
+              <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Location</span>
+              <input type="text" data-ticket-key="whereArea" maxlength="120" placeholder="Exact area or equipment involved" autocomplete="off"
+                     style="width:100%;padding:.5rem .55rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.95rem"/>
+            </label>
+            <label style="display:block">
+              <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Row / slot <span style="opacity:.65">(optional)</span></span>
+              <input type="text" data-ticket-key="rowSlot" maxlength="120" placeholder="If it helps narrow it down" autocomplete="off"
+                     style="width:100%;padding:.5rem .55rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.95rem"/>
+            </label>
+          </div>
+        </div>
+
+        <!-- Other -->
+        <div class="ticket-cat-panel" data-ticket-cats="Other" hidden>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.75rem">
+            <label style="display:block">
+              <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Area <span style="opacity:.65">(optional)</span></span>
+              <input type="text" data-ticket-key="whereArea" maxlength="120" placeholder="Where / what system" autocomplete="off"
+                     style="width:100%;padding:.5rem .55rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.95rem"/>
+            </label>
+            <label style="display:block">
+              <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Row / slot <span style="opacity:.65">(optional)</span></span>
+              <input type="text" data-ticket-key="rowSlot" maxlength="120" autocomplete="off"
+                     style="width:100%;padding:.5rem .55rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.95rem"/>
+            </label>
+            <label style="display:block">
+              <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Rack <span style="opacity:.65">(optional)</span></span>
+              <input type="text" data-ticket-key="rackRef" maxlength="120" autocomplete="off"
+                     style="width:100%;padding:.5rem .55rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.95rem"/>
+            </label>
+            <label style="display:block">
+              <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Order / WO # <span style="opacity:.65">(optional)</span></span>
+              <input type="text" data-ticket-key="orderRef" maxlength="120" autocomplete="off"
+                     style="width:100%;padding:.5rem .55rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.95rem"/>
+            </label>
+          </div>
+        </div>
+
+        <label style="display:block;margin-bottom:.75rem">
+          <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Title</span>
+          <input type="text" id="ticketTitle2" name="title"
+                 placeholder="Short summary" required autocomplete="off"/>
+        </label>
+        <label style="display:block;margin-bottom:.75rem">
+          <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Details</span>
+          <textarea name="description" rows="4" required
+                    placeholder="What you need or what’s wrong — enough detail for someone to act without a follow-up."
+                    style="width:100%"></textarea>
+        </label>
+        <label style="display:block;margin-bottom:.75rem">
+          <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Photo <span style="opacity:.65">(optional)</span></span>
+          <span style="font-size:.78rem;display:block;margin-bottom:.35rem;color:var(--fg-muted);line-height:1.4">Label, leak, damage, or error screen — optional but helpful.</span>
+          <input type="file" name="image" accept="image/*" style="display:block;width:100%;font-size:.85rem"/>
+        </label>
+        <div class="buttons-row" style="justify-content:flex-end;gap:.5rem">
+          <button type="button" class="btn btn-secondary" data-modal-close="ticketModal">Cancel</button>
+          <button type="submit" class="btn btn-danger">Submit Ticket</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Inspection Report -->
+  <div id="inspectionModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal inspection-modal" role="dialog" aria-modal="true" aria-labelledby="inspectionTitle">
+      <h2 id="inspectionTitle" style="font-size:1.4rem;font-weight:800;margin-bottom:.5rem">Inspection Report</h2>
+      <p style="margin-bottom:.75rem;font-size:.9rem;color:var(--fg-muted)">
+        Reports are saved under your logged-in account. Shift is captured automatically.
+      </p>
+      <form id="inspectionForm" autocomplete="off">
+        <div class="inspection-steps" role="tablist" aria-label="Inspection steps">
+          <button type="button" class="inspection-step active" id="inspectionStepMeta" data-inspection-step="meta" aria-selected="true">
+            1. Rack Details
+          </button>
+          <button type="button" class="inspection-step" id="inspectionStepChecklist" data-inspection-step="checklist" aria-selected="false" disabled>
+            2. Inspection Checklist
+          </button>
+        </div>
+
+        <section id="inspectionPaneMeta" class="inspection-pane">
+          <div class="inspection-field inspection-field--full inspection-rack-sn-block">
+            <span>Rack SN *</span>
+            <input type="text" id="inspectionRackSn" inputmode="numeric" pattern="[0-9]{12}" maxlength="12" autocomplete="off"
+                   placeholder="12-digit rack serial..." required />
+            <p id="inspectionRackSnHint" class="input-hint">Enter the 12-digit rack serial first. Remaining rack fields unlock after the SN is recognized.</p>
+          </div>
+
+          <fieldset id="inspectionMetaRest" class="inspection-meta-fieldset" disabled>
+            <div class="inspection-grid">
+              <label class="inspection-field">
+                <span>Tech ID</span>
+                <div id="inspectionTechId" class="inspection-locked-value">-</div>
+              </label>
+              <label class="inspection-field">
+                <span>Shift</span>
+                <div id="inspectionShift" class="inspection-locked-value">-</div>
+              </label>
+              <label class="inspection-field">
+                <span>Area</span>
+                <select id="inspectionArea" required>
+                  <option value="">Select area</option>
+                  <option>SLT Queue</option>
+                  <option>SLT</option>
+                  <option>Inventory Queue</option>
+                  <option>RLT Queue</option>
+                  <option>RLT</option>
+                  <option>Hi-Pot</option>
+                </select>
+              </label>
+              <label class="inspection-field">
+                <span>Stage</span>
+                <select id="inspectionStage" required>
+                  <option value="">-</option>
+                </select>
+              </label>
+              <label class="inspection-field">
+                <span>Index</span>
+                <input type="text" id="inspectionIndex" required />
+              </label>
+              <label class="inspection-field inspection-field--full">
+                <span>Rack Model</span>
+                <select id="inspectionRackModel" required>
+                  <option value="">Select rack model</option>
+                  <option>Bonsai24 MP</option>
+                  <option>GarfieldCV1</option>
+                  <option>Gen 7.0 GPU Compute T4</option>
+                  <option>GEN8.0 XDIRECT</option>
+                  <option>GEN8.1 COMPUTE FPGA STP</option>
+                  <option>GEN8.1 Dedicated Compute DSC</option>
+                  <option>GEN8.2 XArchive Single Frame</option>
+                  <option>GEN8.3 XArchive Single Frame</option>
+                  <option>GEN9.0 GPU Compute MI300X</option>
+                  <option>GEN9.0 XArchive Single Frame</option>
+                  <option>GEN9.1 XArchive Single Frame</option>
+                  <option>GEN9.3 GPU Compute H200</option>
+                  <option>GEN10.0 HPC Compute MI300C</option>
+                  <option>Hopper01K</option>
+                  <option>Hopper03K</option>
+                  <option>Hopper03K NSK4.0</option>
+                  <option>Hopper05K</option>
+                  <option>Hopper68EK</option>
+                  <option>Hopper68EK EVT2</option>
+                  <option>Hopper79 MI355</option>
+                  <option>Hopper79 S&amp;V</option>
+                  <option>Webber1816 Patagonia</option>
+                </select>
+              </label>
+            </div>
+          </fieldset>
+
+          <div class="buttons-row inspection-pane-actions">
+            <div id="inspectionMetaHint" class="input-hint">Enter a valid rack SN to load rack details, then complete them to continue.</div>
+            <button type="button" class="btn btn-primary" id="inspectionNextBtn">Continue to Checklist</button>
+          </div>
+        </section>
+
+        <section id="inspectionPaneChecklist" class="inspection-pane" hidden>
+          <div class="inspection-questions">
+          <section class="inspection-question">
+            <div class="inspection-question__title">Are all cables organized and tucked into Velcro's?</div>
+            <div class="inspection-choice-row">
+              <label><input type="radio" name="cablesOrganized" value="yes" required /> Yes</label>
+              <label><input type="radio" name="cablesOrganized" value="no" /> No</label>
+            </div>
+            <div id="cablesOrganizedFollowup" class="inspection-followup inspection-followup--detail" hidden>
+              <label class="inspection-field inspection-field--full">
+                <span>Which positions have unorganized or loose cables?</span>
+                <textarea id="looseCablePositions" rows="2" placeholder="Include the position of the server the cable is connected to."></textarea>
+              </label>
+              <div class="inspection-field inspection-field--full">
+                <span class="inspection-followup__label">Cable types affected</span>
+                <div class="inspection-checkbox-grid inspection-checkbox-grid__cols" role="group" aria-label="Cable types affected">
+                  <label><input type="checkbox" name="looseCableTypes" value="QSFP" /><span class="inspection-cb-text">QSFP</span></label>
+                  <label><input type="checkbox" name="looseCableTypes" value="RJ45" /><span class="inspection-cb-text">RJ45</span></label>
+                  <label><input type="checkbox" name="looseCableTypes" value="Power" /><span class="inspection-cb-text">Power</span></label>
+                  <label><input type="checkbox" name="looseCableTypes" value="Bridge" /><span class="inspection-cb-text">Bridge</span></label>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="inspection-question">
+            <div class="inspection-question__title">Are all cables free of damage?</div>
+            <div class="inspection-choice-row">
+              <label><input type="radio" name="cablesUndamaged" value="yes" required /> Yes</label>
+              <label><input type="radio" name="cablesUndamaged" value="no" /> No</label>
+            </div>
+            <div id="cablesDamagedFollowup" class="inspection-followup inspection-followup--detail" hidden>
+              <label class="inspection-field inspection-field--full">
+                <span>Which positions have damaged cables?</span>
+                <textarea id="damagedCablePositions" rows="2" placeholder="Include the position of the server the cable is connected to."></textarea>
+              </label>
+              <div class="inspection-field inspection-field--full">
+                <span class="inspection-followup__label">Cable types damaged</span>
+                <div class="inspection-checkbox-grid inspection-checkbox-grid__cols" role="group" aria-label="Cable types damaged">
+                  <label><input type="checkbox" name="damagedCableTypes" value="QSFP" /><span class="inspection-cb-text">QSFP</span></label>
+                  <label><input type="checkbox" name="damagedCableTypes" value="RJ45" /><span class="inspection-cb-text">RJ45</span></label>
+                  <label><input type="checkbox" name="damagedCableTypes" value="Power" /><span class="inspection-cb-text">Power</span></label>
+                  <label><input type="checkbox" name="damagedCableTypes" value="Bridge" /><span class="inspection-cb-text">Bridge</span></label>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="inspection-question">
+            <div class="inspection-question__title">Are all server covers installed correctly?</div>
+            <div class="inspection-choice-row">
+              <label><input type="radio" name="coversInstalled" value="yes" required /> Yes</label>
+              <label><input type="radio" name="coversInstalled" value="no" /> No</label>
+            </div>
+            <div id="coversInstalledFollowup" class="inspection-followup" hidden>
+              <label class="inspection-field inspection-field--full">
+                <span>Which positions have incorrectly installed covers?</span>
+                <textarea id="incorrectCoverPositions" rows="2"></textarea>
+              </label>
+            </div>
+          </section>
+
+          <section class="inspection-question">
+            <div class="inspection-question__title">Are all server covers free of damage?</div>
+            <div class="inspection-choice-row">
+              <label><input type="radio" name="coversUndamaged" value="yes" required /> Yes</label>
+              <label><input type="radio" name="coversUndamaged" value="no" /> No</label>
+            </div>
+            <div id="coversUndamagedFollowup" class="inspection-followup" hidden>
+              <label class="inspection-field inspection-field--full">
+                <span>Which positions have damaged covers?</span>
+                <textarea id="damagedCoverPositions" rows="2"></textarea>
+              </label>
+            </div>
+          </section>
+
+          <section class="inspection-question">
+            <div class="inspection-question__title">Are all thumb screws tightened correctly?</div>
+            <div class="inspection-choice-row">
+              <label><input type="radio" name="thumbscrewsTight" value="yes" required /> Yes</label>
+              <label><input type="radio" name="thumbscrewsTight" value="no" /> No</label>
+            </div>
+            <div id="thumbscrewsTightFollowup" class="inspection-followup" hidden>
+              <label class="inspection-field inspection-field--full">
+                <span>Which positions have loose thumb screws?</span>
+                <textarea id="looseThumbscrewPositions" rows="2"></textarea>
+              </label>
+            </div>
+          </section>
+
+          <section class="inspection-question">
+            <div class="inspection-question__title">Are all screws installed?</div>
+            <div class="inspection-choice-row">
+              <label><input type="radio" name="screwsInstalled" value="yes" required /> Yes</label>
+              <label><input type="radio" name="screwsInstalled" value="no" /> No</label>
+            </div>
+            <div id="screwsInstalledFollowup" class="inspection-followup" hidden>
+              <label class="inspection-field inspection-field--full">
+                <span>Which positions have missing screws?</span>
+                <textarea id="missingScrewPositions" rows="2"></textarea>
+              </label>
+            </div>
+          </section>
+
+          <section class="inspection-question">
+            <label class="inspection-field inspection-field--full">
+              <span>Any other damages or issues?</span>
+              <textarea id="inspectionOtherIssues" rows="3"></textarea>
+            </label>
+          </section>
+          </div>
+        </section>
+
+        <div id="inspectionHint" class="input-hint" style="margin-top:.5rem"></div>
+
+        <div class="buttons-row" style="justify-content:flex-end;gap:.5rem;margin-top:1rem">
+          <button type="button" class="btn btn-secondary" id="inspectionBackBtn" hidden>Back</button>
+          <button type="button" class="btn btn-secondary" data-modal-close="inspectionModal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="inspectionSubmitBtn" hidden>Submit Inspection Report</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Queue Modal (required by main.js: wireQueueModal / renderQueueModal) -->
+  <div id="queueModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="queueTitle" style="max-width:640px">
+      <h2 id="queueTitle" style="font-size:1.3rem;font-weight:800;margin-bottom:.5rem">Queued Offline Submissions</h2>
+      <p style="margin-bottom:.75rem;font-size:.9rem;color:var(--fg-muted)">
+        These actions will be sent automatically when the kiosk is back online.
+      </p>
+      <div style="overflow-x:auto;max-height:380px">
+        <table style="width:100%;border-collapse:collapse;font-size:.875rem">
+          <thead>
+            <tr>
+              <th style="text-align:left;padding:.3rem .5rem .3rem 0;border-bottom:1px solid var(--border)">Type</th>
+              <th style="text-align:left;padding:.3rem .5rem .3rem 0;border-bottom:1px solid var(--border)">Code / Cart</th>
+              <th style="text-align:left;padding:.3rem .5rem .3rem 0;border-bottom:1px solid var(--border)">Operator</th>
+              <th style="text-align:left;padding:.3rem .5rem .3rem 0;border-bottom:1px solid var(--border)">Enqueued</th>
+            </tr>
+          </thead>
+          <tbody id="queueTableBody">
+            <!-- rows injected by main.js -->
+          </tbody>
+        </table>
+      </div>
+      <div class="buttons-row" style="justify-content:space-between;margin-top:1rem">
+        <button type="button" class="btn btn-danger btn-xs" id="clearQueueBtn">Clear Queue</button>
+        <button type="button" class="btn btn-secondary" data-modal-close="queueModal">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- My Checkouts Modal (required by main.js: renderMyItemsModal) -->
+  <div id="myItemsModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="myItemsTitle" style="max-width:640px">
+      <h2 id="myItemsTitle" style="font-size:1.3rem;font-weight:800;margin-bottom:.5rem">My Active Checkouts</h2>
+      <p style="margin-bottom:.75rem;font-size:.9rem;color:var(--fg-muted)">
+        Items you have checked out from this kiosk session.
+      </p>
+      <div id="myItemsEmpty" style="font-size:.875rem;color:var(--fg-muted)" hidden>
+        No active checkouts recorded for this operator.
+      </div>
+      <div id="myItemsTableWrapper" style="overflow-x:auto;max-height:380px">
+        <table style="width:100%;border-collapse:collapse;font-size:.875rem">
+          <thead>
+            <tr>
+              <th style="text-align:left;padding:.3rem .5rem .3rem 0;border-bottom:1px solid var(--border)">Type</th>
+              <th style="text-align:left;padding:.3rem .5rem .3rem 0;border-bottom:1px solid var(--border)">Identifier</th>
+              <th style="text-align:left;padding:.3rem .5rem .3rem 0;border-bottom:1px solid var(--border)">Since</th>
+            </tr>
+          </thead>
+          <tbody id="myItemsTableBody">
+            <!-- rows injected by main.js -->
+          </tbody>
+        </table>
+      </div>
+      <div class="buttons-row" style="justify-content:flex-end;margin-top:1rem">
+        <button type="button" class="btn btn-secondary" data-modal-close="myItemsModal">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/nav.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js" defer></script>
+  <script type="module" src="/kiosk/main.js"></script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+

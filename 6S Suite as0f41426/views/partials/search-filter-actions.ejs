@@ -1,0 +1,99 @@
+<!-- Compact 3-pane toolbar: Left (actions), Middle (filters + count), Right (bulk) -->
+<div class="top-toolbar" role="region" aria-label="Asset catalog toolbar"
+     data-total="<%= typeof total !== 'undefined' ? total : '' %>">
+
+  <!-- LEFT: Primary actions -->
+  <div class="pane-left">
+    <a href="/asset-catalog/import-template?<%= new URLSearchParams({ itemType: itemType || '' }).toString() %>" class="btn" style="order:2">
+      Template CSV
+    </a>
+    <button id="openModalBtn" type="button" class="btn btn-primary" style="order:1">
+      ➕ New Asset
+    </button>
+
+    <a href="/asset-catalog/export" id="assetExportBtn" class="btn btn-export" style="order:4">
+      ⬇️ Export CSV
+    </a>
+
+    <form id="csvImportForm"
+          style="order:3"
+          class="import-inline"
+          action="/asset-catalog/import"
+          method="POST"
+          enctype="multipart/form-data">
+      <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>">
+      <input type="hidden" name="building" id="assetImportBuilding" value="">
+      <input type="file" id="csvUpload" name="file" accept=".csv" required class="file-input"/>
+      <button type="submit" class="btn btn-import">⬆️ Import CSV</button>
+    </form>
+  </div>
+
+  <!-- MIDDLE: Filters + results count + clear -->
+  <form id="filtersForm" method="GET" action="/asset-catalog" class="pane-center">
+
+    <!-- Item type quick filter (new) -->
+    <div style="display:flex;gap:.3rem;align-items:center;margin-bottom:.3rem;flex-wrap:wrap">
+      <a href="/asset-catalog?<%= new URLSearchParams({q: q||'', category: category||'', auditStatus: auditStatus||'', status: status||'', attention: attention||'', limit: limit||25}).toString() %>"
+         class="btn btn-xs <%= (!itemType) ? 'btn-primary' : 'btn-secondary' %>"
+         style="font-size:.75rem;padding:.2rem .55rem">All</a>
+      <a href="/asset-catalog?<%= new URLSearchParams({q: q||'', category: category||'', auditStatus: auditStatus||'', status: status||'', attention: attention||'', limit: limit||25, itemType:'fleet'}).toString() %>"
+         class="btn btn-xs <%= itemType === 'fleet' ? 'btn-primary' : 'btn-secondary' %>"
+         style="font-size:.75rem;padding:.2rem .55rem">🏗 Fleet</a>
+      <a href="/asset-catalog?<%= new URLSearchParams({q: q||'', category: category||'', auditStatus: auditStatus||'', status: status||'', attention: attention||'', limit: limit||25, itemType:'equipment'}).toString() %>"
+         class="btn btn-xs <%= itemType === 'equipment' ? 'btn-primary' : 'btn-secondary' %>"
+         style="font-size:.75rem;padding:.2rem .55rem">🔬 Equipment</a>
+    </div>
+
+    <input type="hidden" name="itemType" value="<%= typeof itemType !== 'undefined' ? itemType : '' %>"/>
+    <input type="hidden" name="managedSource" value="<%= typeof managedSource !== 'undefined' ? managedSource : '' %>"/>
+    <input type="hidden" name="status" value="<%= typeof status !== 'undefined' ? status : '' %>"/>
+    <input type="hidden" name="attention" value="<%= typeof attention !== 'undefined' ? attention : '' %>"/>
+
+    <input id="liveSearch"
+           type="text"
+           name="q"
+           placeholder="🔎 Search name, tag, serial…"
+           value="<%= q || '' %>"
+           aria-label="Live Search"/>
+
+    <select id="filterCategory" name="category" aria-label="Filter by category">
+      <option value="">All Categories</option>
+      <% allCategories.forEach(cat => { %>
+        <option value="<%= cat %>" <%= category === cat ? 'selected' : '' %>><%= cat %></option>
+      <% }) %>
+    </select>
+
+    <select id="filterEquipmentClass" name="equipmentClass" aria-label="Filter by equipment class">
+      <option value="">All Classes</option>
+      <% (allEquipmentClasses || []).forEach(cls => { %>
+        <option value="<%= cls %>" <%= equipmentClass === cls ? 'selected' : '' %>><%= cls %></option>
+      <% }) %>
+    </select>
+
+    <select id="filterAuditStatus" name="auditStatus" aria-label="Filter by audit/cal status">
+      <option value="">All</option>
+      <option value="overdue" <%= auditStatus === 'overdue' ? 'selected' : '' %>>Overdue</option>
+      <option value="due"     <%= auditStatus === 'due'     ? 'selected' : '' %>>Due Soon</option>
+      <option value="ok"      <%= auditStatus === 'ok'      ? 'selected' : '' %>>OK</option>
+    </select>
+
+    <div class="tools">
+      <span id="resultsCount" class="muted" aria-live="polite"></span>
+      <a id="clearFilters"
+         class="link-clear"
+         href="/asset-catalog?<%= 'page=1&limit=' + encodeURIComponent(String(typeof limit !== 'undefined' ? limit : 25)) %>">
+        Clear filters
+      </a>
+    </div>
+  </form>
+
+  <!-- RIGHT: Bulk Audit -->
+  <div class="pane-right">
+    <form id="bulkAuditForm" action="/asset-catalog/bulk-audit" method="POST">
+      <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>">
+      <div id="bulkSelectedContainer"></div>
+      <button type="submit" class="btn btn-bulk">🗂️ Bulk Audit</button>
+    </form>
+    <button id="syncManagedAssetsBtn" type="button" class="btn btn-primary">Sync Tools & Carts</button>
+  </div>
+</div>

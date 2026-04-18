@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>6S Tool Suite</title>
+  <meta name="csrf-token" content="<%= csrfToken || '' %>"/>
+  <link rel="icon" href="/images/favicon.png" type="image/png"/>
+  <link rel="stylesheet" href="/styles.css"/>
+  <script src="/theme-init.js"></script>
+  <style>
+    :root { --h-bg0:var(--cmd-bg2,var(--bg)); --h-bg1:var(--cmd-bg3,var(--surface)); --h-bd:var(--cmd-bd2,var(--border)); --h-txt2:var(--cmd-txt2,var(--fg-muted)); --h-txt3:var(--cmd-txt3,color-mix(in srgb,var(--fg-muted) 50%,transparent)); }
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    body { background:var(--bg); color:var(--fg); min-height:100vh; display:flex; flex-direction:column; font-family:var(--font-sans,system-ui,sans-serif); }
+    a { text-decoration:none; color:inherit; }
+
+    .h-topbar { display:flex; align-items:center; justify-content:space-between; padding:.6rem 1.25rem; background:var(--surface); border-bottom:0.5px solid var(--border); gap:.75rem; flex-wrap:wrap; }
+    .h-brand { display:flex; align-items:center; gap:.65rem; }
+    .h-pulse { width:7px; height:7px; border-radius:50%; background:var(--cmd-ok,var(--ok,var(--accent))); box-shadow:0 0 0 3px color-mix(in srgb,var(--cmd-ok,var(--ok,var(--accent))) 15%,transparent); }
+    .h-brand-name { font-size:.82rem; font-weight:500; color:var(--fg); letter-spacing:.06em; text-transform:uppercase; }
+    .h-bay { font-size:9px; font-family:monospace; color:var(--h-txt3); margin-left:.25rem; }
+    .h-actions { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
+    .h-chip { display:inline-flex; align-items:center; gap:.3rem; font-size:.78rem; padding:.22rem .55rem; border-radius:999px; background:var(--h-bg0); border:0.5px solid var(--h-bd); color:var(--h-txt2); }
+    .h-chip-dot { width:6px; height:6px; border-radius:50%; background:var(--accent); }
+    .role-admin       .h-chip-dot { background:var(--cmd-crit,var(--danger)); }
+    .role-coordinator .h-chip-dot { background:var(--cmd-floor,var(--accent)); }
+    .role-lead        .h-chip-dot { background:var(--cmd-projects,var(--ok)); }
+    .role-management  .h-chip-dot { background:var(--cmd-mgmt,var(--fg-muted)); }
+    .role-tech        .h-chip-dot { background:var(--h-txt3); }
+    .h-sel { padding:.28rem .45rem; background:var(--h-bg0); border:0.5px solid var(--h-bd); border-radius:5px; color:var(--fg-muted); font-size:.78rem; }
+    .h-btn { padding:.28rem .6rem; background:transparent; border:0.5px solid var(--h-bd); border-radius:5px; color:var(--fg-muted); font-size:.78rem; cursor:pointer; transition:border-color .12s,color .12s; }
+    .h-btn:hover { border-color:var(--cmd-crit,var(--danger)); color:var(--cmd-crit,var(--danger)); }
+
+    .h-kpis { display:flex; background:var(--bg); border-bottom:0.5px solid var(--border); overflow-x:auto; }
+    .h-kpi { flex:1; min-width:90px; padding:.65rem 1rem; border-right:0.5px solid var(--border); text-decoration:none; transition:background .1s; }
+    .h-kpi:last-child { border-right:none; }
+    .h-kpi:hover { background:var(--h-bg0); }
+    .h-kpi-l { font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:var(--h-txt3); margin-bottom:.2rem; }
+    .h-kpi-n { font-size:22px; font-weight:500; font-family:monospace; line-height:1; color:var(--h-txt2); transition:color .2s; }
+    .h-kpi-n.loading { width:28px; height:22px; background:var(--skeleton-base,var(--surface-strong)); border-radius:3px; display:inline-block; }
+    .h-kpi-sub { font-size:9px; font-family:monospace; color:var(--h-txt3); margin-top:.15rem; }
+    .kpi-crit .h-kpi-n { color:var(--cmd-crit,var(--danger)); }
+    .kpi-warn .h-kpi-n { color:var(--cmd-warn,var(--warn)); }
+    .kpi-ok   .h-kpi-n { color:var(--cmd-ok,var(--ok)); }
+
+    .h-body { flex:1; display:grid; grid-template-columns:280px 1fr; }
+    @media(max-width:700px) { .h-body { grid-template-columns:1fr; } .h-feed { display:none; } }
+
+    .h-nav { border-right:0.5px solid var(--border); display:flex; flex-direction:column; }
+    .h-sec-hd { font-size:9px; letter-spacing:.09em; text-transform:uppercase; color:var(--h-txt3); padding:.4rem 1rem; background:var(--surface); border-bottom:0.5px solid var(--border); }
+    .h-nr { display:flex; align-items:center; justify-content:space-between; padding:.6rem 1rem; border-bottom:0.5px solid color-mix(in srgb,var(--border) 40%,transparent); position:relative; overflow:hidden; transition:background .1s; cursor:pointer; text-decoration:none; color:inherit; }
+    .h-nr::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; border-radius:0 2px 2px 0; background:var(--accent); }
+    .h-nr:hover { background:var(--h-bg0); }
+    .h-ni { display:flex; align-items:center; gap:.55rem; min-width:0; }
+    .h-ibox { width:27px; height:27px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0; background:color-mix(in srgb,var(--accent) 12%,transparent); border:0.5px solid color-mix(in srgb,var(--accent) 30%,transparent); color:var(--accent); }
+    .h-ibox svg { width:15px; height:15px; flex-shrink:0; display:block; }
+    .nr-tools    .h-ibox { color:var(--cmd-tools,var(--accent)); }
+    .nr-toolmgmt .h-ibox { color:var(--cmd-toolmgmt,var(--accent)); }
+    .nr-floor    .h-ibox { color:var(--cmd-floor,var(--accent)); }
+    .nr-kiosk    .h-ibox { color:var(--cmd-kiosk,var(--accent)); }
+    .nr-inv      .h-ibox { color:var(--cmd-inv,var(--accent)); }
+    .nr-asset    .h-ibox { color:var(--cmd-asset,var(--accent)); }
+    .nr-projects .h-ibox { color:var(--cmd-projects,var(--accent)); }
+    .nr-cal      .h-ibox { color:var(--cmd-cal,var(--fg-muted)); }
+    .nr-people   .h-ibox { color:var(--cmd-people,var(--accent)); }
+    .nr-mgmt     .h-ibox { color:var(--cmd-mgmt,var(--fg-muted)); }
+    .h-empty-icon { display:flex; justify-content:center; align-items:center; color:var(--h-txt2); }
+    .h-empty-icon svg { width:28px; height:28px; opacity:.4; }
+    .h-nt { font-size:12px; font-weight:500; color:var(--fg); }
+    .h-ns { font-size:10px; color:var(--fg-muted); margin-top:1px; }
+    .h-badge { font-size:9px; font-family:monospace; padding:.12rem .38rem; border-radius:3px; white-space:nowrap; }
+    .h-arr { font-size:10px; color:var(--h-txt3); flex-shrink:0; }
+
+    .nr-tools    .h-nr::before { background:var(--cmd-tools,var(--accent)); }    .nr-tools    .h-ibox { background:color-mix(in srgb,var(--cmd-tools,var(--accent)) 12%,transparent); border-color:color-mix(in srgb,var(--cmd-tools,var(--accent)) 30%,transparent); }
+    .nr-floor    .h-nr::before { background:var(--cmd-floor,var(--accent)); }    .nr-floor    .h-ibox { background:color-mix(in srgb,var(--cmd-floor,var(--accent)) 12%,transparent); border-color:color-mix(in srgb,var(--cmd-floor,var(--accent)) 30%,transparent); }
+    .nr-kiosk    .h-nr::before { background:var(--cmd-kiosk,var(--accent)); }    .nr-kiosk    .h-ibox { background:color-mix(in srgb,var(--cmd-kiosk,var(--accent)) 12%,transparent); border-color:color-mix(in srgb,var(--cmd-kiosk,var(--accent)) 30%,transparent); }
+    .nr-toolmgmt .h-nr::before { background:var(--cmd-toolmgmt,var(--accent)); } .nr-toolmgmt .h-ibox { background:color-mix(in srgb,var(--cmd-toolmgmt,var(--accent)) 12%,transparent); border-color:color-mix(in srgb,var(--cmd-toolmgmt,var(--accent)) 30%,transparent); }
+    .nr-inv      .h-nr::before { background:var(--cmd-inv,var(--accent)); }      .nr-inv      .h-ibox { background:color-mix(in srgb,var(--cmd-inv,var(--accent)) 12%,transparent); border-color:color-mix(in srgb,var(--cmd-inv,var(--accent)) 30%,transparent); }
+    .nr-asset    .h-nr::before { background:var(--cmd-asset,var(--accent)); }    .nr-asset    .h-ibox { background:color-mix(in srgb,var(--cmd-asset,var(--accent)) 12%,transparent); border-color:color-mix(in srgb,var(--cmd-asset,var(--accent)) 30%,transparent); }
+    .nr-projects .h-nr::before { background:var(--cmd-projects,var(--accent)); } .nr-projects .h-ibox { background:color-mix(in srgb,var(--cmd-projects,var(--accent)) 12%,transparent); border-color:color-mix(in srgb,var(--cmd-projects,var(--accent)) 30%,transparent); }
+    .nr-cal      .h-nr::before { background:var(--cmd-cal,var(--fg-muted)); }    .nr-cal      .h-ibox { background:color-mix(in srgb,var(--cmd-cal,var(--fg-muted)) 12%,transparent); border-color:color-mix(in srgb,var(--cmd-cal,var(--fg-muted)) 30%,transparent); }
+    .nr-people   .h-nr::before { background:var(--cmd-people,var(--accent)); }   .nr-people   .h-ibox { background:color-mix(in srgb,var(--cmd-people,var(--accent)) 12%,transparent); border-color:color-mix(in srgb,var(--cmd-people,var(--accent)) 30%,transparent); }
+    .nr-mgmt     .h-nr::before { background:var(--cmd-mgmt,var(--fg-muted)); }   .nr-mgmt     .h-ibox { background:color-mix(in srgb,var(--cmd-mgmt,var(--fg-muted)) 12%,transparent); border-color:color-mix(in srgb,var(--cmd-mgmt,var(--fg-muted)) 30%,transparent); }
+
+    .h-feed { display:flex; flex-direction:column; border-left:0.5px solid var(--border); min-width:0; background:linear-gradient(180deg, color-mix(in srgb,var(--surface) 96%,transparent), color-mix(in srgb,var(--bg) 92%,transparent)); }
+    .h-feed-row { width:100%; padding:.75rem 1rem; border:0; border-bottom:0.5px solid color-mix(in srgb,var(--border) 40%,transparent); display:flex; gap:.7rem; align-items:flex-start; background:transparent; color:inherit; text-align:left; cursor:pointer; transition:background .12s,border-color .12s; }
+    .h-feed-row:hover, .h-feed-row:focus-visible { background:color-mix(in srgb,var(--accent) 5%, var(--h-bg0)); outline:none; }
+    .h-dot { width:5px; height:5px; border-radius:50%; margin-top:5px; flex-shrink:0; }
+    .h-feed-copy { min-width:0; flex:1; }
+    .h-feed-top { display:flex; align-items:flex-start; justify-content:space-between; gap:.6rem; }
+    .h-ft { font-size:11px; color:var(--fg); font-weight:700; }
+    .h-feed-open { font-size:9px; font-family:monospace; color:var(--accent); text-transform:uppercase; letter-spacing:.06em; white-space:nowrap; }
+    .h-feed-badges { display:flex; flex-wrap:wrap; gap:.35rem; margin:.3rem 0; }
+    .h-feed-badge { display:inline-flex; align-items:center; gap:.3rem; padding:.16rem .42rem; border-radius:999px; border:0.5px solid var(--h-bd); background:var(--h-bg0); color:var(--fg-muted); font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+    .h-feed-badge.action { color:var(--fg); }
+    .h-feed-badge.route { color:var(--accent); }
+    .h-feed-summary { font-size:10px; line-height:1.45; color:var(--fg-muted); }
+    .h-fm { font-size:10px; font-family:monospace; color:var(--fg-muted); margin-top:4px; }
+    .h-feed-empty { padding:2rem 1.1rem; font-size:11px; color:var(--h-txt3); }
+
+    .h-footer { background:var(--surface); border-top:0.5px solid var(--border); padding:.42rem 1.25rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.5rem; }
+    .h-footer span { font-size:10px; font-family:monospace; color:var(--fg-muted); }
+
+    .h-empty { padding:3rem 1rem; display:flex; flex-direction:column; align-items:center; gap:.5rem; text-align:center; color:var(--fg-muted); }
+  </style>
+</head>
+<body>
+  <%
+    const effectiveAllowed = Array.isArray(allowedTools) ? allowedTools : [];
+    const can = k => effectiveAllowed.includes(k);
+    const role = (user?.role || 'user').toLowerCase();
+    const canPeople = role === 'admin' || role === 'lead' || role === 'management';
+    const canToolMgmt = role === 'admin' || role === 'lead';
+    const canInspectionReports = role === 'admin' || role === 'lead' || role === 'management';
+    const canActivity = role === 'admin';
+  %>
+
+  <header class="h-topbar">
+    <div class="h-brand">
+      <div class="h-pulse" aria-hidden="true"></div>
+      <span class="h-brand-name">6S Tool Suite</span>
+      <span class="h-bay" id="homeBayLabel">BAY 350</span>
+    </div>
+    <div class="h-actions">
+      <% if (user) { %>
+        <span class="h-chip role-<%= role %>">
+          <span class="h-chip-dot" aria-hidden="true"></span>
+          <span><%= user.name || user.id %></span>
+          <span style="opacity:.5;font-size:.7rem">· <%= role %></span>
+        </span>
+      <% } %>
+      <select id="themeSelector" class="h-sel" aria-label="Theme">
+        <option value="theme-command">Command</option>
+<option value="theme-atlas">Atlas</option>
+<option value="theme-carbon">Carbon</option>
+<option value="theme-grove">Grove</option>
+<option value="theme-ember">Ember</option>
+<option value="theme-harbor">Harbor</option>
+<option value="theme-slate">Slate</option>
+<option value="theme-orchid">Orchid</option>
+<option value="theme-dusk">Dusk</option>
+<option value="theme-pulse">Pulse</option>
+<option value="theme-highcontrast">High Contrast</option>
+      </select>
+      <% if (user) { %>
+        <form method="POST" action="/auth/logout" style="margin:0">
+          <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>"/>
+          <button type="submit" class="h-btn">Sign out</button>
+        </form>
+      <% } else { %>
+        <a href="/auth/login" class="h-btn">Sign in</a>
+      <% } %>
+    </div>
+  </header>
+
+  <div id="buildingSelectorBar" style="display:flex;align-items:center;gap:.75rem;padding:.65rem 1.25rem;background:var(--surface);border-bottom:1px solid var(--border);flex-wrap:wrap">
+    <span style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--h-txt3)">Active Location:</span>
+    <div style="display:flex;gap:.4rem" role="group" aria-label="Select building">
+      <button id="bldgBtn350" type="button" data-building="Bldg-350"
+        style="display:inline-flex;align-items:center;gap:.4rem;padding:.32rem .85rem;border-radius:999px;border:1.5px solid var(--border);background:transparent;color:var(--fg-muted);font-size:.8rem;font-weight:700;cursor:pointer;transition:all .15s;letter-spacing:.02em">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        Building 350
+      </button>
+      <button id="bldgBtn4050" type="button" data-building="Bldg-4050"
+        style="display:inline-flex;align-items:center;gap:.4rem;padding:.32rem .85rem;border-radius:999px;border:1.5px solid var(--border);background:transparent;color:var(--fg-muted);font-size:.8rem;font-weight:700;cursor:pointer;transition:all .15s;letter-spacing:.02em">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        Building 4050
+      </button>
+    </div>
+    <span id="bldgActiveLabel" style="font-size:.73rem;color:var(--fg-muted);font-style:italic"></span>
+  </div>
+  <style>
+    .bldg-btn-active { background:var(--accent) !important; border-color:var(--accent) !important; color:var(--accent-contrast) !important; }
+    .bldg-btn-active svg { stroke:currentColor; }
+  </style>
+
+  <% if (can('management') || can('screwdriver') || can('projects') || can('audits') || can('expiration') || can('inventory')) { %>
+  <div class="h-kpis" aria-label="Live metrics">
+    <% if (can('screwdriver')) { %>
+    <a class="h-kpi" href="/screwdriver/screwdriver.html" id="kpi-tools">
+      <div class="h-kpi-l">Tools out</div>
+      <div class="h-kpi-n loading" id="kn-checked"></div>
+      <div class="h-kpi-sub" id="ks-checked"></div>
+    </a>
+    <% } %>
+    <% if (can('expiration')) { %>
+    <a class="h-kpi" href="/cf/management" id="kpi-cal">
+      <div class="h-kpi-l">Cal alarm</div>
+      <div class="h-kpi-n loading" id="kn-overdue"></div>
+      <div class="h-kpi-sub" id="ks-overdue"></div>
+      <div class="h-badge" id="badge-exp-nav" style="display:none;background:color-mix(in srgb,var(--cmd-warn,var(--warn)) 12%,transparent);color:var(--cmd-warn,var(--warn));border:0.5px solid color-mix(in srgb,var(--cmd-warn,var(--warn)) 35%,transparent)"></div>
+    </a>
+    <% } %>
+    <% if (can('audits')) { %>
+<a class="h-kpi" href="/projects?domain=audit" id="kpi-audits">
+  <div class="h-kpi-l">Open audits</div>
+  <div class="h-kpi-n loading" id="kn-audits"></div>
+  <div class="h-kpi-sub" id="ks-audits"></div>
+</a>
+<% } %>
+    <% if (can('projects') || can('audits')) { %>
+    <a class="h-kpi" href="/projects?bucket=blocked" id="kpi-blocked">
+      <div class="h-kpi-l">Blocked</div>
+      <div class="h-kpi-n loading" id="kn-blocked"></div>
+      <div class="h-kpi-sub" id="ks-blocked"></div>
+    </a>
+    <a class="h-kpi" href="/projects?qfilter=overdue" id="kpi-proj-overdue">
+      <div class="h-kpi-l">Proj. overdue</div>
+      <div class="h-kpi-n loading" id="kn-proj-overdue"></div>
+      <div class="h-kpi-sub" id="ks-proj-overdue"></div>
+    </a>
+    <% } %>
+    <% if (can('inventory')) { %>
+    <a class="h-kpi" href="/inventory" id="kpi-reorder">
+      <div class="h-kpi-l">Reorders</div>
+      <div class="h-kpi-n loading" id="kn-reorder"></div>
+      <div class="h-kpi-sub" id="ks-reorder"></div>
+    </a>
+    <a class="h-kpi" href="/inventory/Inventory.html" id="kpi-inv-bldg">
+      <div class="h-kpi-l" id="kpi-inv-bldg-label">Inventory</div>
+      <div class="h-kpi-n loading" id="kn-inv-bldg"></div>
+      <div class="h-kpi-sub" id="ks-inv-bldg"></div>
+    </a>
+    <% } %>
+  </div>
+  <% } %>
+
+  <div class="h-body">
+    <nav class="h-nav" aria-label="Suite navigation">
+
+      <% if (can('kiosk') || can('screwdriver') || can('inventory') || can('assetCatalog') || can('esdCarts') || canToolMgmt) { %>
+      <div class="h-sec-hd">Floor operations</div>
+      <% /* Nav icons: Noun Project–style stroke glyphs (thenounproject.com). Replace with licensed NP downloads if your org standardizes on a set. */ %>
+
+      <% if (can('screwdriver')) { %>
+      <div class="nr-tools"><a class="h-nr" href="/screwdriver/screwdriver.html">
+        <div class="h-ni"><div class="h-ibox" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div><div><div class="h-nt">Floor Tools &amp; ESD</div><div class="h-ns">Checkout · Return · Cal · ESD carts</div></div></div>
+        <div class="h-badge" id="badge-tools-out" style="display:none;background:color-mix(in srgb,var(--cmd-warn,var(--warn)) 12%,transparent);color:var(--cmd-warn,var(--warn));border:0.5px solid color-mix(in srgb,var(--cmd-warn,var(--warn)) 35%,transparent)"></div>
+      </a></div>
+      <% } %>
+
+      <% if (can('inventory') || can('assetCatalog') || can('screwdriver')) { %>
+      <div class="nr-floor"><a class="h-nr" href="/cf/inventory">
+        <div class="h-ni"><div class="h-ibox" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="11" width="7" height="10" rx="1"/><rect x="3" y="15" width="7" height="6" rx="1"/></svg></div><div><div class="h-nt">Command Floor</div><div class="h-ns">Inventory · Assets · Tool tracking · Management</div></div></div>
+        <span class="h-arr">→</span>
+      </a></div>
+      <% } %>
+
+      <% if (can('kiosk')) { %>
+      <div class="nr-kiosk"><a class="h-nr" href="/kiosk/">
+        <div class="h-ni"><div class="h-ibox" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="11" rx="1"/><path d="M9 21h6"/><path d="M12 14v4"/></svg></div><div><div class="h-nt">Technician Kiosk</div><div class="h-ns">Self-service checkout &amp; returns</div></div></div>
+        <span class="h-arr">→</span>
+      </a></div>
+      <% } %>
+
+      <% if (can('inventory')) { %>
+      <div class="nr-inv"><a class="h-nr" href="/inventory/Inventory.html">
+        <div class="h-ni"><div class="h-ibox" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div><div><div class="h-nt">Inventory Manager</div><div class="h-ns">Stock · Import/export · Reorder queue</div></div></div>
+        <div class="h-badge" id="badge-reorder" style="display:none;background:color-mix(in srgb,var(--cmd-crit,var(--danger)) 12%,transparent);color:var(--cmd-crit,var(--danger));border:0.5px solid color-mix(in srgb,var(--cmd-crit,var(--danger)) 35%,transparent)"></div>
+      </a></div>
+      <% } %>
+
+      <% if (can('assetCatalog')) { %>
+      <div class="nr-asset"><a class="h-nr" href="/asset-catalog">
+        <div class="h-ni"><div class="h-ibox" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29a1 1 0 0 0 1.41 0l6.59-6.58a1 1 0 0 0 0-1.41L12 2Z"/><path d="M7 7h.01"/></svg></div><div><div class="h-nt">Asset Catalog</div><div class="h-ns">Fleet PM · Equipment cal · Audits</div></div></div>
+        <span class="h-arr">→</span>
+      </a></div>
+      <% } %>
+
+      <% if (can('transfers') || can('inventory') || can('assetCatalog') || can('screwdriver')) { %>
+      <div class="nr-inv"><a class="h-nr" href="/transfers">
+        <div class="h-ni"><div class="h-ibox" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/><path d="m19 3-3 3 3 3"/><path d="m5 21 3-3-3-3"/></svg></div><div><div class="h-nt">Building Transfers</div><div class="h-ns">Move stock · Tools · Assets between buildings</div></div></div>
+        <span class="h-arr">→</span>
+      </a></div>
+      <% } %>
+      <% } %>
+
+      <% if (can('projects') || can('audits') || can('expiration') || canInspectionReports) { %>
+      <div class="h-sec-hd">Planning &amp; compliance</div>
+
+      <% if (can('projects') || can('audits')) { %>
+      <%
+        const pjTitle = 'Projects';
+        const pjDesc  = '6S improvement Kanban board';
+      %>
+      <% if (can('projects')) { %>
+      <div class="nr-projects"><a class="h-nr" href="/projects">
+        <div class="h-ni"><div class="h-ibox" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/><path d="M8 10v4"/><path d="M12 10v2"/><path d="M16 10v6"/></svg></div><div><div class="h-nt"><%= pjTitle %></div><div class="h-ns"><%= pjDesc %></div></div></div>
+        <div class="h-badge" id="badge-blocked-nav" style="display:none;background:color-mix(in srgb,var(--cmd-crit,var(--danger)) 12%,transparent);color:var(--cmd-crit,var(--danger));border:0.5px solid color-mix(in srgb,var(--cmd-crit,var(--danger)) 35%,transparent)"></div>
+      </a></div>
+      <% } %>
+      <% } %>
+
+      <% if (canInspectionReports) { %>
+      <div class="nr-cal"><a class="h-nr" href="/inspections">
+        <div class="h-ni"><div class="h-ibox" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 12h6"/><path d="M9 16h6"/><path d="M9 8h2"/></svg></div><div><div class="h-nt">Inspection Reports</div><div class="h-ns">By building · Shift · Tech · Rack model</div></div></div>
+        <span class="h-arr">→</span>
+      </a></div>
+      <% } %>
+      <% } %>
+
+      <% if (can('management') || canPeople || canActivity) { %>
+      <div class="h-sec-hd">Administration</div>
+
+      <% if (canPeople) { %>
+      <div class="nr-people"><a class="h-nr" href="/admin/user-management">
+        <div class="h-ni"><div class="h-ibox" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><div class="h-nt">People &amp; Access</div><div class="h-ns">Users · Technician roster · Roles</div></div></div>
+        <span class="h-arr">→</span>
+      </a></div>
+      <% } %>
+
+      <% if (canActivity) { %>
+      <div class="nr-mgmt"><a class="h-nr" href="/admin/activity">
+        <div class="h-ni"><div class="h-ibox" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg></div><div><div class="h-nt">Activity Ledger</div><div class="h-ns">App transactions · Tool usage · Inventory and asset changes</div></div></div>
+        <span class="h-arr">→</span>
+      </a></div>
+      <% } %>
+      <% } %>
+
+      <% if (!can('screwdriver') && !can('inventory') && !can('assetCatalog') && !can('expiration') && !can('audits') && !can('projects') && !can('esdCarts') && !can('management') && !can('kiosk') && !canToolMgmt && !canPeople && !canInspectionReports && !canActivity) { %>
+      <div class="h-empty">
+        <div class="h-empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+        <div style="font-size:.85rem">No tools assigned to your role</div>
+        <div style="font-size:.78rem;color:var(--h-txt3)">Contact your administrator</div>
+      </div>
+      <% } %>
+    </nav>
+
+    <div class="h-feed" aria-label="Live activity">
+      <div class="h-sec-hd">Live activity</div>
+      <div id="feedList"><div class="h-feed-empty">Connecting…</div></div>
+    </div>
+  </div>
+
+  <footer class="h-footer">
+    <span>ZT SYSTEMS © 2026 · 6S TOOL SUITE · v2</span>
+    <span id="footerTime"></span>
+  </footer>
+
+  <script src="/nav.js"></script>
+  <script src="/socket.io/socket.io.js" defer></script>
+  <script src="/management/live-activity-feed.js" defer></script>
+  <script nonce="<%= cspNonce %>">
+  (function(){
+    var BLDG_KEY = 'suite.building.v1';
+    var BLDG_LABELS = { 'Bldg-350': 'Building 350', 'Bldg-4050': 'Building 4050' };
+
+    function getBuilding() {
+      return localStorage.getItem(BLDG_KEY) || 'Bldg-350';
+    }
+
+    function setBuilding(bldg) {
+      localStorage.setItem(BLDG_KEY, bldg);
+      applyBuildingUI(bldg);
+      loadStats();
+    }
+
+    function applyBuildingUI(bldg) {
+      var b350  = document.getElementById('bldgBtn350');
+      var b4050 = document.getElementById('bldgBtn4050');
+      var label = document.getElementById('bldgActiveLabel');
+      var bay   = document.getElementById('homeBayLabel');
+      var kpiLbl = document.getElementById('kpi-inv-bldg-label');
+
+      if (b350)  b350.className  = bldg === 'Bldg-350'  ? 'bldg-btn-active' : '';
+      if (b4050) b4050.className = bldg === 'Bldg-4050' ? 'bldg-btn-active' : '';
+      if (label) label.textContent = '— All tools, inventory & assets will show this location';
+      if (bay)   bay.textContent = bldg === 'Bldg-4050' ? 'BAY 4050' : 'BAY 350';
+      if (kpiLbl) kpiLbl.textContent = BLDG_LABELS[bldg] || 'Inventory';
+
+      var map = {
+        'kpi-tools': '/screwdriver/screwdriver.html?building=' + encodeURIComponent(bldg),
+        'kpi-cal': '/cf/management',
+        'kpi-audits': '/projects?domain=audit&building=' + encodeURIComponent(bldg),
+        'kpi-blocked': '/projects?bucket=blocked&building=' + encodeURIComponent(bldg),
+        'kpi-proj-overdue': '/projects?qfilter=overdue&building=' + encodeURIComponent(bldg),
+        'kpi-reorder': '/inventory/Inventory.html?building=' + encodeURIComponent(bldg),
+        'kpi-inv-bldg': '/inventory/Inventory.html?building=' + encodeURIComponent(bldg),
+      };
+      Object.keys(map).forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.href = map[id];
+      });
+    }
+
+    applyBuildingUI(getBuilding());
+
+    document.getElementById('bldgBtn350')?.addEventListener('click', function() { setBuilding('Bldg-350'); });
+    document.getElementById('bldgBtn4050')?.addEventListener('click', function() { setBuilding('Bldg-4050'); });
+
+    var sel = document.getElementById('themeSelector');
+    var themeMap = {
+      'theme-light': 'theme-atlas',
+      'theme-dark': 'theme-carbon',
+      'theme-mint': 'theme-grove',
+      'theme-ocean': 'theme-harbor',
+      'theme-sunset': 'theme-dusk',
+      'theme-forest': 'theme-grove',
+      'theme-charcoal': 'theme-slate',
+      'theme-lavender': 'theme-orchid',
+      'theme-neon': 'theme-pulse'
+    };
+    var validThemes = [
+      'theme-command',
+      'theme-atlas',
+      'theme-carbon',
+      'theme-grove',
+      'theme-ember',
+      'theme-harbor',
+      'theme-slate',
+      'theme-orchid',
+      'theme-dusk',
+      'theme-pulse',
+      'theme-highcontrast'
+    ];
+    var saved = localStorage.getItem('themeSelector') || 'theme-command';
+    saved = themeMap[saved] || saved;
+    if (validThemes.indexOf(saved) === -1) saved = 'theme-command';
+    document.documentElement.className = saved;
+    localStorage.setItem('themeSelector', saved);
+    if (sel) {
+      sel.value = saved;
+      sel.addEventListener('change', function(e){
+        var next = themeMap[e.target.value] || e.target.value;
+        if (validThemes.indexOf(next) === -1) next = 'theme-command';
+        document.documentElement.className = next;
+        localStorage.setItem('themeSelector', next);
+        sel.value = next;
+      });
+    }
+
+    var ftEl = document.getElementById('footerTime');
+    function tick(){ if(ftEl) ftEl.textContent = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}); }
+    tick(); setInterval(tick,1000);
+
+    function setKpi(numId, subId, val, sub, severity){
+      var n=document.getElementById(numId), s=document.getElementById(subId);
+      var kEl=n&&n.closest('.h-kpi');
+      if(!n) return;
+      n.textContent=String(val); n.classList.remove('loading');
+      if(s&&sub!=null) s.textContent=sub;
+      if(kEl){ kEl.classList.remove('kpi-crit','kpi-warn','kpi-ok'); if(severity) kEl.classList.add('kpi-'+severity); }
+    }
+    function showBadge(id,text){
+      var b=document.getElementById(id); if(b){b.textContent=text;b.style.display='';}
+    }
+
+    function loadStats(){
+      var currentBuilding = getBuilding();
+      fetch('/management/api/metrics?building=' + encodeURIComponent(currentBuilding),{credentials:'include'})
+        .then(function(r){ return r.ok?r.json():null; })
+        .then(function(d){
+          if(!d){
+            fetch('/tools?building=' + encodeURIComponent(currentBuilding),{credentials:'include'})
+              .then(function(r){ return r.ok?r.json():[]; })
+              .then(function(tools){
+                var arr=Array.isArray(tools)?tools:[];
+                var out=arr.filter(function(t){ return t.status==='being used'; }).length;
+                setKpi('kn-checked','ks-checked',out,'of '+arr.length,out>0?'warn':'ok');
+                if(out>0) showBadge('badge-tools-out',out+' out');
+              }).catch(function(){});
+            return;
+          }
+          var out     = d.checkedOut      != null ? d.checkedOut      : (d.toolsCheckedOut  || '–');
+          var blocked = d.blocked         != null ? d.blocked         : (d.blockedTasks     || '–');
+          var audits  = d.openAudits      != null ? d.openAudits      : (d.auditTodo        || '–');
+          var projOv  = d.overdueProjects != null ? d.overdueProjects : '–';
+          var reorder = d.pendingReorders != null ? d.pendingReorders : '–';
+          setKpi('kn-checked','ks-checked', out, '', out>0?'warn':'ok');
+          setKpi('kn-blocked','ks-blocked', blocked, '', blocked>0?'crit':'ok');
+          setKpi('kn-audits','ks-audits', audits, '', audits>5?'warn':null);
+          setKpi('kn-proj-overdue','ks-proj-overdue', projOv, '', projOv>0?'warn':null);
+          setKpi('kn-reorder','ks-reorder', reorder, '', reorder>0?'warn':null);
+          if(out>0) showBadge('badge-tools-out',out+' out');
+          if(blocked>0) showBadge('badge-blocked-nav',blocked+' blocked');
+          if(reorder>0) showBadge('badge-reorder',reorder+' pending');
+
+          var bldg = currentBuilding;
+          if(d.inventoryByBuilding && d.inventoryByBuilding[bldg]) {
+            var bi = d.inventoryByBuilding[bldg];
+            var low = (bi.lowStock||0) + (bi.outOfStock||0);
+            setKpi('kn-inv-bldg', 'ks-inv-bldg', bi.total || 0,
+              bi.total === 0 ? 'pending upload' : (low > 0 ? low+' low/out' : 'all stocked'),
+              bi.total === 0 ? null : (low > 0 ? 'warn' : 'ok'));
+          }
+        }).catch(function(){});
+
+      fetch('/expiration/api?days=30',{credentials:'include'})
+        .then(function(r){ return r.ok?r.json():[]; })
+        .then(function(data){
+          var arr=Array.isArray(data)?data:[];
+          var overdue=arr.filter(function(x){ return x.status==='overdue'; }).length;
+          var soon=arr.filter(function(x){ return x.status==='due-soon'; }).length;
+          setKpi('kn-overdue','ks-overdue',overdue,
+            overdue>0?'overdue':soon>0?soon+' soon':'all clear',
+            overdue>0?'crit':soon>0?'warn':'ok');
+          if(overdue>0) showBadge('badge-exp-nav',overdue+' overdue');
+          else if(soon>0) showBadge('badge-exp-nav',soon+' soon');
+        }).catch(function(){});
+    }
+
+    function initSocket(){
+      if(!window.io) return;
+      try {
+        var socket=window.io('/',{withCredentials:true});
+
+        socket.on('connect', function(){
+          ['tools','projects','audit','inventory','assets','employees'].forEach(function(room){
+            socket.emit('subscribe', room);
+          });
+        });
+
+        socket.on('toolsUpdated', function(){ loadStats(); });
+
+        socket.on('esdCarts:checkout', function(){});
+        socket.on('esdCarts:return', function(){});
+        socket.on('esdCarts:removed', function(){});
+        socket.on('esdCarts:updated', function(){});
+
+        socket.on('projectsUpdated', function(){ loadStats(); });
+        socket.on('auditUpdated', function(){ loadStats(); });
+        socket.on('assetsUpdated', function(){ loadStats(); });
+        socket.on('inventoryUpdated', function(){ loadStats(); });
+        socket.on('employeesUpdated', function(){});
+
+        socket.on('disconnect', function(){});
+        socket.on('reconnect', function(){ loadStats(); });
+      } catch(e){}
+    }
+
+    if(document.readyState==='loading'){
+      document.addEventListener('DOMContentLoaded',function(){ loadStats(); initSocket(); });
+    } else { loadStats(); initSocket(); }
+
+    setInterval(loadStats, 90000);
+  })();
+  </script>
+</body>
+</html>

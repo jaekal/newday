@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+/* ─── Electric Editorial (default) ─────────────────────────────────────────── */
+:root,
+[data-theme="editorial"] {
+  --c-sidebar:          #111111;
+  --c-sidebar-hover:    rgba(255,255,255,0.05);
+  --c-accent:           #ff6a00;
+  --c-accent-fg:        #111111;
+  --c-dark:             #111111;
+  --c-dark-2:           #2a2a2a;
+  --c-btn-primary:      #111111;
+  --c-btn-primary-hover:#2a2a2a;
+  --c-btn-primary-fg:   #ffffff;
+  --c-success:          #ff6a00;
+  --c-success-fg:       #111111;
+  --c-success-hover:    #e45f00;
+
+  --background: #ffffff;
+  --foreground: #111111;
+  --muted:      #888888;
+  --border:     #e8e8e8;
+  --surface:    #f4f4f4;
+}
+
+/* ─── Organic ───────────────────────────────────────────────────────────────── */
+[data-theme="organic"] {
+  --c-sidebar:          #DF4826;
+  --c-sidebar-hover:    rgba(255,255,255,0.08);
+  --c-accent:           #0E1A58;
+  --c-accent-fg:        #ffffff;
+  --c-dark:             #0E1A58;
+  --c-dark-2:           #162070;
+  --c-btn-primary:      #0E1A58;
+  --c-btn-primary-hover:#162070;
+  --c-btn-primary-fg:   #ffffff;
+  --c-success:          #0E1A58;
+  --c-success-fg:       #ffffff;
+  --c-success-hover:    #162070;
+
+  --background: #ffffff;
+  --foreground: #1E1E20;
+  --muted:      #888888;
+  --border:     #e8e8e8;
+  --surface:    #f4f4f4;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-poppins);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-poppins), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html[data-theme="organic"] body {
+  font-family: var(--font-poppins), Arial, Helvetica, sans-serif;
+}
+
+/* Hide scrollbar while keeping scroll functionality */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Accent glow — data viz highlight */
+.accent-glow {
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--c-accent) 40%, transparent));
+}

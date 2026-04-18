@@ -1,0 +1,193 @@
+<!-- public/cf/inventory/index.html -->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Inventory — Command Floor</title>
+  <meta name="csrf-token" content=""/>
+  <link rel="icon" href="/images/favicon.png" type="image/png"/>
+  <link rel="stylesheet" href="/styles.css"/>
+  <link rel="stylesheet" href="/cf/cf.css"/>
+  <script src="/theme-init.js"></script>
+</head>
+<body style="margin:0;padding:0;background:#F0F4F8">
+
+<div class="cf-shell" id="cfShell">
+
+  <!-- ════════════ RAIL ════════════ -->
+    <nav class="cf-rail" id="cfRailNav" data-active="/cf/inventory" aria-label="Command Floor navigation"></nav>
+
+  <!-- ════════════ MAIN ════════════ -->
+  <div class="cf-main">
+
+    <!-- Topbar -->
+    <header class="cf-topbar">
+      <span class="cf-topbar-title">Inventory</span>
+      <span class="cf-topbar-crumb" id="topbarCrumb">/ Stock management</span>
+      <div class="cf-topbar-right">
+        <div class="cf-search" role="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input id="cfSearch" type="text" placeholder="Search SKU, description, vendor…" aria-label="Search inventory"/>
+        </div>
+        <button class="cf-tb-btn" title="Download report" aria-label="Download report" id="exportBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+        <div class="cf-avatar" id="cfAvatar" aria-label="User menu">?</div>
+      </div>
+    </header>
+
+    <!-- Building selector -->
+    <!-- Building badge (locked — change at home) -->
+    <div style="display:flex;align-items:center;gap:.5rem;padding:.4rem 1rem;border-bottom:1px solid #E2E8F0;background:#fff">
+      <span style="font-size:.7rem;color:#94A3B8">Viewing:</span>
+      <span id="buildingBadgeSlot"></span>
+    </div>
+    <script src="/js/building.js"></script>
+
+    <!-- Bento -->
+    <div class="cf-bento cf-bento-4" id="cfBento">
+
+      <!-- KPI 1: Total SKUs -->
+      <div class="cf-kpi cf-fade-up-1" id="cf-kpi-total-card" data-filter="all" role="button" tabindex="0">
+        <div class="cf-kpi-label">Total SKUs</div>
+        <div class="cf-kpi-value cyan" id="kv-total">—</div>
+        <div class="cf-kpi-footer">
+          <span class="cf-kpi-sub" id="ks-total">loading…</span>
+          <div class="cf-kpi-bar"><div class="cf-kpi-bar-fill cyan" id="bar-total"></div></div>
+        </div>
+      </div>
+
+      <!-- KPI 2: Low stock -->
+      <div class="cf-kpi cf-fade-up-2" id="cf-kpi-low-card" data-filter="warn" role="button" tabindex="0">
+        <div class="cf-kpi-label">Low stock items</div>
+        <div class="cf-kpi-value orange" id="kv-low">—</div>
+        <div class="cf-kpi-footer">
+          <span class="cf-kpi-sub">below safety threshold</span>
+          <div class="cf-kpi-bar"><div class="cf-kpi-bar-fill warn" id="bar-low"></div></div>
+        </div>
+      </div>
+
+      <!-- KPI 3: Critical -->
+      <div class="cf-kpi cf-fade-up-3" id="cf-kpi-crit-card" data-filter="crit" role="button" tabindex="0">
+        <div class="cf-kpi-label">Critical stock</div>
+        <div class="cf-kpi-value red" id="kv-crit">—</div>
+        <div class="cf-kpi-footer">
+          <span class="cf-kpi-sub">zero or near-zero on hand</span>
+          <div class="cf-kpi-bar"><div class="cf-kpi-bar-fill red" id="bar-crit"></div></div>
+        </div>
+      </div>
+
+      <!-- KPI 4: Reorders -->
+      <div class="cf-kpi cf-fade-up-4" id="cf-kpi-ord-card" data-filter="ord" role="button" tabindex="0">
+        <div class="cf-kpi-label">Pending reorders</div>
+        <div class="cf-kpi-value ok" id="kv-ord">—</div>
+        <div class="cf-kpi-footer">
+          <span class="cf-kpi-sub">orders in queue</span>
+          <div class="cf-kpi-bar"><div class="cf-kpi-bar-fill cyan" id="bar-ord"></div></div>
+        </div>
+      </div>
+
+      <!-- Category filter strip (spans all 4 cols) -->
+      <div class="cf-cat-strip cf-span-all cf-fade-up-5" id="catStrip" role="toolbar" aria-label="Filter by category">
+        <button class="cf-cat-pill active" data-cat="">All</button>
+        <button class="cf-cat-pill" data-cat="Fasteners">Fasteners</button>
+        <button class="cf-cat-pill" data-cat="Lubricants" id="catLubricants">Lubricants</button>
+        <button class="cf-cat-pill" data-cat="PPE" id="catPPE">PPE</button>
+        <button class="cf-cat-pill" data-cat="Adhesives">Adhesives</button>
+        <button class="cf-cat-pill" data-cat="Electrical">Electrical</button>
+        <button class="cf-cat-pill" data-cat="Consumables">Consumables</button>
+        <div class="cf-cat-sep" aria-hidden="true"></div>
+        <div class="cf-cat-right">
+          <a href="/inventory/Inventory.html" class="cf-chip">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Full view
+          </a>
+          <a href="/inventory/Inventory.html" class="cf-chip primary">+ Add SKU</a>
+        </div>
+      </div>
+
+      <!-- SKU table (cols 1-3) -->
+      <div class="cf-panel cf-span-3 cf-fade-up-5" style="grid-row:3">
+        <div class="cf-panel-header">
+          <span class="cf-panel-title">SKU master</span>
+          <span class="cf-panel-count" id="skuCount">loading…</span>
+          <div class="cf-panel-right">
+            <div class="cf-tab-strip" id="skuTabs" role="tablist">
+              <button class="cf-tab active" data-filter="all"  role="tab" aria-selected="true">All</button>
+              <button class="cf-tab"        data-filter="warn" role="tab" aria-selected="false">Low stock</button>
+              <button class="cf-tab"        data-filter="crit" role="tab" aria-selected="false">Critical</button>
+              <button class="cf-tab"        data-filter="ord"  role="tab" aria-selected="false">Ordered</button>
+            </div>
+            <button class="cf-chip" id="exportBtn" style="margin-left:6px">Export CSV</button>
+          </div>
+        </div>
+
+        <div class="cf-table-scroll" role="region" aria-label="SKU table" tabindex="0">
+          <table class="cf-table" id="skuTable" aria-live="polite">
+            <colgroup>
+              <col style="width:116px"><col><col style="width:105px">
+              <col style="width:58px"><col style="width:58px"><col style="width:160px">
+              <col style="width:86px"><col style="width:72px"><col style="width:74px">
+            </colgroup>
+            <thead>
+              <tr>
+                <th class="sorted" data-sort="ItemCode">SKU
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:middle" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+                </th>
+                <th data-sort="Description">Description</th>
+                <th data-sort="Category">Category</th>
+                <th data-sort="OnHandQty" style="text-align:right">On hand</th>
+                <th data-sort="SafetyLevelQty" style="text-align:right">Safety</th>
+                <th>Stock level</th>
+                <th data-sort="OrderStatus">Status</th>
+                <th>30d trend</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="skuBody">
+              <tr><td colspan="9" style="text-align:center;padding:2rem;color:#94A3B8;font-family:'IBM Plex Sans',sans-serif">Loading inventory…</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="cf-table-footer">
+          <span class="cf-table-footer-info" id="pgInfo">—</span>
+          <div class="cf-pg-btns" id="pgBtns" role="navigation" aria-label="Pagination"></div>
+        </div>
+      </div>
+
+      <!-- Reorder queue (col 4) -->
+      <div class="cf-panel cf-col-4 cf-fade-up-6" style="grid-row:3">
+        <div class="cf-panel-header dark">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00B4D8" stroke-width="2" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          <span class="cf-panel-title">Reorder queue</span>
+          <span class="cf-panel-count" id="reorderCount">—</span>
+          <div class="cf-panel-right">
+            <button class="cf-panel-action" id="clearQueueBtn">Clear all</button>
+          </div>
+        </div>
+
+        <div id="reorderList" style="flex:1;overflow:auto" role="list" aria-label="Items pending reorder">
+          <div style="padding:2rem;text-align:center;color:#94A3B8;font-size:12px;font-family:'IBM Plex Sans',sans-serif">Loading queue…</div>
+        </div>
+
+        <div style="padding:10px 14px;border-top:1px solid #E2E8F0;flex-shrink:0">
+          <button class="cf-rq-submit-btn" id="submitOrdersBtn">
+            Submit all purchase orders
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="/nav.js" defer></script>
+<script src="/socket.io/socket.io.js" defer></script>
+<script type="module" src="/cf/cf-nav.js"></script>
+  <script type="module" src="/cf/inventory/inventory.js"></script>
+</body>
+</html>

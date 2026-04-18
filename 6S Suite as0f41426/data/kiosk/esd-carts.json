@@ -1,0 +1,308 @@
+{
+  "carts": [
+    {
+      "id": "MFG004462",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004478",
+      "status": "available",
+      "holder": null,
+      "updatedAt": "2025-12-04T21:58:34.342Z"
+    },
+    {
+      "id": "MFG004439",
+      "status": "available",
+      "holder": null,
+      "updatedAt": "2026-03-23T21:14:28.534Z"
+    },
+    {
+      "id": "MFG004498",
+      "status": "available",
+      "holder": null,
+      "building": "Bldg-350",
+      "updatedAt": "2026-04-17T01:09:20.322Z"
+    },
+    {
+      "id": "MFG004436",
+      "status": "available",
+      "holder": null,
+      "updatedAt": "2026-03-22T21:52:06.061Z"
+    },
+    {
+      "id": "MFG004505",
+      "status": "available",
+      "holder": null,
+      "updatedAt": "2026-03-23T19:15:27.273Z"
+    },
+    {
+      "id": "MFG004434",
+      "status": "available",
+      "holder": null,
+      "building": "Bldg-350",
+      "updatedAt": "2026-04-16T23:52:37.388Z"
+    },
+    {
+      "id": "MFG004470",
+      "status": "available",
+      "holder": null,
+      "building": "Bldg-350",
+      "updatedAt": "2026-04-18T01:13:38.902Z"
+    },
+    {
+      "id": "MFG004430",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004429",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004497",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004428",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004476",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004438",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004440",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004427",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004477",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004469",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004426",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004422",
+      "status": "available",
+      "holder": null,
+      "building": "Bldg-350",
+      "updatedAt": "2026-04-18T01:13:41.409Z"
+    },
+    {
+      "id": "MFG004074",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004524",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004507",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004463",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004466",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004500",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004435",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004465",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004473",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004433",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004432",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004485",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004464",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004437",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004525",
+      "status": "available",
+      "holder": null,
+      "updatedAt": "2025-11-20T13:12:13.413Z"
+    },
+    {
+      "id": "MFG004467",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004472",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004474",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004508",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004618",
+      "status": "available",
+      "holder": null,
+      "updatedAt": "2025-11-20T13:12:08.016Z"
+    },
+    {
+      "id": "MFG004499",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004480",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004475",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004431",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004468",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004479",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004483",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004506",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004509",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    },
+    {
+      "id": "MFG004849",
+      "status": "Available",
+      "holder": "null",
+      "updatedAt": "2025-11-19T14:43:55Z"
+    }
+  ]
+}

@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Inventory Manager – 6S Tool Suite</title>
+
+  <meta name="csrf-token" content=""/>
+  <link rel="icon" href="/images/favicon.png" type="image/png"/>
+
+  <link rel="stylesheet" href="/styles.css"/>
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css"/>
+  <link rel="stylesheet" href="/inventory/styles.css"/>
+
+  <script src="/theme-init.js"></script>
+
+  <style>
+    body{
+      display:flex;
+      flex-direction:column;
+      min-height:100vh;
+      margin:0;
+      background:var(--bg);
+      color:var(--fg);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      font-size:clamp(.86rem,.6vw+.7rem,.94rem);
+    }
+    .sr-only{
+      position:absolute;
+      width:1px;
+      height:1px;
+      overflow:hidden;
+      clip:rect(0 0 0 0);
+      white-space:nowrap;
+    }
+
+    .inv-topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:.75rem;
+      padding:.6rem 1rem;
+      background:var(--surface);
+      border-bottom:1px solid var(--border);
+      flex-wrap:wrap;
+      flex-shrink:0;
+    }
+    .inv-topbar__left{display:flex;align-items:center;gap:.75rem}
+    .inv-topbar__right{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+
+    .inv-home-btn{
+      display:inline-flex;
+      align-items:center;
+      gap:.35rem;
+      padding:.35rem .6rem;
+      border-radius:var(--radius-sm);
+      background:var(--surface-strong);
+      border:1px solid var(--border);
+      color:var(--fg);
+      text-decoration:none;
+      font-size:.82rem;
+      transition:border-color .15s,color .15s;
+    }
+    .inv-home-btn:hover{
+      border-color:var(--accent);
+      color:var(--accent);
+      text-decoration:none;
+    }
+
+    .inv-brand-title{font-size:1.1rem;font-weight:800;letter-spacing:-.01em}
+    .inv-brand-sub{font-size:.75rem;color:var(--fg-muted)}
+
+    .inv-theme-sel{
+      padding:.3rem .5rem;
+      border:1px solid var(--border);
+      border-radius:var(--radius-sm);
+      background:var(--surface);
+      color:var(--fg);
+      font-size:.8rem;
+      min-width:100px;
+    }
+
+    .inv-kpi-bar{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:.5rem;
+      padding:.65rem 1rem;
+      background:var(--surface);
+      border-bottom:1px solid var(--border);
+      flex-shrink:0;
+    }
+    @media(max-width:600px){
+      .inv-kpi-bar{grid-template-columns:repeat(2,1fr)}
+    }
+
+    .inv-kpi-card{
+      background:var(--surface-strong);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:.65rem .85rem;
+      cursor:pointer;
+      transition:border-color .15s,transform .12s;
+      text-align:left;
+    }
+    .inv-kpi-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+    .inv-kpi-card:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+    .inv-kpi-label{
+      font-size:.72rem;
+      font-weight:700;
+      text-transform:uppercase;
+      letter-spacing:.05em;
+      color:var(--fg-muted);
+      margin-bottom:.2rem;
+    }
+    .inv-kpi-value{
+      font-size:1.5rem;
+      font-weight:900;
+      color:var(--fg);
+      line-height:1;
+    }
+    .inv-kpi-card--warn .inv-kpi-value{color:var(--warn)}
+    .inv-kpi-card--warn{border-color:var(--warn);background:var(--warn-bg)}
+    .inv-kpi-card--danger .inv-kpi-value{color:var(--danger)}
+    .inv-kpi-card--danger{border-color:var(--danger);background:var(--danger-bg)}
+    .inv-kpi-card--ok .inv-kpi-value{color:var(--ok)}
+    .inv-kpi-card--ok{border-color:var(--ok);background:var(--ok-bg)}
+
+    .inv-toolbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:.5rem;
+      flex-wrap:wrap;
+      padding:.5rem 1rem;
+      background:var(--surface);
+      border-bottom:1px solid var(--border);
+      flex-shrink:0;
+    }
+    .inv-toolbar__left{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center}
+
+    .bulk-toolbar{
+      display:none;
+      gap:.5rem;
+      align-items:center;
+      flex-wrap:wrap;
+      padding:.45rem 1rem;
+      background:var(--info-bg);
+      border-bottom:1px solid var(--info);
+      font-size:.85rem;
+    }
+    .bulk-toolbar:not(.hidden){display:flex}
+
+    .inv-filter-bar{
+      display:flex;
+      flex-wrap:wrap;
+      gap:.4rem;
+      align-items:center;
+      padding:0 1rem;
+      background:var(--surface);
+      border-bottom:0 solid var(--border);
+      flex-shrink:0;
+      overflow:hidden;
+      max-height:0;
+      transition:max-height .25s cubic-bezier(.4,0,.2,1),padding .2s ease,border-bottom-width .2s ease;
+    }
+    .inv-filter-bar.open{
+      max-height:140px;
+      padding:.45rem 1rem;
+      border-bottom-width:1px;
+    }
+    @media(max-width:600px){
+      .inv-filter-bar.open{max-height:280px}
+    }
+
+    .inv-search-wrap{position:relative;display:flex;align-items:center}
+    .inv-search-icon{position:absolute;left:.55rem;color:var(--fg-muted);pointer-events:none}
+    .inv-search-input{
+      padding:.38rem .6rem .38rem 2rem;
+      border:1px solid var(--border);
+      border-radius:var(--radius-sm);
+      background:var(--surface);
+      color:var(--fg);
+      font-size:.85rem;
+      width:220px;
+      transition:border-color .15s;
+    }
+    .inv-search-input:focus{outline:none;border-color:var(--accent)}
+    .inv-filter-sel,
+    .inv-qty-input{
+      padding:.38rem .55rem;
+      border:1px solid var(--border);
+      border-radius:var(--radius-sm);
+      background:var(--surface);
+      color:var(--fg);
+      font-size:.85rem;
+    }
+    .inv-qty-range{display:flex;align-items:center;gap:.3rem;font-size:.83rem;color:var(--fg-muted)}
+    .inv-qty-input{width:60px}
+    .inv-result-count{font-size:.78rem;color:var(--fg-muted);margin-left:auto}
+
+    .inv-btn,
+    .btn,
+    .btn-edit,
+    .btn-primary,
+    .btn-secondary,
+    .btn-danger,
+    .btn-delete,
+    .btn-checkout,
+    .btn-audit,
+    .btn-reorder{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:.35rem;
+      padding:.38rem .75rem;
+      border:1px solid var(--border);
+      border-radius:var(--radius-sm);
+      background:transparent;
+      color:var(--fg);
+      cursor:pointer;
+      font-size:.83rem;
+      transition:background .12s,border-color .12s,color .12s;
+      white-space:nowrap;
+      text-decoration:none;
+      line-height:1.1;
+    }
+    .inv-btn:hover,.btn:hover{background:var(--surface-strong);border-color:var(--accent);color:var(--accent)}
+    .inv-btn--primary,.btn-primary,.btn-reorder{
+      background:var(--accent);
+      color:var(--accent-contrast);
+      border-color:var(--accent);
+    }
+    .inv-btn--primary:hover,.btn-primary:hover,.btn-reorder:hover{background:var(--accent-hover);color:var(--accent-contrast)}
+    .inv-btn--danger,.btn-danger,.btn-delete{
+      background:var(--danger);
+      color:var(--accent-contrast);
+      border-color:var(--danger);
+    }
+    .inv-btn--danger:hover,.btn-danger:hover,.btn-delete:hover{background:hsl(0 72% 44%);color:var(--accent-contrast)}
+    .btn-checkout{background:var(--ok);color:var(--ok-contrast);border-color:var(--ok)}
+    .btn-checkout:hover{background:hsl(140 60% 34%);color:var(--accent-contrast)}
+    .btn-edit,.btn-audit{
+      background:color-mix(in srgb,var(--accent) 12%,var(--surface));
+      border-color:color-mix(in srgb,var(--accent) 24%,var(--border));
+    }
+    .btn-edit:hover,.btn-audit:hover{background:var(--accent);border-color:var(--accent);color:var(--accent-contrast)}
+    .inv-btn--sm,.btn-xs{padding:.24rem .48rem;font-size:.76rem}
+
+    .inv-filter-toggle{
+      display:flex;
+      align-items:center;
+      gap:.35rem;
+      padding:.28rem .65rem;
+      border:1px solid var(--border);
+      border-radius:var(--radius-sm);
+      background:transparent;
+      color:var(--fg-muted);
+      cursor:pointer;
+      font-size:.8rem;
+      transition:background .12s,border-color .12s,color .12s;
+      white-space:nowrap;
+    }
+    .inv-filter-toggle:hover{
+      background:var(--surface-strong);
+      border-color:var(--accent);
+      color:var(--accent);
+    }
+    .inv-filter-toggle.active{
+      background:color-mix(in srgb,var(--accent) 10%,var(--surface));
+      border-color:var(--accent);
+      color:var(--accent);
+    }
+    .filter-chevron{font-size:.65rem;transition:transform .2s}
+    .inv-filter-toggle.active .filter-chevron{transform:rotate(180deg)}
+    .inv-filter-count{
+      display:none;
+      background:var(--accent);
+      color:var(--accent-contrast);
+      border-radius:999px;
+      padding:0 5px;
+      font-size:.65rem;
+      font-weight:700;
+      line-height:1.5;
+    }
+    .inv-filter-count.has-filters{display:inline-block}
+
+    .inv-main{
+      flex:1;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    }
+    .inv-table-wrap{
+      flex:1;
+      min-height:0;
+      overflow:auto;
+      padding:.75rem 1rem 1rem;
+    }
+
+    .dataTables_wrapper{
+      width:100%;
+      max-width:100%;
+      color:var(--fg);
+      overflow-x:auto;
+      margin:0 !important;
+      padding:0 !important;
+    }
+    .dataTables_wrapper .dataTables_filter,
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_info,
+    .dataTables_wrapper .dataTables_paginate{
+      display:none !important;
+    }
+
+    #inventoryTable{
+      width:100% !important;
+      min-width:1120px;
+      table-layout:fixed;
+      border-collapse:separate;
+      border-spacing:0;
+      background:var(--box-bg);
+      color:var(--fg);
+      border:1px solid var(--border);
+      border-radius:12px;
+      overflow:hidden;
+    }
+
+    #inventoryTable col:nth-child(1){width:42px}
+    #inventoryTable col:nth-child(2){width:175px}
+    #inventoryTable col:nth-child(3){width:270px}
+    #inventoryTable col:nth-child(4){width:80px}
+    #inventoryTable col:nth-child(5){width:140px}
+    #inventoryTable col:nth-child(6){width:145px}
+    #inventoryTable col:nth-child(7){width:125px}
+    #inventoryTable col:nth-child(8){width:240px}
+
+    #inventoryTable thead th{
+      position:sticky;
+      top:0;
+      z-index:5;
+      background:var(--surface-strong) !important;
+      color:var(--fg) !important;
+      border-bottom:1px solid var(--border) !important;
+      font-size:.74rem;
+      font-weight:700;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      padding:.7rem .95rem .7rem .65rem;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      text-align:center !important;
+      vertical-align:middle !important;
+      box-shadow:none !important;
+    }
+
+    table.dataTable thead th.sorting,
+    table.dataTable thead th.sorting_asc,
+    table.dataTable thead th.sorting_desc{
+      background-image:none !important;
+      position:sticky;
+    }
+    table.dataTable thead th.sorting::before,
+    table.dataTable thead th.sorting::after,
+    table.dataTable thead th.sorting_asc::before,
+    table.dataTable thead th.sorting_asc::after,
+    table.dataTable thead th.sorting_desc::before,
+    table.dataTable thead th.sorting_desc::after{
+      opacity:.85 !important;
+      color:var(--fg-muted) !important;
+      right:.35rem !important;
+    }
+
+    #inventoryTable tbody tr{
+      background:var(--box-bg);
+      transition:background .12s ease;
+    }
+    #inventoryTable tbody tr:nth-child(even){
+      background:color-mix(in srgb,var(--fg) 2.5%,var(--box-bg));
+    }
+    #inventoryTable tbody tr:hover td{
+      background:color-mix(in srgb,var(--accent) 5%,var(--box-bg)) !important;
+    }
+
+    #inventoryTable tbody td{
+      padding:.58rem .65rem;
+      vertical-align:middle;
+      font-size:.84rem;
+      border-bottom:1px solid var(--border);
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      background:transparent;
+    }
+
+    #inventoryTable thead th:first-child,
+    #inventoryTable tbody td:first-child{
+      text-align:center !important;
+      padding-left:.35rem !important;
+      padding-right:.35rem !important;
+    }
+    #selectAll,
+    .row-select{
+      width:15px;
+      height:15px;
+      accent-color:var(--accent);
+      cursor:pointer;
+    }
+
+    #inventoryTable td:nth-child(2){white-space:nowrap !important}
+    #inventoryTable td:nth-child(3){
+      text-align:left !important;
+      white-space:normal !important;
+      overflow-wrap:anywhere;
+      word-break:break-word;
+      line-height:1.35;
+    }
+    #inventoryTable td:nth-child(4),
+    #inventoryTable td:nth-child(5),
+    #inventoryTable td:nth-child(6),
+    #inventoryTable td:nth-child(7){
+      text-align:center !important;
+      white-space:nowrap !important;
+    }
+
+    .code-hover-group{
+      display:inline-flex !important;
+      align-items:center;
+      gap:6px;
+      min-width:0;
+      max-width:100%;
+      white-space:nowrap;
+    }
+    .code-thumb,
+    .js-thumb{
+      width:32px !important;
+      height:32px !important;
+      min-width:32px;
+      object-fit:cover;
+      border-radius:4px;
+      border:1px solid var(--border);
+      background:var(--surface-strong);
+      display:inline-block;
+      vertical-align:middle;
+    }
+    .code-value{
+      font-size:.82rem !important;
+      font-weight:700;
+      color:var(--accent);
+      text-decoration:underline dotted;
+      cursor:pointer;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width:115px;
+    }
+    .code-hover-group .btn-img-upload{
+      display:none;
+      font-size:.68rem !important;
+      padding:.15rem .4rem !important;
+    }
+    .code-hover-group:hover .btn-img-upload{display:inline-block}
+
+    #inventoryTable td:last-child,
+    #inventoryTable th:last-child{
+      width:240px;
+    }
+    #inventoryTable td:last-child{
+      white-space:normal !important;
+      overflow:hidden !important;
+      padding:.38rem .45rem !important;
+    }
+    .action-cell,
+    .row-actions,
+    #inventoryTable td:last-child > div,
+    #inventoryTable td:last-child .inline-flex{
+      display:flex !important;
+      flex-wrap:wrap !important;
+      align-items:center;
+      justify-content:center;
+      gap:4px !important;
+      max-width:100%;
+      overflow:hidden;
+    }
+    #inventoryTable td:last-child .btn,
+    #inventoryTable td:last-child button{
+      padding:.2rem .42rem !important;
+      font-size:.72rem !important;
+      line-height:1.1;
+      max-width:100%;
+    }
+
+    #inventoryTable tbody tr.low-stock td{
+      background:color-mix(in srgb,var(--tone-warning) 12%,var(--box-bg)) !important;
+      color:var(--fg) !important;
+    }
+    #inventoryTable tbody tr.out-of-stock td{
+      background:color-mix(in srgb,var(--tone-danger) 12%,var(--box-bg)) !important;
+      color:var(--fg) !important;
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-size:.7rem !important;
+      padding:.15rem .5rem !important;
+      border-radius:999px;
+      font-weight:700;
+      white-space:nowrap;
+    }
+    .badge-success{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok)}
+    .badge-error{background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger)}
+    .badge-info{background:var(--info-bg);color:var(--info);border:1px solid var(--info)}
+    .badge-warning{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn)}
+
+    .inv-table-footer{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      gap:.5rem;
+      padding:.6rem 0 .2rem;
+      border-top:1px solid var(--border);
+      margin-top:.45rem;
+    }
+    .inv-table-footer__left,
+    .inv-table-footer__right{
+      display:flex;
+      align-items:center;
+      gap:.5rem;
+      flex-wrap:wrap;
+    }
+    .inv-page-len-label{
+      font-size:.78rem;
+      color:var(--fg-muted);
+      white-space:nowrap;
+    }
+    .inv-page-len-sel{
+      padding:.28rem .45rem;
+      border:1px solid var(--border);
+      border-radius:var(--radius-sm);
+      background:var(--surface);
+      color:var(--fg);
+      font-size:.8rem;
+    }
+
+    .modal-backdrop{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.5);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:600;
+      padding:1rem;
+    }
+    .modal-backdrop[aria-hidden="false"]{display:flex}
+
+    .modal{
+      position:relative;
+      background:var(--surface-strong);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      width:min(640px,95vw);
+      padding:1.25rem;
+      max-height:90vh;
+      overflow-y:auto;
+      box-shadow:0 20px 48px rgba(0,0,0,.25);
+    }
+    .modal--details{width:min(860px,95vw)}
+    .modal h3,.modal .modal-title{font-size:1.05rem;font-weight:800;margin-bottom:.85rem}
+    .modal label>span,.modal label>div:first-child{
+      display:block;
+      font-size:.78rem;
+      font-weight:600;
+      text-transform:uppercase;
+      letter-spacing:.03em;
+      color:var(--fg-muted);
+      margin-bottom:.25rem;
+    }
+    .modal input[type=text],
+    .modal input[type=number],
+    .modal input[type=url],
+    .modal input[type=date],
+    .modal select,
+    .modal textarea{
+      display:block;
+      width:100%;
+      padding:.42rem .6rem;
+      border:1px solid var(--border);
+      border-radius:var(--radius-sm);
+      background:var(--surface);
+      color:var(--fg);
+      font-size:.88rem;
+      transition:border-color .15s;
+    }
+    .modal input:focus,.modal select:focus,.modal textarea:focus{
+      outline:none;
+      border-color:var(--accent);
+    }
+    .modal .space-y-4>*+*{margin-top:.75rem}
+    .modal .flex.gap-2{display:flex;gap:.5rem}
+    .modal .flex-1{flex:1}
+    .modal .block{display:block}
+    .buttons-row{display:flex;gap:.5rem;flex-wrap:wrap}
+    .buttons-row.justify-end{justify-content:flex-end}
+    .buttons-row.justify-between{justify-content:space-between}
+
+    .tab-btn{
+      padding:.42rem .85rem;
+      border:none;
+      border-bottom:2px solid transparent;
+      background:transparent;
+      color:var(--fg-muted);
+      cursor:pointer;
+      font-size:.85rem;
+      font-weight:500;
+      transition:color .15s,border-color .15s;
+    }
+    .tab-btn.active,.tab-btn[aria-selected="true"]{
+      color:var(--accent);
+      border-bottom-color:var(--accent);
+    }
+    .tab-pane.hidden{display:none}
+
+    .img-dropzone{
+      border:2px dashed var(--border);
+      border-radius:var(--radius-sm);
+      padding:1.25rem;
+      text-align:center;
+      cursor:pointer;
+      transition:border-color .15s,background .15s;
+      background:var(--surface);
+    }
+    .img-dropzone:hover,.img-dropzone:focus{
+      border-color:var(--accent);
+      background:color-mix(in srgb,var(--accent) 6%,var(--surface));
+    }
+    .img-dropzone__icon{width:2rem;height:2rem;color:var(--fg-muted);margin:0 auto .5rem}
+    .img-dropzone__label{display:block;font-size:.88rem;font-weight:600}
+    .img-dropzone__hint{display:block;font-size:.75rem;color:var(--fg-muted);margin-top:.25rem}
+    .img-dropzone__thumb{max-height:120px;border-radius:var(--radius-sm);margin:0 auto .5rem}
+    .img-dropzone__preview-actions{display:flex;gap:.5rem;justify-content:center;align-items:center;flex-wrap:wrap}
+    .img-dropzone__filename{font-size:.75rem;color:var(--fg-muted)}
+
+    .DTFH__clonedHeader,
+    div.DTFH__placeholder,
+    table.fixedHeader-floating{
+      display:none !important;
+    }
+
+    @media(max-width:700px){
+      .inv-toolbar__left{gap:.3rem}
+      .inv-filter-bar.open{gap:.3rem}
+      .inv-search-input{width:160px}
+    }
+  </style>
+</head>
+<body>
+  <noscript><div style="padding:.75rem;background:var(--danger-bg);color:var(--danger);text-align:center;font-weight:700">JavaScript is required.</div></noscript>
+  <div class="sr-only" aria-live="polite" id="liveRegion"></div>
+
+  <header class="inv-topbar">
+    <div class="inv-topbar__left">
+      <a href="/home" class="inv-home-btn" aria-label="Back to Suite Home">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Home
+      </a>
+      <div>
+        <div class="inv-brand-title">Inventory Manager</div>
+        <div class="inv-brand-sub">Stock levels · Reorder queue · Audit history</div>
+      </div>
+    </div>
+    <div class="inv-topbar__right">
+      <label for="themeSelector" class="sr-only">Theme</label>
+      <select id="themeSelector" class="inv-theme-sel" aria-label="Theme">
+        <option value="theme-command">Command</option>
+<option value="theme-beacon">Beacon</option>
+<option value="theme-atlas">Atlas</option>
+<option value="theme-carbon">Carbon</option>
+<option value="theme-grove">Grove</option>
+<option value="theme-ember">Ember</option>
+<option value="theme-harbor">Harbor</option>
+<option value="theme-slate">Slate</option>
+<option value="theme-orchid">Orchid</option>
+<option value="theme-dusk">Dusk</option>
+<option value="theme-pulse">Pulse</option>
+<option value="theme-highcontrast">High Contrast</option>
+      </select>
+    </div>
+  </header>
+
+  <div style="display:flex;align-items:center;gap:.5rem;padding:.4rem 1rem;background:var(--surface);border-bottom:1px solid var(--border)">
+    <span style="font-size:.72rem;color:var(--fg-muted)">Viewing:</span>
+    <span id="buildingBadgeSlot"></span>
+  </div>
+  <script src="/js/building.js"></script>
+
+  <section class="inv-kpi-bar" aria-label="Inventory summary">
+    <button class="inv-kpi-card" id="cardTotalSkus" type="button" aria-label="Total SKUs">
+      <div class="inv-kpi-label">Total SKUs</div>
+      <div id="totalSkus" class="inv-kpi-value">–</div>
+    </button>
+    <button class="inv-kpi-card inv-kpi-card--warn" id="cardBelowSafety" type="button" aria-label="Below safety stock">
+      <div class="inv-kpi-label">Below Safety</div>
+      <div id="belowSafetyCount" class="inv-kpi-value">–</div>
+    </button>
+    <button class="inv-kpi-card inv-kpi-card--danger" id="cardPendingOrders" type="button" aria-label="Pending orders">
+      <div class="inv-kpi-label">Pending Orders</div>
+      <div id="pendingOrders" class="inv-kpi-value">–</div>
+    </button>
+    <button class="inv-kpi-card inv-kpi-card--ok" id="cardInventoryValue" type="button" aria-label="Inventory value">
+      <div class="inv-kpi-label">Inventory Value</div>
+      <div id="inventoryValue" class="inv-kpi-value">–</div>
+    </button>
+  </section>
+
+  <div class="inv-toolbar">
+    <div class="inv-toolbar__left">
+      <button id="addItemBtn" class="inv-btn inv-btn--primary" type="button" aria-label="Add new item" data-role="admin">
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 5v10M5 10h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Add Item
+      </button>
+
+      <button id="refreshInventoryBtn" class="inv-btn" type="button">
+        <svg width="14" height="14" fill="none" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4v5h5M16 16v-5h-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 16a7 7 0 118-8" stroke="currentColor" stroke-width="2"/></svg>
+        Refresh
+      </button>
+
+      <button id="exportCsvBtn" class="inv-btn" type="button" data-role="lead,admin">Export CSV</button>
+      <button id="exportAllHistoryBtn" class="inv-btn" type="button" data-role="lead,admin">Export History</button>
+      <button id="downloadImportTemplateBtn" class="inv-btn" type="button" data-role="lead,admin">Import Template</button>
+
+      <label class="inv-btn" for="importFile" data-role="lead,admin" aria-label="Choose CSV file to import" style="cursor:pointer">
+        Import CSV
+        <input type="file" id="importFile" accept=".csv" class="sr-only"/>
+      </label>
+      <span id="importFileName" aria-live="polite" style="font-size:.75rem;color:var(--fg-muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+      <button id="importBtn" class="inv-btn" type="button" data-role="lead,admin">Upload</button>
+    </div>
+
+    <div style="display:flex;gap:.3rem;align-items:center">
+      <button id="filterToggleBtn" class="inv-filter-toggle" type="button" aria-expanded="false" aria-controls="filterBar">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        Filters
+        <span class="inv-filter-count" id="filterCountBadge"></span>
+        <span class="filter-chevron">▼</span>
+      </button>
+      <button id="clearFiltersBtn2" class="inv-filter-toggle" type="button" title="Clear all filters" style="padding:.28rem .6rem">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Clear
+      </button>
+    </div>
+  </div>
+
+  <div class="bulk-toolbar hidden" aria-live="polite" data-role="lead,admin,management">
+    <span style="color:var(--info);font-weight:700">Bulk Actions:</span>
+    <button id="deleteSelectedBtn" class="inv-btn inv-btn--danger inv-btn--sm" data-role="lead,admin,management" type="button">Delete Selected</button>
+    <button id="reorderSelectedBtn" class="inv-btn inv-btn--sm" type="button">Reorder Selected</button>
+  </div>
+
+  <div id="filterBar" class="inv-filter-bar">
+    <div class="inv-search-wrap">
+      <svg class="inv-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input id="filterSearch" class="inv-search-input" placeholder="Search code, desc, vendor…" aria-label="Search inventory"/>
+    </div>
+
+    <select id="filterStatus" class="inv-filter-sel" aria-label="Filter by status">
+      <option value="">All statuses</option>
+      <option value="In Stock">In Stock</option>
+      <option value="Low Stock">Low Stock</option>
+      <option value="Out of Stock">Out of Stock</option>
+      <option value="Ordered">Ordered</option>
+    </select>
+
+    <select id="filterCategory" class="inv-filter-sel" aria-label="Filter by category">
+      <option value="">All categories</option>
+    </select>
+
+    <div class="inv-qty-range">
+      Qty
+      <input id="filterMinQty" type="number" placeholder="Min" class="inv-qty-input" min="0" aria-label="Minimum quantity"/>
+      –
+      <input id="filterMaxQty" type="number" placeholder="Max" class="inv-qty-input" min="0" aria-label="Maximum quantity"/>
+    </div>
+
+    <button id="clearFiltersBtn" class="inv-btn inv-btn--sm" type="button" aria-label="Clear all filters" style="margin-left:auto">Clear filters</button>
+    <span class="inv-result-count" id="invResultCount"></span>
+  </div>
+
+  <main class="inv-main">
+    <div class="inv-table-wrap">
+      <table id="inventoryTable" class="display" aria-label="Inventory table">
+        <colgroup>
+          <col/>
+          <col/>
+          <col/>
+          <col/>
+          <col/>
+          <col/>
+          <col/>
+          <col/>
+        </colgroup>
+        <thead>
+          <tr>
+            <th><input type="checkbox" id="selectAll" aria-label="Select all"/></th>
+            <th>Item Code</th>
+            <th>Description</th>
+            <th>Qty</th>
+            <th>Category</th>
+            <th>Vendor</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <div class="inv-table-footer" id="invTableFooter">
+        <div class="inv-table-footer__left">
+          <div id="invTableInfo" style="font-size:.78rem;color:var(--fg-muted)"></div>
+          <div id="invTablePager"></div>
+        </div>
+        <div class="inv-table-footer__right">
+          <label class="inv-page-len-label" for="invPageLen">Show</label>
+          <select id="invPageLen" class="inv-page-len-sel" aria-label="Entries per page">
+            <option value="10">10</option>
+            <option value="20" selected>20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="-1">All</option>
+          </select>
+          <span class="inv-page-len-label">entries</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="itemModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" style="max-width:640px">
+      <h3 id="modalTitle" class="modal-title">Add / Edit Item</h3>
+
+      <div style="display:flex;margin-bottom:.75rem;border-bottom:1px solid var(--border)">
+        <button type="button" class="tab-btn" data-tab="tabBasic" id="tabBtnBasic" aria-selected="true">Basic Info</button>
+        <button type="button" class="tab-btn" data-tab="tabOrder" id="tabBtnOrder" aria-selected="false">Order &amp; Procurement</button>
+      </div>
+
+      <form id="modalForm" class="space-y-4" autocomplete="off" aria-describedby="liveRegion">
+        <div class="tab-pane" id="tabBasic">
+          <label class="block"><span>Item Code *</span><input name="ItemCode" required/></label>
+          <div class="flex gap-2">
+            <label class="flex-1 block"><span>Location</span><input name="Location"/></label>
+            <label class="flex-1 block"><span>Building</span>
+              <select name="Building">
+                <option value="Bldg-350">Building 350</option>
+                <option value="Bldg-4050">Building 4050</option>
+              </select>
+            </label>
+          </div>
+          <label class="block"><span>Description *</span><input name="Description" required/></label>
+          <label class="block"><span>Category</span><input name="Category" placeholder="e.g. Fasteners, PPE, Tools"/></label>
+          <div class="flex gap-2">
+            <label class="flex-1 block"><span>On Hand Qty</span><input name="OnHandQty" type="number" min="0"/></label>
+            <label class="flex-1 block"><span>Safety Level Qty</span><input name="SafetyLevelQty" type="number" min="0"/></label>
+          </div>
+          <label style="display:inline-flex;align-items:center;gap:.5rem;margin-top:.5rem;cursor:pointer">
+            <input name="SafetyWarningOn" type="checkbox"/> Safety Warning
+          </label>
+        </div>
+
+        <div class="tab-pane hidden" id="tabOrder">
+          <label class="block"><span>Unit Price</span><input name="UnitPrice" type="number" step="0.01" min="0"/></label>
+          <label class="block"><span>Vendor</span><input name="Vendor"/></label>
+          <label class="block"><span>Purchase Link</span><input type="url" name="PurchaseLink" inputmode="url" spellcheck="false"/></label>
+          <div class="flex gap-2">
+            <label class="flex-1 block"><span>Order Date</span><input type="date" name="OrderDate"/></label>
+            <label class="flex-1 block"><span>Expected Arrival</span><input type="date" name="ExpectedArrival"/></label>
+          </div>
+          <label class="block"><span>Purchase Order Number</span><input name="PurchaseOrderNumber"/></label>
+          <label class="block"><span>Tracking Number</span><input name="TrackingNumber"/></label>
+          <label class="block">
+            <span>Order Status</span>
+            <select name="OrderStatus">
+              <option>Ordered</option>
+              <option>In Stock</option>
+              <option>Low Stock</option>
+              <option>Out of Stock</option>
+            </select>
+          </label>
+
+          <div class="block">
+            <span style="display:block;font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.03em;color:var(--fg-muted);margin-bottom:.35rem">Item Image</span>
+            <div id="imgDropZone" class="img-dropzone" role="button" tabindex="0" aria-label="Drop an image here or click to select" aria-describedby="imgDropHint">
+              <div id="imgDropIdle" class="img-dropzone__idle">
+                <svg class="img-dropzone__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.5"/>
+                  <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+                  <path d="M3 15l5-5 4 4 3-3 6 5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/>
+                  <path d="M12 10V6m0 0l-2 2m2-2l2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span class="img-dropzone__label">Drag &amp; drop image here</span>
+                <span id="imgDropHint" class="img-dropzone__hint">or click to select · JPEG, PNG, WebP · max 5 MB</span>
+              </div>
+              <div id="imgDropActive" class="img-dropzone__active" hidden>
+                <svg class="img-dropzone__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 5v14M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span class="img-dropzone__label">Release to upload</span>
+              </div>
+              <div id="imgDropPreview" class="img-dropzone__preview" hidden>
+                <img id="editImageThumb" src="" alt="Item image" class="img-dropzone__thumb" loading="lazy"/>
+                <div class="img-dropzone__preview-actions">
+                  <span id="imgDropFilename" class="img-dropzone__filename"></span>
+                  <button type="button" id="imgDropReplace" class="inv-btn inv-btn--sm">Replace</button>
+                  <button type="button" id="editImageRemove" class="inv-btn inv-btn--danger inv-btn--sm">Remove</button>
+                </div>
+              </div>
+            </div>
+            <input type="file" id="editImageInput" accept="image/jpeg,image/png,image/gif,image/webp" class="sr-only" tabindex="-1" aria-hidden="true"/>
+          </div>
+        </div>
+
+        <div class="buttons-row justify-end" style="margin-top:1rem">
+          <button type="button" id="cancelModal" class="inv-btn">Cancel</button>
+          <button type="submit" class="inv-btn inv-btn--primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="confirmModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmText" style="max-width:400px">
+      <p id="confirmText" style="margin-bottom:1rem;font-size:.95rem"></p>
+      <div class="buttons-row justify-end">
+        <button id="cancelConfirm" class="inv-btn" type="button">Cancel</button>
+        <button id="confirmBtn" class="inv-btn inv-btn--danger" type="button">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="checkoutModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="checkoutTitle" style="max-width:440px">
+      <h3 id="checkoutTitle" class="modal-title">Checkout Item</h3>
+      <form id="checkoutForm" class="space-y-4" autocomplete="off">
+        <label class="block"><span>Tech ID</span><input name="operatorId" required/></label>
+        <label class="block"><span>6S Operator</span><input name="sixSOperator" required/></label>
+        <label class="block"><span>Quantity</span><input name="CheckoutQty" type="number" min="1" required/></label>
+        <p id="currentQtyDisplay" style="font-size:.82rem;color:var(--fg-muted)">Current Qty: –</p>
+        <div class="buttons-row justify-end">
+          <button type="button" id="cancelCheckout" class="inv-btn">Cancel</button>
+          <button type="submit" class="inv-btn" style="background:var(--ok);color:var(--ok-contrast);border-color:var(--ok)">Confirm Checkout</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="auditModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal modal--details hist-modal" role="dialog" aria-modal="true" aria-labelledby="auditTitle">
+      <header class="hist-header">
+        <div class="hist-header__titles">
+          <h3 id="auditTitle" class="modal-title hist-title">Item History</h3>
+          <div class="hist-subtitle">
+            <span id="auditItemCode" class="hist-pill hist-pill--code">—</span>
+            <span id="auditItemDesc" class="hist-subtitle__desc"></span>
+          </div>
+        </div>
+        <div class="hist-header__actions">
+          <button type="button" id="expandAudit" class="inv-btn inv-btn--sm" aria-expanded="false" aria-controls="auditModalBody" title="Toggle fullscreen">Expand</button>
+          <button type="button" id="cancelAudit" class="inv-btn inv-btn--sm" data-modal-close>Close</button>
+        </div>
+      </header>
+
+      <section class="hist-summary" aria-label="History summary">
+        <div class="hist-stat" data-stat="total">
+          <span class="hist-stat__label">Events</span>
+          <span class="hist-stat__value" id="histStatTotal">0</span>
+          <span class="hist-stat__sub" id="histStatTotalSub">of 0</span>
+        </div>
+        <div class="hist-stat" data-stat="qty">
+          <span class="hist-stat__label">Net Qty Δ</span>
+          <span class="hist-stat__value" id="histStatNetQty">0</span>
+          <span class="hist-stat__sub" id="histStatNetQtySub">checkouts − checkins</span>
+        </div>
+        <div class="hist-stat" data-stat="people">
+          <span class="hist-stat__label">Operators</span>
+          <span class="hist-stat__value" id="histStatOperators">0</span>
+          <span class="hist-stat__sub">unique actors</span>
+        </div>
+        <div class="hist-stat hist-stat--range" data-stat="range">
+          <span class="hist-stat__label">Range</span>
+          <span class="hist-stat__value" id="histStatRange">—</span>
+          <span class="hist-stat__sub" id="histStatRangeSub"></span>
+        </div>
+      </section>
+
+      <section class="hist-toolbar" aria-label="Filter history">
+        <div class="hist-toolbar__row hist-toolbar__row--search">
+          <label class="hist-search">
+            <span class="sr-only">Search history</span>
+            <svg class="hist-search__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input id="auditFilterSearch" type="search" placeholder="Search operator, action, fields, values…" autocomplete="off"/>
+          </label>
+          <input id="auditFilterOperator" type="text" placeholder="Operator ID" autocomplete="off" class="hist-input"/>
+          <div class="hist-presets" role="group" aria-label="Date range presets">
+            <button type="button" class="hist-chip hist-chip--preset" data-preset="today">Today</button>
+            <button type="button" class="hist-chip hist-chip--preset" data-preset="7d">7d</button>
+            <button type="button" class="hist-chip hist-chip--preset" data-preset="30d">30d</button>
+            <button type="button" class="hist-chip hist-chip--preset" data-preset="90d">90d</button>
+            <button type="button" class="hist-chip hist-chip--preset is-active" data-preset="all">All</button>
+          </div>
+          <div class="hist-dates">
+            <input id="auditFilterStart" type="date" aria-label="Start date" class="hist-input hist-input--date"/>
+            <span class="hist-dates__sep">→</span>
+            <input id="auditFilterEnd" type="date" aria-label="End date" class="hist-input hist-input--date"/>
+          </div>
+          <button type="button" id="auditFilterReset" class="inv-btn inv-btn--sm hist-reset" title="Clear all filters">Reset</button>
+        </div>
+        <div class="hist-toolbar__row hist-toolbar__row--actions">
+          <span class="hist-toolbar__label">Actions:</span>
+          <div id="auditActionChips" class="hist-chips" role="group" aria-label="Filter by action">
+            <!-- action chips injected by events.js -->
+          </div>
+        </div>
+      </section>
+
+      <div id="auditModalBody" class="hist-body modal-body" role="feed" aria-busy="false" aria-label="Item history timeline"></div>
+
+      <footer class="hist-footer buttons-row justify-end">
+        <span id="auditResultCount" class="hist-result-count" aria-live="polite"></span>
+        <button type="button" id="exportHistoryBtn" class="inv-btn">Export CSV</button>
+        <button type="button" id="cancelAuditBottom" class="inv-btn" data-modal-close>Close</button>
+      </footer>
+    </div>
+  </div>
+
+  <div id="itemDetailsModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal modal--details det-modal" role="dialog" aria-modal="true" aria-labelledby="itemDetailsTitle">
+      <header class="det-header">
+        <div class="det-header__titles">
+          <h3 id="itemDetailsTitle" class="modal-title det-title">Item Details</h3>
+          <div id="itemDetailsSubtitle" class="det-subtitle"></div>
+        </div>
+        <div class="det-header__actions">
+          <button type="button" id="expandItemDetails" class="inv-btn inv-btn--sm" aria-expanded="false" aria-controls="itemDetailsBody" title="Toggle fullscreen">Expand</button>
+          <button type="button" id="closeItemDetails" class="inv-btn inv-btn--sm" data-modal-close>Close</button>
+        </div>
+      </header>
+
+      <div id="itemDetailsBody" class="det-body modal-body" aria-busy="false">
+        <!-- injected by render.js / showDetails() -->
+      </div>
+
+      <footer class="det-footer buttons-row">
+        <button type="button" id="itemDetailsEditBtn" class="inv-btn" data-role="lead,admin">Edit</button>
+        <button type="button" id="itemDetailsHistoryBtn" class="inv-btn">Full History</button>
+        <div style="flex:1"></div>
+        <button type="button" class="inv-btn" data-modal-close>Close</button>
+      </footer>
+    </div>
+  </div>
+
+  <div id="exportAllHistoryModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="exportAllHistoryTitle" style="max-width:420px">
+      <h3 id="exportAllHistoryTitle" class="modal-title">Export All Inventory History</h3>
+      <form id="exportAllHistoryForm" class="space-y-4">
+        <label class="block"><span>Start Date</span><input type="date" id="historyStartDate"/></label>
+        <label class="block"><span>End Date</span><input type="date" id="historyEndDate"/></label>
+        <div class="buttons-row justify-end">
+          <button type="button" id="cancelExportAllHistory" class="inv-btn">Cancel</button>
+          <button type="submit" class="inv-btn inv-btn--primary">Export</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js" defer></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js" defer></script>
+  <script src="/socket.io/socket.io.js" defer></script>
+  <script src="/nav.js" defer></script>
+
+  <script type="module" src="/js/inventory/main.js"></script>
+  <script src="/inventory/filter-toggle.js" defer></script>
+</body>
+</html>
+
+
+
+

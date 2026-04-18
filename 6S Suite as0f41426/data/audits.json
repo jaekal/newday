@@ -1,0 +1,40 @@
+{
+  "templates": [
+    {
+      "id": "daily-6s",
+      "title": "Daily 6S Walk",
+      "frequency": "daily",
+      "items": [
+        { "id": "benches-clean", "label": "Benches clean & organized" },
+        { "id": "aisles-clear", "label": "Aisles clear & labeled" },
+        { "id": "trash-emptied", "label": "Trash emptied" },
+        { "id": "shadow-boards", "label": "Shadow boards up to date" }
+      ]
+    },
+    {
+      "id": "weekly-safety",
+      "title": "Weekly Safety Check",
+      "frequency": "weekly",
+      "items": [
+        { "id": "ppe-stock", "label": "PPE stock verified" },
+        { "id": "spill-kits", "label": "Spill kits inspected" },
+        { "id": "eyewash", "label": "Eyewash stations tested" }
+      ]
+    }
+  ],
+  "entries": [
+    {
+      "date": "2025-01-10T00:00:00.000Z",
+      "shift": "AM",
+      "templateId": "daily-6s",
+      "results": [
+        { "itemId": "benches-clean", "pass": true,  "note": "" },
+        { "itemId": "aisles-clear",  "pass": true,  "note": "" },
+        { "itemId": "trash-emptied", "pass": false, "note": "North bay missed" },
+        { "itemId": "shadow-boards", "pass": true,  "note": "" }
+      ],
+      "submittedBy": "j.smith",
+      "submittedAt": "2025-01-10T13:15:00.000Z"
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+{
+  "Laptop": {
+    "frequencyDays": 7,
+    "criteria": [
+      "PhysicalDamage",
+      "ScreenIntact",
+      "PowerCordPresent",
+      "BatteryHealthy",
+      "KeyboardFunctional",
+      "PortsClear",
+      "LabelIntact"
+    ]
+  },
+  "Cart": {
+    "frequencyDays": 90,
+    "criteria": [
+      "WheelsRoll",
+      "BrakeCheck",
+      "Cleanliness",
+      "Monitors",
+      "Keyboards",
+      "CableManagement",
+      "CastersSecure",
+      "DeckStable"
+    ]
+  },
+  "Whip": {
+    "frequencyDays": 180,
+    "criteria": [
+      "ConnectorSecure",
+      "InsulationIntact",
+      "NoExposedWires",
+      "StrainReliefOK",
+      "GroundingSecure"
+    ]
+  },
+  "Transceiver": {
+    "frequencyDays": 60,
+    "criteria": [
+      "PortClean",
+      "LabelPresent",
+      "LEDsNormal",
+      "FirmwareCurrent"
+    ]
+  },
+  "Toolbox": {
+    "frequencyDays": 7,
+    "criteria": [
+      "Contents",
+      "LockingMechanism",
+      "LabelIntact",
+      "HandleSecure",
+      "InventoryComplete"
+    ]
+  },
+  "BBU Box": {
+    "frequencyDays": 120,
+    "criteria": [
+      "ConnectorSecure",
+      "InsulationIntact",
+      "BatteryLevel",
+      "VentilationClear",
+      "TerminalsClean"
+    ]
+  },
+  "Drop Box": {
+    "frequencyDays": 120,
+    "criteria": [
+      "ConnectorSecure",
+      "InsulationIntact",
+      "MountingSecure",
+      "LidCloses",
+      "NoCorrosion"
+    ]
+  },
+  "Voltage Tester": {
+    "frequencyDays": 120,
+    "criteria": [
+      "LockingMechanism",
+      "ContentInventory",
+      "CalibrationValid",
+      "ProbesIntact",
+      "BatteryGood"
+    ]
+  }
+}

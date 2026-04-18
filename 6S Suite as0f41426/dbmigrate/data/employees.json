@@ -1,0 +1,2844 @@
+[
+  {
+    "id": "1090",
+    "name": "Luis Gonzalez",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "1113",
+    "name": "JieLei Xie",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "1163",
+    "name": "Andres Bolivar",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "1165",
+    "name": "Ana Leon",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "1176",
+    "name": "Jean Desilhomme",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "1185",
+    "name": "Sonia Valencia",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "1213",
+    "name": "Bharatkumar Desai",
+    "role": " Engineer",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "1214",
+    "name": "Dhimant Desai",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "1215",
+    "name": "Antonio Munoz",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "1319",
+    "name": "Victor Castro",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "1553",
+    "name": "Josue Taveras",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "1560",
+    "name": "Latoya Smith",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "1662",
+    "name": "Jose Parra",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "1718",
+    "name": "Edsene Cajous",
+    "role": "Test & Repair / 6S",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "1999",
+    "name": "Roberto Carcamo",
+    "role": " Engineer",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "2133",
+    "name": "Katherine Suero",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "2144",
+    "name": "Mitul Patel",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "2230",
+    "name": "Christian Devers",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "2277",
+    "name": "Nelson Lovera",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "2278",
+    "name": "Gabriel Rosario",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "2314",
+    "name": "Yanibel Rodriguez",
+    "role": " System Inventory",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "2317",
+    "name": "Dilipkumar Surti",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "2318",
+    "name": "Daniel Rojas",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "2348",
+    "name": "Jean Tapia",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "2580",
+    "name": "Javier Hodges",
+    "role": " QC support",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "2586",
+    "name": "Kaminiben Patel",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "2592",
+    "name": "Genesis Bautista",
+    "role": "Test & Repair / Parts Handling",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "2603",
+    "name": "Fredy Valenzuela",
+    "role": " Technician",
+    "building": "Other",
+    "shift": 1
+  },
+  {
+    "id": "2727",
+    "name": "Cesar Romero",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "2732",
+    "name": "Alexander Sheng",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "2736",
+    "name": "Carlos Villegas",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "2737",
+    "name": "Johanna Matute",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "3026",
+    "name": "Jake Masercola",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "3087",
+    "name": "Jay Ye",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "3143",
+    "name": "Jackson Franco",
+    "role": " QC support",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "3146",
+    "name": "Emely Rijo Perez",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "3158",
+    "name": "Ruan Shao Hua",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "3165",
+    "name": "Yun Pu",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "3182",
+    "name": "Lin Ming Jian",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "3202",
+    "name": "Matthew Shegelski",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "3210",
+    "name": "Miguel Torres",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "3224",
+    "name": "Jean Dessources",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "3228",
+    "name": "Fatima Fahhama",
+    "role": " System Inventory",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "3239",
+    "name": "Uriah Forde",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "3240",
+    "name": "Kian Paraiso",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "3241",
+    "name": "Vicente Basaldua",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "3268",
+    "name": "David Wells",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "3269",
+    "name": "Raj Gandhi",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "3287",
+    "name": "Desiree Espinosa",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "3295",
+    "name": "Francis Mensah",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "3307",
+    "name": "Chanel Colon",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "3365",
+    "name": "Dawood Saleem",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "3384",
+    "name": "Muhammad Baig",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "3539",
+    "name": "Homer Abes",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "3547",
+    "name": "Angel Rodriguez",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "3559",
+    "name": "Francisco Guerrero",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "3572",
+    "name": "Guido Guerra",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "3613",
+    "name": "Dignesh Patel",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "3622",
+    "name": "Bin Chen",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "3636",
+    "name": "Jennifer Rodriguez",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "3719",
+    "name": "Vibert Facey",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "3863",
+    "name": "Jayden Rodriguez",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "3865",
+    "name": "Luisaida Casamayor",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "3918",
+    "name": "Ray Greenberg",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "3934",
+    "name": "Moussa Fomba",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "3961",
+    "name": "Denzel Gaines",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "3962",
+    "name": "Resty Sabado",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "3964",
+    "name": "Gabriel Velez",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "3991",
+    "name": "Mohamed Messaoudi",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "4011",
+    "name": "Matthew Blanco",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "4017",
+    "name": "John Cruz",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "4038",
+    "name": "Jonathan Ledesma",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "4054",
+    "name": "Marek Sendyka",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "4074",
+    "name": "Miguel Retamozo",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "4083",
+    "name": "Narendra Ramrattan",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 3
+  },
+  {
+    "id": "4089",
+    "name": "Syed Mohammed",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "4093",
+    "name": "Ivan Carreno",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "4133",
+    "name": "Frank DeCandia",
+    "role": " QC support",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "4138",
+    "name": "William Castillo",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 3
+  },
+  {
+    "id": "4141",
+    "name": "Unnati Shah",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "4144",
+    "name": "Daniela Yagual",
+    "role": " System Inventory",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "4157",
+    "name": "Manuel Jimenez",
+    "role": " QC support",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "4176",
+    "name": "Dimas Sanchez",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "4425",
+    "name": "Ernesto Estremera",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 3
+  },
+  {
+    "id": "4426",
+    "name": "Shivam Patel",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "4445",
+    "name": "Daniel Sanchez",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "4446",
+    "name": "Terry Brown",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "4474",
+    "name": "Atikur Rahman",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "4479",
+    "name": "Nishith Brahmbhatt",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "4481",
+    "name": "Sofiane Oughanem",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "4482",
+    "name": "Mohammed Krachai",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "4550",
+    "name": "Yves Bernardin",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "4566",
+    "name": "Amir Haskins",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "4622",
+    "name": "Mar Leonard Lopez",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "4642",
+    "name": "Chirag Gabhawala",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "4643",
+    "name": "Ektaben Patel",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "4651",
+    "name": "Noemi Tolentino",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "4743",
+    "name": "Ydebi Valdez",
+    "role": " QC support",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "4744",
+    "name": "Kenia Bustillo",
+    "role": "Test & Repair / 6S",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "4765",
+    "name": "Syed Faraz Shah",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "4847",
+    "name": "Christopher Barrientos",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "4858",
+    "name": "Yoleiny Benitez",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "4920",
+    "name": "Christian Aymacana",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "4921",
+    "name": "Deysy Rodriguez",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "4922",
+    "name": "Steven Wasai",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "4928",
+    "name": "Gary Tekulsky",
+    "role": " Engineer",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "4934",
+    "name": "Nicholas Tartaglia",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "4935",
+    "name": "Andre Zatta",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "5033",
+    "name": "Gustavo Millan",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "5090",
+    "name": "Terrance Windham",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 3
+  },
+  {
+    "id": "5094",
+    "name": "David Clermont",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "5095",
+    "name": "Alexis Urbina",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "5368",
+    "name": "Evan Marinelli",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "5369",
+    "name": "Burcin Yilmaz",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "5370",
+    "name": "Samuel Harding",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "5393",
+    "name": "Jeremiah Biddle",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "5402",
+    "name": "John LLerena",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "5427",
+    "name": "Timothy Aymar",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "5430",
+    "name": "Rafael Machado",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "5431",
+    "name": "Yissel Araujo",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "5433",
+    "name": "Raquel Brito",
+    "role": "Test & Repair / 6S",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "5437",
+    "name": "Ibrahim Basha",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "5438",
+    "name": "Jamila Wassou",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "5443",
+    "name": "Christian Rivera",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 3
+  },
+  {
+    "id": "5472",
+    "name": "Jordan Cabrera",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "5484",
+    "name": "Ryan Marinas",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "5489",
+    "name": "Katty Gonzalez",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "5491",
+    "name": "Aby Ashok",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "5493",
+    "name": "Imad El Hamdan",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "5506",
+    "name": "Bobby Cavendish",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "5511",
+    "name": "Brandon Boodooram",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "5561",
+    "name": "Victor Castillo",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "5585",
+    "name": "Mike Reynoso",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "5657",
+    "name": "John Carbone",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "5662",
+    "name": "Philip DeRamos",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "5672",
+    "name": "Jeff Frederic",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "5676",
+    "name": "Teresa Guerrero",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "5682",
+    "name": "Abdulazim Kizilay",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "5684",
+    "name": "Primzian Magdael",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "5702",
+    "name": "Kinjal Rana",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "5714",
+    "name": "Eric Tengson",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "5718",
+    "name": "Peter Wu",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "5814",
+    "name": "Jordan Saurborn",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "5854",
+    "name": "David Pinos",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "5858",
+    "name": "Dylan Flores Wong",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "587",
+    "name": "Jo Yu",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "5895",
+    "name": "Dipendra Kayastha",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "5896",
+    "name": "Francisco Rodriguez",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "5898",
+    "name": "Daniel Hernandez",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "5899",
+    "name": "George Cermak",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "5950",
+    "name": "Erick Lugo",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "5993",
+    "name": "Anderson Rolf",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "5996",
+    "name": "Esteven Espinoza",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "6001",
+    "name": "Santiago Orrego",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "6052",
+    "name": "Theos Nikolla",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "6059",
+    "name": "Harsha Perera",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "6062",
+    "name": "Mayurbhai Lad",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "6202",
+    "name": "Khalil Monroe",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "6209",
+    "name": "Barbara Andino",
+    "role": " System Inventory",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6210",
+    "name": "Felipe Gomez",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6211",
+    "name": "Genesis Gomez",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "6213",
+    "name": "Shine Rajan",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "6218",
+    "name": "Arthur Deabreu",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6219",
+    "name": "Edmund Solis",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "6221",
+    "name": "Erwin James Rosales",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6223",
+    "name": "John Joel Reyes",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6224",
+    "name": "Josmar Mateo",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6225",
+    "name": "Quinito Fisher",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6226",
+    "name": "Timothy Lazicki",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6242",
+    "name": "Shaquel Seymour",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "6247",
+    "name": "Ryan Hall",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "6349",
+    "name": "Franco Perez",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "6352",
+    "name": "Sebastian Valenzuela",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "6356",
+    "name": "Bevan Cabalquinto",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6357",
+    "name": "Dariel Jacobo",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6358",
+    "name": "Hernis De Leon",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6360",
+    "name": "Jason Cerisano",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 3
+  },
+  {
+    "id": "6361",
+    "name": "Jesus Pastrana",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "6362",
+    "name": "Radin Islam",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6363",
+    "name": "Sak Thach",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6367",
+    "name": "Angel Ramirez",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6445",
+    "name": "Rodrigo Roque",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "6447",
+    "name": "Azizuddin Ahmed",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "6453",
+    "name": "Zoilo Peralta",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "6458",
+    "name": "Tristan Engel",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "6537",
+    "name": "Chrisonia DeCosta",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "6625",
+    "name": "Keithleen Penetrante",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "6773",
+    "name": "Jovel Charlecius",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "6774",
+    "name": "Bakal Dagnachew",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "6775",
+    "name": "Luisany Matos",
+    "role": " System Inventory",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "6776",
+    "name": "Nutepe Vodzogbe",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "6779",
+    "name": "Chinedu Emezieobi",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "6783",
+    "name": "Cielo Cua",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6784",
+    "name": "Zachary Veliky",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6788",
+    "name": "Mario Marte",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6789",
+    "name": "Armida Aquino",
+    "role": "Test & Repair / 6S",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "6791",
+    "name": "Luisanna Taveras",
+    "role": " System Inventory",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "6792",
+    "name": "Vidhi Joshi",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "6841",
+    "name": "Daniel Rivadeneira",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "6842",
+    "name": "Kent Mendoza",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6843",
+    "name": "John Rykowski",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6844",
+    "name": "Francis Figueroa",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6845",
+    "name": "Rodrigo Gonzalez",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6887",
+    "name": "Axel Gonzalez Ontiveros",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "6890",
+    "name": "Erick Blasco",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "6905",
+    "name": "Maxim Duganov",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "6908",
+    "name": "Anthony Ramcharan",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "6909",
+    "name": "Patrick Motto",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "6914",
+    "name": "Nirav Patel",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "6916",
+    "name": "Walter Rawls",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "6917",
+    "name": "Edison Flores",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "6920",
+    "name": "Wilson Carpio",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "6938",
+    "name": "Mirlind Bedeni",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "6939",
+    "name": "Jeffrey Crespo",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "6940",
+    "name": "Ysai Vicente",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "696",
+    "name": "Wander Cruz",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "6963",
+    "name": "Mahmoud Gouda",
+    "role": " Technician",
+    "building": "Other",
+    "shift": 1
+  },
+  {
+    "id": "6964",
+    "name": "Randy Garcia",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "6965",
+    "name": "Saif Ali",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "6967",
+    "name": "Andre Alvarados",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6969",
+    "name": "George Sanders",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6975",
+    "name": "Tohed Mahmood",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "6976",
+    "name": "Wilserve Baptiste",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6978",
+    "name": "Kenroy Rodney",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6979",
+    "name": "Nicholas Hussain",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6980",
+    "name": "Paul Esposito",
+    "role": " Engineer",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "6982",
+    "name": "Sean Muttel",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "6983",
+    "name": "Chillion Brown",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 3
+  },
+  {
+    "id": "6984",
+    "name": "David Rivera",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "7027",
+    "name": "John De Los Reyes",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "7030",
+    "name": "Ismael Torres",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "7033",
+    "name": "Joseph Morilla",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 3
+  },
+  {
+    "id": "7040",
+    "name": "Brandden Washington",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "7058",
+    "name": "Nasir Napier",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "7059",
+    "name": "Kyu Tae Park",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "706",
+    "name": "Wilkyn Ramos",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "708",
+    "name": "Jose Valentin",
+    "role": " QC support",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "7103",
+    "name": "Lenney Garcia",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 3
+  },
+  {
+    "id": "7120",
+    "name": "Jay Almoula",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "7121",
+    "name": "Jatnna Polanco Espinal",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "7172",
+    "name": "Anifeg Oualid",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 3
+  },
+  {
+    "id": "7215",
+    "name": "Demetrius Sanderson",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "726",
+    "name": "Oscar Reyes",
+    "role": " QC support",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "7413",
+    "name": "Erick Cruz",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "7417",
+    "name": "Cosme Vidal",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 3
+  },
+  {
+    "id": "744",
+    "name": "Eduardo Cruz",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "7511",
+    "name": "Said Saidi",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "7512",
+    "name": "Zenaida Candelario",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "7521",
+    "name": "Rodolfo Linarez Laureano",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "798",
+    "name": "Florentino Uscamayta",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "8108",
+    "name": "Ali Idali",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "8194",
+    "name": "Jhersson Solis",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "945",
+    "name": "Mamady Loua",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "977",
+    "name": "Alysia Ramsaran",
+    "role": " System Inventory",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "985",
+    "name": "Varion James",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "r00052246",
+    "name": "Jeffson Charles",
+    "role": " QC support",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "r00061864",
+    "name": "Eder Dort",
+    "role": " QC support",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "r00061898",
+    "name": "Barguens Pierre",
+    "role": " QC support",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "r00070277",
+    "name": "Mohammed Afellah",
+    "role": " System Inventory",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "r00073396",
+    "name": "Jose Perez",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "r00099675",
+    "name": "Oussama Zagar",
+    "role": " QC support",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "r00109162",
+    "name": "Ismail - Ajrane",
+    "role": " QC support",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "r00119835",
+    "name": "Jeremiah Sanchez",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "r00124920",
+    "name": "Abdelrahman Abdelhamid",
+    "role": " QC support",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "r00125104",
+    "name": "Mhamed Messaoud",
+    "role": " QC support",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "r00127038",
+    "name": "Kerlin Castillo",
+    "role": " QC support",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "r10169448",
+    "name": "Jeremy Frias",
+    "role": " QC support",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "r10310217",
+    "name": "Cesar Garcia",
+    "role": " QC support",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "r12251965",
+    "name": "Jackeline Zala",
+    "role": "Test & Repair / Parts Handling",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "r14019716",
+    "name": "Giancarlo Ramirez",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "r14064405",
+    "name": "Miguel Moronta",
+    "role": " QC support",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "r14070588",
+    "name": "Jessica Acosta",
+    "role": " System Inventory",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "r14493970",
+    "name": "Ramon Berroa",
+    "role": " QC support",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "r14703608",
+    "name": "Joseph Legra",
+    "role": " QC support",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "r14872068",
+    "name": "Iprovat Sarker",
+    "role": " QC support",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "r15515670",
+    "name": "Narvi Guzman",
+    "role": " System Inventory",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "r15596863",
+    "name": "Noreth Lecky",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "r16321223",
+    "name": "Jaouad Elghazouni",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "r16708090",
+    "name": "Mohamed Maiga",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 3
+  },
+  {
+    "id": "r16796301",
+    "name": "Ayoub Hda",
+    "role": " QC support",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "r16898045",
+    "name": "Kelvin Feliz",
+    "role": " QC support",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "r17324832",
+    "name": "Ramesh Patel",
+    "role": " QC support",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "r17447486",
+    "name": "Wilmer Briceno",
+    "role": " QC support",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "r17479438",
+    "name": "Altenor Etienne",
+    "role": " QC support",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "r17519880",
+    "name": "Najib Belhaj",
+    "role": " System Inventory",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "r17546211",
+    "name": "Fabricio Zambrano",
+    "role": " QC support",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "r17546471",
+    "name": "Nicole Ibanez",
+    "role": " System Inventory",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "r17745706",
+    "name": "Lahcen Khannour",
+    "role": " System Inventory",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "r17801427",
+    "name": "Wilfranc Paul",
+    "role": " QC support",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "r17850745",
+    "name": "Alain Lopez Vega",
+    "role": " QC support",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "r17950107",
+    "name": "Hamza Mouhou",
+    "role": " QC support",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "r18066442",
+    "name": "Jefferson Ruano Valenzuela",
+    "role": " QC support",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "r18155819",
+    "name": "Oscar Llerena",
+    "role": " QC support",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "r18268322",
+    "name": "Manuel Salcedo",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "r18324804",
+    "name": "Omar Bouneddaden",
+    "role": " QC support",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "r18325016",
+    "name": "Juan Segura",
+    "role": " QC support",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "r18332203",
+    "name": "Hicham Bihmaden",
+    "role": " QC support",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "r18467348",
+    "name": "Rahul Chandani",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "r18507375",
+    "name": "Hardik Patel",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "r18538715",
+    "name": "Leynie Rodriguez",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "r18547923",
+    "name": "Monarch Parmar",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "r18622935",
+    "name": "William Mitchell Jr",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 3
+  },
+  {
+    "id": "r18623915",
+    "name": "Alfonso Rojas",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "r18653093",
+    "name": "Andrew Bock",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "r18671578",
+    "name": "Edgar Fuentes",
+    "role": " QC support",
+    "building": "40-50",
+    "shift": 3
+  },
+  {
+    "id": "r18702480",
+    "name": "Luis E. Chavez",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "r18736145",
+    "name": "Onamudiana Okoruwa",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 3
+  },
+  {
+    "id": "r18737475",
+    "name": "Christopher Castrejon",
+    "role": " QC support",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "r18741641",
+    "name": "Christian Barrientos",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "r18774138",
+    "name": "James Camarillo",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "r18803279",
+    "name": "Ramon Aragones",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "r18803288",
+    "name": "Puro Cedeno",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "r18803293",
+    "name": "Kirtikumar Patel",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "r18806422",
+    "name": "Joshua Vega",
+    "role": " QC support",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "r18817562",
+    "name": "Merardo Terrero",
+    "role": " QC support",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "r18861601",
+    "name": "Edimir Ramirez Rosario",
+    "role": " QC support",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "r18883122",
+    "name": "Emilio Caminero Rosado",
+    "role": " QC support",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "r18883151",
+    "name": "Aabella Atik",
+    "role": " QC support",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "r3635980",
+    "name": "Todd Grant",
+    "role": " QC support",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "r7018243",
+    "name": "Mrudulakumari Desai",
+    "role": "Test & Repair / Parts Handling",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "r7028078",
+    "name": "Olga Romero",
+    "role": " System Inventory",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "r7083923",
+    "name": "Enrique Peralta",
+    "role": " QC support",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "r7197812",
+    "name": "Cecilia Fernandez",
+    "role": " QC support",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "r7268766",
+    "name": "Lucy Otero",
+    "role": "Test & Repair / Parts Handling",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "r7323118",
+    "name": "Diego Bolivar",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "r7523716",
+    "name": "Maurice Thomas",
+    "role": " QC support",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "r7546206",
+    "name": "Ana Santana",
+    "role": " System Inventory",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "r7655596",
+    "name": "Joel Reynoso",
+    "role": " QC support",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "t23154723",
+    "name": "Piotr Kozlowski",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "t23923197",
+    "name": "Yashiya Mattis",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "t40379422",
+    "name": "Isaac Asante",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "t40852245",
+    "name": "Denny Sylvestre",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "t43886429",
+    "name": "Noberson Joseph",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "t45786465",
+    "name": "Theodore Russo",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "t51205290",
+    "name": "Leandro Carmo",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 3
+  },
+  {
+    "id": "t55745775",
+    "name": "Bianca Perez",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 3
+  },
+  {
+    "id": "t56205355",
+    "name": "Michael Staropoli",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "t56596791",
+    "name": "Raul Acosta",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "t56614862",
+    "name": "Arthur Pelingon",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "t57023823",
+    "name": "Rommel Pinos",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "t57073981",
+    "name": "Marc Jean",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "t57223442",
+    "name": "Sebastian Quinchia",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "t57399665",
+    "name": "Habeeb Olayiwola",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "t57623178",
+    "name": "Keyon Terry",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "t57761948",
+    "name": "Javier Tabar",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "t57764387",
+    "name": "Steven Chamba",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "t57928170",
+    "name": "Eduardo Perez Jr",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "t58228327",
+    "name": "Gabriel Acevedo",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "t58246135",
+    "name": "Ryan Vargas",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "t58589792",
+    "name": "Isaac Guerrero",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "t58605324",
+    "name": "Alexander Rodriguez",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "t58664388",
+    "name": "Hamit Nour",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 3
+  },
+  {
+    "id": "t58724832",
+    "name": "Jason Seigel",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 3
+  },
+  {
+    "id": "t60515620",
+    "name": "Atiya White",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "t72395068",
+    "name": "Manuchehr Inoyatov",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "t74879626",
+    "name": "Rachel DeForge",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "t77213690",
+    "name": "John Crearer",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "t82573009",
+    "name": "Jonathan Romero",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "t85801457",
+    "name": "Luis Cruz",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "t88340669",
+    "name": "Nicolus Brown",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "t88775134",
+    "name": "Neeta Sonar",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "t91724376",
+    "name": "Jed Reyes",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 3
+  },
+  {
+    "id": "t92840500",
+    "name": "Johann Jimenez",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "t93041726",
+    "name": "Benjamin Rivers",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "t93076843",
+    "name": "Franklyn Gomez",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 3
+  },
+  {
+    "id": "t93786595",
+    "name": "Syed Shaukat",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "t93854863",
+    "name": "Cristian Crespo",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "t94142353",
+    "name": "John Visitacion",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "t94299073",
+    "name": "Pedro Velez",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "t94311743",
+    "name": "John Secoy",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "t94373083",
+    "name": "Ali Iddir",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "t94397298",
+    "name": "Joshua Defaz",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "t94617481",
+    "name": "Yaobiri Santos",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 3
+  },
+  {
+    "id": "t94724168",
+    "name": "Malik Iddris",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "t94734959",
+    "name": "Jay Patel",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 3
+  },
+  {
+    "id": "t94743698",
+    "name": "Yavier Torres",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "t94768545",
+    "name": "Zachary Spricigo",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "t95205206",
+    "name": "Emilio Rodriguez",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "t95314924",
+    "name": "George Solis",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "t95331955",
+    "name": "Saeed Rezkalla",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "t95335765",
+    "name": "Luis Rodriguez",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "t95362506",
+    "name": "Steven Ha",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "t95597112",
+    "name": "Troy Bostwick",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "t95844150",
+    "name": "Shawn McQuilkin",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "t96167160",
+    "name": "Erkowitz Hobbs",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 3
+  },
+  {
+    "id": "t96173149",
+    "name": "Mahin Shah",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "t96234828",
+    "name": "Tyler Baer",
+    "role": " Technician",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "t96246442",
+    "name": "Andree Violeta",
+    "role": " Technician",
+    "building": "350",
+    "shift": 3
+  },
+  {
+    "id": "t96280412",
+    "name": "Shing Hong Chung",
+    "role": " Technician",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "t96606693",
+    "name": "Andrew Kerber",
+    "role": " Technician",
+    "building": "40-50",
+    "shift": 3
+  },
+  {
+    "id": "1077",
+    "name": "Jose Menjivar",
+    "role": "Management",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "1078",
+    "name": "Luis Valois",
+    "role": "Management",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "1518",
+    "name": "Jose Martinez",
+    "role": "Management",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "1537",
+    "name": "Juan Guerrero",
+    "role": "Management",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "1780",
+    "name": "Henry Pena",
+    "role": "Management",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "2142",
+    "name": "Yuxuan Lin",
+    "role": "Management",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "2146",
+    "name": "George Schick",
+    "role": "Management",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "2503",
+    "name": "Jayesh Master",
+    "role": "Management",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "2731",
+    "name": "Daniel Moya",
+    "role": "Management",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "3563",
+    "name": "Mahmoud Elsayed",
+    "role": "Management",
+    "building": "350",
+    "shift": 1
+  },
+  {
+    "id": "4181",
+    "name": "Isaac Rosado",
+    "role": "Management",
+    "building": "40-50",
+    "shift": 3
+  },
+  {
+    "id": "591",
+    "name": "Robin Melendez",
+    "role": "Management",
+    "building": "40-50",
+    "shift": 2
+  },
+  {
+    "id": "711",
+    "name": "Oscar Salazar",
+    "role": "Management",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "8640",
+    "name": "Hamid Khellouk",
+    "role": "Management",
+    "building": "350",
+    "shift": 2
+  },
+  {
+    "id": "972",
+    "name": "Wajeeh Iqbal",
+    "role": "Management",
+    "building": "40-50",
+    "shift": 1
+  },
+  {
+    "id": "7381",
+    "name": "Javier Tabar",
+    "role": "Technician",
+    "building": "350",
+    "shift": 3
+  }
+]

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Inspection Reports</title>
+  <link rel="icon" href="/images/favicon.png" type="image/png"/>
+  <link rel="stylesheet" href="/styles.css"/>
+  <script src="/theme-init.js"></script>
+  <style>
+    .wrap { max-width: 1220px; margin: 0 auto; padding: 1rem; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: .8rem; box-shadow: var(--shadow); }
+    .toolbar { display: grid; grid-template-columns: 1.2fr .8fr .8fr .9fr .9fr .9fr auto auto; gap: .75rem; padding: 1rem; margin-bottom: 1rem; }
+    .toolbar label { display: block; font-size: .82rem; font-weight: 700; color: var(--fg-muted); margin-bottom: .3rem; text-transform: uppercase; letter-spacing: .04em; }
+    .toolbar input, .toolbar select { width: 100%; }
+    .toolbar-actions { display:flex; align-items:end; gap:.6rem; }
+    table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+    th, td { padding: .65rem .75rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+    th { font-size: .78rem; color: var(--fg-muted); text-transform: uppercase; letter-spacing: .04em; }
+    tbody tr { cursor: pointer; }
+    tbody tr:hover { background: var(--row-hover); }
+    .pill { display: inline-flex; padding: .15rem .5rem; border-radius: 999px; font-size: .75rem; font-weight: 700; background: var(--surface-strong); }
+    .meta { color: var(--fg-muted); font-size: .82rem; }
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.48); display: none; align-items: center; justify-content: center; z-index: 60; }
+    .modal-backdrop.open { display: flex; }
+    .modal { width: min(96vw, 980px); max-height: 88vh; overflow: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 1rem; box-shadow: var(--shadow); padding: 1rem; }
+    .detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .9rem; margin: 1rem 0; }
+    .detail-card { border: 1px solid var(--border); border-radius: .8rem; padding: .8rem; background: var(--surface-strong); }
+    .detail-card label { display: block; font-size: .75rem; color: var(--fg-muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: .35rem; }
+    .response-list { display: grid; gap: .75rem; }
+    .response-item { border: 1px solid var(--border); border-radius: .8rem; padding: .8rem; }
+    .response-item h4 { margin: 0 0 .4rem; font-size: .95rem; }
+    .response-item p { margin: .25rem 0; }
+    .empty { padding: 2rem; text-align: center; color: var(--fg-muted); }
+    @media (max-width: 900px) {
+      .toolbar { grid-template-columns: 1fr; }
+      .detail-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="suite-topbar" style="margin-bottom:1rem">
+      <div class="brand">
+        <div class="brand-title">Inspection Reports</div>
+        <div class="brand-subtitle">Lead view for technician inspection submissions by building and shift</div>
+      </div>
+      <div class="suite-actions">
+        <a href="/home" class="home-button">Home</a>
+        <a href="/history" class="btn-secondary" style="padding:.45rem .85rem;border-radius:.4rem;text-decoration:none;font-size:.88rem;border:1px solid var(--border)">History</a>
+        <label for="themeSelector" class="visually-hidden">Theme</label>
+        <select id="themeSelector" class="theme-select" aria-label="Theme">
+          <option value="theme-command">Command</option>
+<option value="theme-atlas">Atlas</option>
+<option value="theme-carbon">Carbon</option>
+<option value="theme-grove">Grove</option>
+<option value="theme-ember">Ember</option>
+<option value="theme-harbor">Harbor</option>
+<option value="theme-slate">Slate</option>
+<option value="theme-orchid">Orchid</option>
+<option value="theme-dusk">Dusk</option>
+<option value="theme-pulse">Pulse</option>
+<option value="theme-highcontrast">High Contrast</option>
+        </select>
+      </div>
+    </header>
+
+    <section class="card toolbar">
+      <div>
+        <label for="inspectionSearch">Search</label>
+        <input id="inspectionSearch" type="text" placeholder="Rack SN, tech, model, area..."/>
+      </div>
+      <div>
+        <label for="inspectionBuilding">Building</label>
+        <select id="inspectionBuilding"></select>
+      </div>
+      <div>
+        <label for="inspectionShiftFilter">Shift</label>
+        <select id="inspectionShiftFilter">
+          <option value="">All shifts</option>
+          <option value="1">Shift 1</option>
+          <option value="2">Shift 2</option>
+          <option value="3">Shift 3</option>
+        </select>
+      </div>
+      <div>
+        <label for="inspectionTechId">Tech ID</label>
+        <input id="inspectionTechId" type="text" placeholder="Filter by tech ID"/>
+      </div>
+      <div>
+        <label for="inspectionSku">SKU / Rack Model</label>
+        <input id="inspectionSku" type="text" placeholder="Filter by rack model"/>
+      </div>
+      <div>
+        <label for="inspectionDateFrom">Date From</label>
+        <input id="inspectionDateFrom" type="date"/>
+      </div>
+      <div>
+        <label for="inspectionDateTo">Date To</label>
+        <input id="inspectionDateTo" type="date"/>
+      </div>
+      <div class="toolbar-actions">
+        <button id="inspectionRefresh" class="btn btn-primary" type="button">Refresh</button>
+        <button id="inspectionExport" class="btn btn-secondary" type="button">Export Filtered</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div style="padding:1rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:.75rem;align-items:center">
+        <strong id="inspectionCount">0 reports</strong>
+        <span class="meta" id="inspectionScope"></span>
+      </div>
+      <div style="overflow:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Submitted</th>
+              <th>Technician</th>
+              <th>Building</th>
+              <th>Shift</th>
+              <th>Area / Stage</th>
+              <th>Rack</th>
+            </tr>
+          </thead>
+          <tbody id="inspectionRows"></tbody>
+        </table>
+      </div>
+      <div id="inspectionEmpty" class="empty" hidden>No inspection reports match the current filters.</div>
+    </section>
+  </div>
+
+  <div id="inspectionDetailModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="inspectionDetailTitle">
+      <div style="display:flex;justify-content:space-between;gap:1rem;align-items:start">
+        <div>
+          <h2 id="inspectionDetailTitle" style="margin:0 0 .35rem">Inspection Detail</h2>
+          <div class="meta" id="inspectionDetailSubtitle"></div>
+        </div>
+        <div style="display:flex;gap:.6rem;align-items:center">
+          <button id="inspectionDetailExport" class="btn btn-primary" type="button">Export This Report</button>
+          <button id="inspectionDetailClose" class="btn btn-secondary" type="button">Close</button>
+        </div>
+      </div>
+
+      <div class="detail-grid" id="inspectionDetailMeta"></div>
+      <div class="response-list" id="inspectionDetailResponses"></div>
+    </div>
+  </div>
+
+  <script src="/nav.js"></script>
+  <script type="module" src="/inspections/inspections.js"></script>
+</body>
+</html>
+
+

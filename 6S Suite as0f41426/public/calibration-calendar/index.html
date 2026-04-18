@@ -1,0 +1,316 @@
+<!--public/calibration-calendar/index.html-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Calibration Calendar – 6S Tool Suite</title>
+  <link rel="icon" href="/images/favicon.png" type="image/png"/>
+  <link rel="stylesheet" href="/styles.css"/>
+  <script src="/theme-init.js"></script>
+  <style>
+    .wrap { max-width:1100px; margin:0 auto; padding:1rem; }
+    .cal-nav { display:flex; align-items:center; gap:1rem; margin-bottom:1rem; }
+    .cal-nav h2 { flex:1; text-align:center; font-size:1.25rem; font-weight:800; }
+    .month-grid {
+      display:grid; grid-template-columns:repeat(7,1fr); gap:3px; margin-bottom:1.5rem;
+    }
+    .day-cell {
+      border:1px solid var(--border); border-radius:.4rem; padding:.35rem .4rem;
+      min-height:80px; background:var(--surface); vertical-align:top;
+      font-size:.78rem; transition:background .1s;
+    }
+    .day-cell:hover { background:var(--row-hover); }
+    .day-cell.today { border-color:var(--accent); background:var(--info-bg); }
+    .day-cell.other-month { opacity:.35; }
+    .day-num { font-weight:700; margin-bottom:.25rem; font-size:.82rem; }
+    .day-events { display:flex; flex-direction:column; gap:2px; }
+    .cal-event {
+      display:block; padding:.1rem .3rem; border-radius:.25rem; font-size:.72rem;
+      font-weight:600; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      text-decoration:none;
+    }
+    .ev-overdue  { background:var(--danger-bg); color:var(--danger); border-left:2px solid var(--danger); }
+    .ev-soon     { background:var(--warn-bg);   color:var(--warn);   border-left:2px solid var(--warn); }
+    .ev-ok       { background:var(--ok-bg);     color:var(--ok);     border-left:2px solid var(--ok); }
+    .day-cell-head { font-weight:700; font-size:.75rem; color:var(--fg-muted); text-align:center; padding:.25rem 0; }
+    .legend { display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin-bottom:1rem; font-size:.82rem; }
+    .legend-item { display:flex; align-items:center; gap:.35rem; }
+    .legend-dot { width:.7rem; height:.7rem; border-radius:50%; }
+    .list-view { display:none; }
+    .filters { display:flex; gap:.65rem; align-items:center; flex-wrap:wrap; margin-bottom:1rem; }
+    /* Detail popover */
+    #cal-detail {
+      position:fixed; z-index:5000; background:var(--surface-strong); color:var(--fg);
+      border:1px solid var(--border); border-radius:.65rem; padding:1rem;
+      box-shadow:0 12px 32px rgba(0,0,0,.2); min-width:260px; max-width:320px;
+      display:none;
+    }
+    #cal-detail.open { display:block; }
+    #cal-detail h4 { margin:0 0 .5rem; font-size:.95rem; }
+    #cal-detail .detail-row { font-size:.83rem; margin:.2rem 0; }
+    #cal-detail .detail-row span { color:var(--fg-muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- Suite Topbar -->
+    <header class="suite-topbar" style="margin-bottom:1rem">
+      <div class="brand">
+        <div class="brand-title" style="display:flex;align-items:center;gap:.4rem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Calibration Calendar</div>
+        <div class="brand-subtitle">Monthly view of upcoming calibration due dates</div>
+      </div>
+      <div class="suite-actions">
+        <a href="/home" class="home-button" style="display:inline-flex;align-items:center;gap:.35rem"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Home</a>
+        <a href="/expiration" style="display:inline-flex;align-items:center;gap:.35rem;padding:.45rem .85rem;border-radius:.4rem;text-decoration:none;font-size:.88rem;border:1px solid var(--border);background:var(--surface-strong);color:var(--fg)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 13l-4.414 3.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 11l4.414-3.414A2 2 0 0 0 17 6.172V2"/></svg> Expiration</a>
+        <label for="themeSelector" class="visually-hidden">Theme</label>
+        <select id="themeSelector" class="theme-select" aria-label="Theme">
+          <option value="theme-command">Command</option>
+<option value="theme-beacon">Beacon</option>
+<option value="theme-atlas">Atlas</option>
+<option value="theme-carbon">Carbon</option>
+<option value="theme-grove">Grove</option>
+<option value="theme-ember">Ember</option>
+<option value="theme-harbor">Harbor</option>
+<option value="theme-slate">Slate</option>
+<option value="theme-orchid">Orchid</option>
+<option value="theme-dusk">Dusk</option>
+<option value="theme-pulse">Pulse</option>
+<option value="theme-highcontrast">High Contrast</option>
+        </select>
+      </div>
+    </header>
+
+    <div class="filters">
+      <label style="display:flex;align-items:center;gap:.4rem;font-size:.88rem">
+        Type:
+        <select id="filterType" style="width:auto">
+          <option value="">All</option>
+          <option value="tool">Tools</option>
+          <option value="asset">Assets</option>
+        </select>
+      </label>
+      <label style="display:flex;align-items:center;gap:.4rem;font-size:.88rem">
+        Window:
+        <select id="filterDays" style="width:auto">
+          <option value="90">90 days</option>
+          <option value="180" selected>180 days</option>
+          <option value="365">12 months</option>
+        </select>
+      </label>
+      <button id="todayBtn" class="btn-secondary" style="font-size:.85rem;padding:.4rem .75rem">Today</button>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--danger)"></div> Overdue</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--warn)"></div> Due within 14 days</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--ok)"></div> Upcoming</div>
+    </div>
+
+    <div class="cal-nav">
+      <button id="prevMonth" class="btn-secondary" style="padding:.4rem .75rem">◀</button>
+      <h2 id="monthLabel"></h2>
+      <button id="nextMonth" class="btn-secondary" style="padding:.4rem .75rem">▶</button>
+    </div>
+
+    <div class="skeleton skeleton-row" id="calSkeleton" style="height:400px;border-radius:.6rem" aria-hidden="true"></div>
+
+    <div id="calGrid" style="display:none">
+      <!-- Day-of-week headers -->
+      <div class="month-grid" id="calHeaders"></div>
+      <!-- Calendar cells -->
+      <div class="month-grid" id="calCells"></div>
+    </div>
+  </div>
+
+  <!-- Event detail popover -->
+  <div id="cal-detail" role="tooltip" aria-live="polite">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem">
+      <h4 id="cd-title"></h4>
+      <button onclick="document.getElementById('cal-detail').classList.remove('open')"
+        style="border:none;background:transparent;cursor:pointer;font-size:1rem;color:var(--fg-muted)">✕</button>
+    </div>
+    <div class="detail-row"><span>Serial: </span><strong id="cd-serial"></strong></div>
+    <div class="detail-row"><span>Type: </span><strong id="cd-type"></strong></div>
+    <div class="detail-row"><span>Due: </span><strong id="cd-due"></strong></div>
+    <div class="detail-row"><span>Status: </span><strong id="cd-status"></strong></div>
+    <div class="detail-row"><span>Last cal.: </span><strong id="cd-last"></strong></div>
+    <div style="margin-top:.6rem">
+      <a id="cd-link" href="#" class="btn-primary" style="font-size:.82rem;padding:.3rem .65rem;border-radius:.35rem;text-decoration:none">View in Screwdriver →</a>
+    </div>
+  </div>
+
+  <script src="/nav.js"></script>
+  <script type="module">
+    const TODAY = new Date();
+    TODAY.setHours(0,0,0,0);
+    const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+    let _viewYear  = TODAY.getFullYear();
+    let _viewMonth = TODAY.getMonth();
+    let _allItems  = [];
+
+    function isoDate(d) { return d.toISOString().slice(0,10); }
+    function parseDate(str) {
+      if (!str) return null;
+      const d = new Date(str);
+      return isNaN(+d) ? null : d;
+    }
+    function fmtDate(d) {
+      if (!d) return '—';
+      return new Date(d).toLocaleDateString(undefined, { dateStyle:'medium' });
+    }
+
+    /* ── Load data from expiration API ── */
+    async function loadItems() {
+      const type = document.getElementById('filterType').value;
+      const days = document.getElementById('filterDays').value;
+      const params = new URLSearchParams({ days, ...(type ? { type } : {}) });
+      try {
+        const r = await fetch(`/expiration/api?${params}`, { credentials:'include' });
+        if (!r.ok) return [];
+        const data = await r.json();
+        return data?.items || data || [];
+      } catch { return []; }
+    }
+
+    /* ── Build calendar ── */
+    function buildCalendar(items) {
+      // Index items by date string
+      const byDate = {};
+      for (const item of items) {
+        const d = parseDate(item.nextCalibrationDue || item.nextDue || item.expirationDate);
+        if (!d) continue;
+        const key = isoDate(d);
+        (byDate[key] = byDate[key] || []).push({ ...item, _dueDate: d });
+      }
+
+      const label = document.getElementById('monthLabel');
+      label.textContent = `${MONTH_NAMES[_viewMonth]} ${_viewYear}`;
+
+      // Render headers
+      const headers = document.getElementById('calHeaders');
+      headers.innerHTML = DAY_NAMES.map(d =>
+        `<div class="day-cell-head">${d}</div>`
+      ).join('');
+
+      // First day of month, pad with prev-month days
+      const firstDay = new Date(_viewYear, _viewMonth, 1);
+      const lastDay  = new Date(_viewYear, _viewMonth + 1, 0);
+      const startPad = firstDay.getDay(); // 0=Sun
+
+      const cells = document.getElementById('calCells');
+      cells.innerHTML = '';
+
+      for (let i = 0; i < startPad; i++) {
+        const d = new Date(_viewYear, _viewMonth, 1 - (startPad - i));
+        cells.appendChild(buildCell(d, byDate, true));
+      }
+      for (let d = 1; d <= lastDay.getDate(); d++) {
+        const date = new Date(_viewYear, _viewMonth, d);
+        cells.appendChild(buildCell(date, byDate, false));
+      }
+      // Trailing cells
+      const remaining = 7 - ((startPad + lastDay.getDate()) % 7);
+      if (remaining < 7) {
+        for (let i = 1; i <= remaining; i++) {
+          const d = new Date(_viewYear, _viewMonth + 1, i);
+          cells.appendChild(buildCell(d, byDate, true));
+        }
+      }
+
+      document.getElementById('calSkeleton').style.display = 'none';
+      document.getElementById('calGrid').style.display = '';
+    }
+
+    function buildCell(date, byDate, otherMonth) {
+      const key = isoDate(date);
+      const isToday = isoDate(date) === isoDate(TODAY);
+      const div = document.createElement('div');
+      div.className = `day-cell${otherMonth ? ' other-month' : ''}${isToday ? ' today' : ''}`;
+
+      const numEl = document.createElement('div');
+      numEl.className = 'day-num';
+      numEl.textContent = date.getDate();
+      div.appendChild(numEl);
+
+      const events = byDate[key] || [];
+      const evContainer = document.createElement('div');
+      evContainer.className = 'day-events';
+
+      for (const item of events.slice(0, 3)) {
+        const daysDiff = Math.floor((item._dueDate - TODAY) / 86_400_000);
+        const cls = daysDiff < 0 ? 'ev-overdue' : daysDiff <= 14 ? 'ev-soon' : 'ev-ok';
+        const ev = document.createElement('span');
+        ev.className = `cal-event ${cls}`;
+        ev.textContent = item.serialNumber || item.code || item.name || item.ItemCode || 'Item';
+        ev.title = `${item.model || item.description || ''} — due ${fmtDate(item._dueDate)}`;
+        ev.addEventListener('click', e => showDetail(e, item));
+        evContainer.appendChild(ev);
+      }
+      if (events.length > 3) {
+        const more = document.createElement('span');
+        more.style.cssText = 'font-size:.7rem;color:var(--fg-muted);padding:0 .3rem';
+        more.textContent = `+${events.length - 3} more`;
+        evContainer.appendChild(more);
+      }
+      div.appendChild(evContainer);
+      return div;
+    }
+
+    /* ── Event detail popover ── */
+    function showDetail(e, item) {
+      e.stopPropagation();
+      const panel = document.getElementById('cal-detail');
+      document.getElementById('cd-title').textContent = item.model || item.description || item.name || 'Item';
+      document.getElementById('cd-serial').textContent = item.serialNumber || item.code || item.tagNumber || '—';
+      document.getElementById('cd-type').textContent = item.itemType || item.type || '—';
+      document.getElementById('cd-due').textContent = fmtDate(item.nextCalibrationDue || item.nextDue || item.expirationDate);
+      document.getElementById('cd-status').textContent = item.calibrationStatus || item.status || '—';
+      document.getElementById('cd-last').textContent = fmtDate(item.lastCalibrationDate || item.lastCalibrated);
+      document.getElementById('cd-link').href = item.type === 'tool'
+        ? `/screwdriver/screwdriver.html`
+        : `/expiration`;
+      // Position near click
+      panel.style.left = Math.min(e.clientX + 10, window.innerWidth - 340) + 'px';
+      panel.style.top  = Math.min(e.clientY + 10, window.innerHeight - 260) + 'px';
+      panel.classList.add('open');
+    }
+
+    document.addEventListener('click', e => {
+      if (!document.getElementById('cal-detail').contains(e.target)) {
+        document.getElementById('cal-detail').classList.remove('open');
+      }
+    });
+
+    /* ── Controls ── */
+    async function refresh() {
+      document.getElementById('calSkeleton').style.display = '';
+      document.getElementById('calGrid').style.display = 'none';
+      _allItems = await loadItems();
+      buildCalendar(_allItems);
+    }
+
+    document.getElementById('prevMonth').addEventListener('click', () => {
+      _viewMonth--; if (_viewMonth < 0) { _viewMonth = 11; _viewYear--; }
+      buildCalendar(_allItems);
+    });
+    document.getElementById('nextMonth').addEventListener('click', () => {
+      _viewMonth++; if (_viewMonth > 11) { _viewMonth = 0; _viewYear++; }
+      buildCalendar(_allItems);
+    });
+    document.getElementById('todayBtn').addEventListener('click', () => {
+      _viewYear = TODAY.getFullYear(); _viewMonth = TODAY.getMonth();
+      buildCalendar(_allItems);
+    });
+    document.getElementById('filterType').addEventListener('change', refresh);
+    document.getElementById('filterDays').addEventListener('change', refresh);
+
+    // Boot
+    refresh();
+  </script>
+</body>
+</html>
+
+

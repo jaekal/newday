@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Building Transfers – 6S Tool Suite</title>
+  <link rel="icon" href="/images/favicon.png" type="image/png"/>
+  <link rel="stylesheet" href="/styles.css"/>
+  <script src="/theme-init.js"></script>
+  <style>
+    .tr-wrap { max-width:960px; margin:0 auto; padding:1rem; }
+
+    /* ── Transfer form card ─────────────────────────────────────────────── */
+    .tr-card {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:.65rem; padding:1.25rem 1.5rem; margin-bottom:1.25rem;
+    }
+    .tr-card-title {
+      font-size:.92rem; font-weight:800; margin-bottom:1rem;
+      display:flex; align-items:center; gap:.45rem;
+    }
+
+    /* Step flow */
+    .tr-steps {
+      display:flex; gap:0; margin-bottom:1.25rem; border-radius:.45rem;
+      overflow:hidden; border:1px solid var(--border);
+    }
+    .tr-step {
+      flex:1; padding:.45rem .6rem; font-size:.75rem; font-weight:700;
+      text-align:center; background:var(--surface-strong); color:var(--fg-muted);
+      border-right:1px solid var(--border); transition:all .15s;
+      text-transform:uppercase; letter-spacing:.04em;
+    }
+    .tr-step:last-child { border-right:none; }
+    .tr-step.active { background:var(--accent); color:var(--accent-contrast); }
+    .tr-step.done   { background:color-mix(in srgb,var(--accent) 15%,transparent); color:var(--accent); }
+
+    /* Form rows */
+    .tr-row { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; margin-bottom:.75rem; }
+    @media(max-width:560px){ .tr-row { grid-template-columns:1fr; } }
+    .tr-field { display:flex; flex-direction:column; gap:.25rem; }
+    .tr-label { font-size:.77rem; font-weight:700; color:var(--fg-muted); text-transform:uppercase; letter-spacing:.04em; }
+    .tr-input, .tr-select {
+      padding:.38rem .55rem; border:1px solid var(--border); border-radius:var(--radius-sm);
+      background:var(--surface); color:var(--fg); font-size:.88rem;
+      transition:border-color .12s;
+    }
+    .tr-input:focus, .tr-select:focus { outline:none; border-color:var(--accent); }
+
+    /* Building arrow indicator */
+    .tr-arrow-row {
+      display:flex; align-items:center; gap:.5rem;
+      margin-bottom:.75rem; flex-wrap:wrap;
+    }
+    .tr-bldg-pill {
+      display:inline-flex; align-items:center; gap:.3rem;
+      padding:.28rem .7rem; border-radius:999px; font-size:.82rem; font-weight:700;
+      background:color-mix(in srgb,var(--accent) 12%,transparent);
+      border:1.5px solid color-mix(in srgb,var(--accent) 30%,transparent);
+      color:var(--accent);
+    }
+    .tr-bldg-arrow {
+      font-size:1.1rem; color:var(--fg-muted);
+    }
+
+    /* Item search */
+    .tr-search-wrap { position:relative; margin-bottom:.75rem; }
+    .tr-search-input {
+      width:100%; padding:.4rem .55rem .4rem 1.9rem;
+      border:1px solid var(--border); border-radius:var(--radius-sm);
+      background:var(--surface); color:var(--fg); font-size:.88rem;
+      box-sizing:border-box;
+    }
+    .tr-search-icon {
+      position:absolute; left:.55rem; top:50%; transform:translateY(-50%);
+      color:var(--fg-muted); pointer-events:none;
+    }
+    .tr-results {
+      border:1px solid var(--border); border-radius:var(--radius-sm);
+      background:var(--surface); max-height:220px; overflow-y:auto;
+      display:none;
+    }
+    .tr-results.open { display:block; }
+    .tr-result-item {
+      padding:.4rem .6rem; cursor:pointer; border-bottom:1px solid var(--border);
+      transition:background .08s; display:flex; flex-direction:column; gap:.08rem;
+    }
+    .tr-result-item:last-child { border-bottom:none; }
+    .tr-result-item:hover, .tr-result-item.selected { background:color-mix(in srgb,var(--accent) 8%,transparent); }
+    .tr-result-label { font-size:.86rem; font-weight:700; }
+    .tr-result-meta  { font-size:.74rem; color:var(--fg-muted); }
+    .tr-selected-item {
+      padding:.4rem .65rem; background:color-mix(in srgb,var(--accent) 8%,transparent);
+      border:1px solid color-mix(in srgb,var(--accent) 25%,transparent);
+      border-radius:var(--radius-sm); font-size:.87rem; margin-bottom:.75rem;
+    }
+    .tr-selected-list { display:flex; flex-direction:column; gap:.45rem; }
+    .tr-selected-chip {
+      display:flex; align-items:flex-start; justify-content:space-between; gap:.75rem;
+      padding:.2rem 0; border-bottom:1px solid color-mix(in srgb,var(--border) 70%,transparent);
+    }
+    .tr-selected-chip:last-child { border-bottom:none; }
+    .tr-clear-btn { background:none; border:none; cursor:pointer; color:var(--fg-muted); font-size:.85rem; padding:.1rem .2rem; }
+    .tr-clear-btn:hover { color:var(--danger); }
+
+    /* Qty row */
+    .tr-qty-row { display:flex; align-items:center; gap:.5rem; margin-bottom:.75rem; }
+    .tr-qty-input { width:90px; }
+
+    /* Transfer button */
+    .tr-submit {
+      width:100%; padding:.55rem; border-radius:var(--radius-sm);
+      background:var(--accent); color:var(--accent-contrast); font-size:.9rem; font-weight:700;
+      border:none; cursor:pointer; transition:opacity .12s;
+    }
+    .tr-submit:disabled { opacity:.4; cursor:not-allowed; }
+    .tr-submit:hover:not(:disabled) { opacity:.88; }
+
+    /* ── History table ──────────────────────────────────────────────────── */
+    .tr-history-header {
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom:.6rem; flex-wrap:wrap; gap:.4rem;
+    }
+    .tr-history-filters { display:flex; gap:.4rem; flex-wrap:wrap; }
+    .tr-filter-sel {
+      padding:.28rem .45rem; border:1px solid var(--border); border-radius:var(--radius-sm);
+      background:var(--surface); color:var(--fg); font-size:.8rem;
+    }
+
+    .tr-table { width:100%; border-collapse:collapse; font-size:.82rem; }
+    .tr-table th {
+      font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em;
+      color:var(--fg-muted); padding:.35rem .5rem; border-bottom:2px solid var(--border);
+      text-align:left; background:var(--surface-strong);
+    }
+    .tr-table td {
+      padding:.38rem .5rem; border-bottom:1px solid var(--border); vertical-align:top;
+    }
+    .tr-table tr:last-child td { border-bottom:none; }
+    .tr-table tbody tr:hover td { background:var(--surface-strong); }
+
+    .tr-type-badge {
+      display:inline-block; padding:.06rem .38rem; border-radius:999px;
+      font-size:.7rem; font-weight:700; text-transform:uppercase;
+    }
+    .tr-type-inventory { background:var(--info-bg);   color:var(--info); }
+    .tr-type-tool      { background:var(--warn-bg);   color:var(--warn); }
+    .tr-type-asset     { background:color-mix(in srgb,var(--ok) 15%,transparent); color:var(--ok); }
+
+    .tr-bldg-from { color:var(--fg-muted); }
+    .tr-bldg-to   { color:var(--accent); font-weight:700; }
+
+    .tr-empty {
+      text-align:center; padding:2rem; color:var(--fg-muted); font-size:.87rem;
+    }
+    .tr-loading { text-align:center; padding:1.5rem; color:var(--fg-muted); }
+  </style>
+</head>
+<body>
+<div class="tr-wrap">
+  <header class="suite-topbar" style="margin-bottom:1rem">
+    <div class="brand">
+      <div class="brand-title" style="display:flex;align-items:center;gap:.4rem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/><path d="m19 3-3 3 3 3"/><path d="m5 21 3-3-3-3"/></svg> Building Transfers</div>
+      <div class="brand-subtitle">Move inventory, tools, and assets between buildings</div>
+    </div>
+    <div class="suite-actions">
+      <span id="buildingBadgeSlot"></span>
+      <a href="/home" class="home-button" style="display:inline-flex;align-items:center;gap:.35rem"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Home</a>
+      <select id="themeSelector" class="theme-select" aria-label="Theme">
+        <option value="theme-command">Command</option>
+<option value="theme-beacon">Beacon</option>
+<option value="theme-atlas">Atlas</option>
+<option value="theme-carbon">Carbon</option>
+<option value="theme-grove">Grove</option>
+<option value="theme-ember">Ember</option>
+<option value="theme-harbor">Harbor</option>
+<option value="theme-slate">Slate</option>
+<option value="theme-orchid">Orchid</option>
+<option value="theme-dusk">Dusk</option>
+<option value="theme-pulse">Pulse</option>
+<option value="theme-highcontrast">High Contrast</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- ── Transfer form ─────────────────────────────────────────────────── -->
+  <div class="tr-card">
+    <div class="tr-card-title">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      New Transfer
+    </div>
+
+    <!-- Step indicators -->
+    <div class="tr-steps">
+      <div class="tr-step active" data-step="1">1 · Buildings</div>
+      <div class="tr-step"       data-step="2">2 · Type</div>
+      <div class="tr-step"       data-step="3">3 · Item</div>
+      <div class="tr-step"       data-step="4">4 · Confirm</div>
+    </div>
+
+    <form id="transferForm" autocomplete="off" novalidate>
+
+      <!-- Step 1: Buildings -->
+      <div id="step1">
+        <div class="tr-row">
+          <div class="tr-field">
+            <label class="tr-label" for="fromBuilding">From Building</label>
+            <select id="fromBuilding" class="tr-select" required>
+              <option value="Bldg-350">Building 350</option>
+              <option value="Bldg-4050">Building 4050</option>
+            </select>
+          </div>
+          <div class="tr-field">
+            <label class="tr-label" for="toBuilding">To Building</label>
+            <select id="toBuilding" class="tr-select" required>
+              <option value="Bldg-4050">Building 4050</option>
+              <option value="Bldg-350">Building 350</option>
+            </select>
+          </div>
+        </div>
+        <button type="button" id="btnStep1Next" class="tr-submit">Next: Select Type →</button>
+      </div>
+
+      <!-- Step 2: Type -->
+      <div id="step2" style="display:none">
+        <div class="tr-arrow-row">
+          <span class="tr-bldg-pill" id="pillFrom">Bldg-350</span>
+          <span class="tr-bldg-arrow">→</span>
+          <span class="tr-bldg-pill" id="pillTo">Bldg-4050</span>
+        </div>
+        <div class="tr-label" style="margin-bottom:.45rem">What are you transferring?</div>
+        <div style="display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:.75rem">
+          <button type="button" class="tr-type-btn" data-type="inventory"
+            style="flex:1;min-width:100px;padding:.5rem;border-radius:.4rem;border:1.5px solid var(--border);background:var(--surface-strong);cursor:pointer;font-size:.85rem;font-weight:700;transition:all .12s;display:inline-flex;align-items:center;justify-content:center;gap:.35rem">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg> Inventory
+          </button>
+          <button type="button" class="tr-type-btn" data-type="tool"
+            style="flex:1;min-width:100px;padding:.5rem;border-radius:.4rem;border:1.5px solid var(--border);background:var(--surface-strong);cursor:pointer;font-size:.85rem;font-weight:700;transition:all .12s;display:inline-flex;align-items:center;justify-content:center;gap:.35rem">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> Tool
+          </button>
+          <button type="button" class="tr-type-btn" data-type="asset"
+            style="flex:1;min-width:100px;padding:.5rem;border-radius:.4rem;border:1.5px solid var(--border);background:var(--surface-strong);cursor:pointer;font-size:.85rem;font-weight:700;transition:all .12s;display:inline-flex;align-items:center;justify-content:center;gap:.35rem">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2H2v10l9.29 9.29a1 1 0 0 0 1.41 0l6.59-6.58a1 1 0 0 0 0-1.41L12 2Z"/><path d="M7 7h.01"/></svg> Asset
+          </button>
+        </div>
+        <button type="button" id="btnStep2Back" class="btn-secondary" style="width:100%">← Back</button>
+      </div>
+
+      <!-- Step 3: Item search -->
+      <div id="step3" style="display:none">
+        <div class="tr-arrow-row">
+          <span class="tr-bldg-pill" id="pillFrom3">Bldg-350</span>
+          <span class="tr-bldg-arrow">→</span>
+          <span class="tr-bldg-pill" id="pillTo3">Bldg-4050</span>
+          <span id="typeBadge3" class="tr-type-badge" style="margin-left:.25rem"></span>
+        </div>
+
+        <!-- Item selected display -->
+        <div id="selectedItemDisplay" style="display:none" class="tr-selected-item">
+          <div id="selectedItemList" class="tr-selected-list"></div>
+          <button type="button" id="btnClearItem" class="tr-clear-btn" title="Clear all selections">Clear all</button>
+        </div>
+
+        <!-- Item search (hidden when item selected) -->
+        <div id="itemSearchWrap">
+          <div class="tr-search-wrap">
+            <svg class="tr-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input id="itemSearch" class="tr-search-input" type="text" placeholder="Search serial number(s) only - separate multiple SNs with commas or spaces" autocomplete="off"/>
+          </div>
+          <div style="font-size:.76rem;color:var(--fg-muted);margin:-.35rem 0 .45rem">Multi-select is supported for tools and assets. Search stays locked to serial number matching for tool lookups.</div>
+          <div id="itemResults" class="tr-results"></div>
+        </div>
+
+        <!-- Qty (inventory only) -->
+        <div id="qtyRow" class="tr-qty-row" style="display:none">
+          <label class="tr-label" for="qtyInput">Quantity to transfer</label>
+          <input id="qtyInput" class="tr-input tr-qty-input" type="number" min="1" value="1"/>
+          <span id="maxQtyLabel" style="font-size:.78rem;color:var(--fg-muted)"></span>
+        </div>
+
+        <!-- Notes -->
+        <div class="tr-field" style="margin-bottom:.75rem">
+          <label class="tr-label" for="notesInput">Notes (optional)</label>
+          <input id="notesInput" class="tr-input" type="text" placeholder="Reason for transfer…"/>
+        </div>
+
+        <div style="display:flex;gap:.5rem">
+          <button type="button" id="btnStep3Back" class="btn-secondary" style="flex:1">← Back</button>
+          <button type="button" id="btnStep3Next" class="tr-submit" style="flex:2" disabled>Preview Transfer →</button>
+        </div>
+      </div>
+
+      <!-- Step 4: Confirm -->
+      <div id="step4" style="display:none">
+        <div class="tr-card" style="background:var(--surface-strong);margin-bottom:.75rem">
+          <div style="font-size:.82rem;color:var(--fg-muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.6rem">Transfer Summary</div>
+          <table style="width:100%;font-size:.86rem;border-collapse:collapse">
+            <tr><td style="padding:.2rem 0;color:var(--fg-muted);width:40%">Type</td><td id="sum-type" style="font-weight:700"></td></tr>
+            <tr><td style="padding:.2rem 0;color:var(--fg-muted)">Item</td><td id="sum-item" style="font-weight:700"></td></tr>
+            <tr><td style="padding:.2rem 0;color:var(--fg-muted)">From</td><td id="sum-from" class="tr-bldg-from"></td></tr>
+            <tr><td style="padding:.2rem 0;color:var(--fg-muted)">To</td><td id="sum-to" class="tr-bldg-to"></td></tr>
+            <tr id="sum-qty-row"><td style="padding:.2rem 0;color:var(--fg-muted)">Quantity</td><td id="sum-qty"></td></tr>
+            <tr id="sum-notes-row"><td style="padding:.2rem 0;color:var(--fg-muted)">Notes</td><td id="sum-notes" style="color:var(--fg-muted)"></td></tr>
+          </table>
+        </div>
+        <p id="transferError" style="color:var(--danger);font-size:.83rem;display:none;margin-bottom:.5rem"></p>
+        <div style="display:flex;gap:.5rem">
+          <button type="button" id="btnStep4Back" class="btn-secondary" style="flex:1">← Back</button>
+          <button type="button" id="btnConfirmTransfer" class="tr-submit" style="flex:2;display:inline-flex;align-items:center;justify-content:center;gap:.4rem">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg> Confirm Transfer
+          </button>
+        </div>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- ── Transfer history ──────────────────────────────────────────────── -->
+  <div class="tr-card">
+    <div class="tr-history-header">
+      <div class="tr-card-title" style="margin-bottom:0">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Transfer History
+      </div>
+      <div class="tr-history-filters">
+        <select id="histType" class="tr-filter-sel">
+          <option value="">All types</option>
+          <option value="inventory">Inventory</option>
+          <option value="tool">Tool</option>
+          <option value="asset">Asset</option>
+        </select>
+        <select id="histBuilding" class="tr-filter-sel">
+          <option value="">All buildings</option>
+          <option value="Bldg-350">Bldg 350</option>
+          <option value="Bldg-4050">Bldg 4050</option>
+        </select>
+        <button type="button" id="btnRefreshHistory" class="btn-secondary" style="padding:.28rem .6rem;font-size:.8rem;display:inline-flex;align-items:center;gap:.3rem"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> Refresh</button>
+      </div>
+    </div>
+
+    <div id="historyBody">
+      <div class="tr-loading">Loading history…</div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/suite-icons.js"></script>
+<script src="/nav.js"></script>
+<script src="/js/building.js"></script>
+<script type="module" src="/transfers/transfers.js"></script>
+</body>
+</html>
+
+
+

@@ -1,0 +1,30 @@
+{
+  "watch": [
+    "server.js",
+    "config",
+    "jobs",
+    "middleware",
+    "models",
+    "routes",
+    "scripts",
+    "services",
+    "shared",
+    "sockets",
+    "utils",
+    "views",
+    "public"
+  ],
+  "ext": "js,mjs,json,ejs,css,html",
+  "ignore": [
+    ".git",
+    "certs/**",
+    "data/**",
+    "db.sqlite",
+    "db.sqlite-shm",
+    "db.sqlite-wal",
+    "node_modules/**",
+    "tmp/**",
+    "uploads/**"
+  ],
+  "delay": "250"
+}

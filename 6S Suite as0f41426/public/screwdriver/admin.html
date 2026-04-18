@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+
+  <!-- CSRF placeholder; if you enable CSRF middleware, inject token here -->
+  <meta name="csrf-token" content="">
+
+  <title>Admin Portal – Screwdriver Tool</title>
+
+  <!-- Core palette & component styles -->
+  <link rel="stylesheet" href="/styles.css"/>
+
+  <!-- Tailwind (utility helpers for spacing, layout) -->
+  <script defer src="https://cdn.tailwindcss.com"></script>
+
+  <!-- DataTables core -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"/>
+  <script defer src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script defer src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+  <!-- DataTables Buttons (CSV/Excel/PDF) -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css"/>
+  <script defer src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script defer src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+
+  <!-- pdfmake deps so "pdf" button works (optional) -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
+  <!-- Socket.IO for live updates -->
+  <script src="/socket.io/socket.io.js" defer></script>
+
+  <!-- Mobile address-bar color -->
+  <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
+</head>
+
+<body class="flex h-screen overflow-hidden">
+  <h1 id="mainTitle" class="sr-only">Admin Portal</h1>
+
+  <!-- Sidebar -->
+  <aside class="sticky top-0 hidden md:block w-64 flex-shrink-0 border-r" role="navigation" aria-label="Admin Navigation">
+    <div class="p-6 flex flex-col h-full">
+      <h2 id="sidebarGreeting" class="text-2xl font-semibold mb-6">Admin Portal</h2>
+
+      <button id="themeToggle" class="btn-secondary w-full mb-4" aria-label="Toggle theme">Toggle Theme</button>
+
+      <nav aria-label="Admin Sections" class="flex-1">
+        <ul class="space-y-2">
+          <li><a href="#toolsSection"     data-target="toolsSection"     class="nav-link btn-primary block px-3 py-2 rounded w-full text-left" aria-current="page">🧰 Manage Tools</a></li>
+          <li><a href="#employeesSection" data-target="employeesSection" class="nav-link btn-primary block px-3 py-2 rounded w-full text-left">👷 Employees</a></li>
+          <li><a href="#auditSection"     data-target="auditSection"     class="nav-link btn-primary block px-3 py-2 rounded w-full text-left">📜 Audit Log</a></li>
+          <li><a href="#toolverify"       data-target="toolverify"       class="nav-link btn-primary block px-3 py-2 rounded w-full text-left">🔍 Tool Audit</a></li>
+        </ul>
+      </nav>
+
+      <button id="adminLogoutBtn" class="btn-danger w-full mt-6" aria-label="Logout">Logout</button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 p-6 overflow-auto">
+    <!-- Manage Tools -->
+    <section id="toolsSection" class="admin-card" hidden aria-labelledby="toolsTitle">
+      <div class="flex justify-between items-center mb-4">
+        <h2 id="toolsTitle" class="text-2xl font-semibold">🧰 Manage Tools</h2>
+        <button id="openToolModal" class="btn-primary">Add New Tool</button>
+      </div>
+
+      <div id="spinner-tools" class="spinner hidden" aria-hidden="true"></div>
+      <table id="toolsTable" class="w-full display">
+        <thead>
+          <tr>
+            <th>Serial #</th><th>Slot</th><th>Torque</th><th>Class</th>
+            <th>Status</th><th>Operator</th><th>Checked Out At</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- Employees -->
+    <section id="employeesSection" class="admin-card" hidden aria-labelledby="employeesTitle">
+      <div class="flex justify-between items-center mb-4">
+        <h2 id="employeesTitle" class="text-2xl font-semibold">👷 Employees</h2>
+        <button id="openEmpModal" class="btn-primary">Add New Employee</button>
+      </div>
+
+      <div class="flex gap-2 mb-2">
+        <input id="employeesFilter" type="search" placeholder="Filter employees…" class="px-3 py-1 border rounded w-1/3" aria-label="Filter employees"/>
+      </div>
+
+      <div id="spinner-emp" class="spinner hidden" aria-hidden="true"></div>
+      <table id="employeesTable" class="w-full display">
+        <thead>
+          <tr>
+            <th>ID</th><th>Name</th><th>Role</th><th>Building</th><th>Shift</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- Audit Log -->
+    <section id="auditSection" class="admin-card" hidden aria-labelledby="auditTitle">
+      <h2 id="auditTitle" class="text-2xl font-semibold mb-4">📜 Audit Log</h2>
+
+      <div class="flex gap-2 mb-2">
+        <input id="auditFilter" type="search" placeholder="Filter audit log…" class="px-3 py-1 border rounded w-1/3" aria-label="Filter audit log"/>
+      </div>
+
+      <div id="spinner-audit" class="spinner hidden" aria-hidden="true"></div>
+      <table id="auditTable" class="w-full display">
+        <thead>
+          <tr>
+            <th>Time</th><th>Record</th><th>Action</th><th>User</th><th>Details</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- Tool Verification -->
+    <section id="toolverify" class="admin-card" hidden aria-labelledby="verifyTitle">
+      <h2 id="verifyTitle" class="text-2xl font-semibold mb-4">🔍 Tool Verification Audit</h2>
+
+      <form id="verificationAuditForm" class="space-y-3 mb-4" autocomplete="off">
+        <label class="block font-medium" for="verificationInput">
+          Paste or scan all tool serial numbers below (one per line):
+        </label>
+        <textarea
+          id="verificationInput"
+          rows="50"
+          placeholder="Scan or paste serial numbers here, one per line"
+          class="w-full border rounded px-3 py-2 mt-1 font-mono"
+          required
+          aria-required="true"
+        ></textarea>
+
+        <div class="flex gap-2">
+          <button type="submit" class="btn-primary">Review Audit</button>
+          <button type="button" id="cancelVerificationAudit" class="btn-secondary">Clear</button>
+        </div>
+      </form>
+
+      <div id="verificationAuditResults" class="mt-2" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <!-- Tool Modal -->
+  <div id="toolModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="toolModalTitle" aria-hidden="true">
+    <div class="modal grid grid-cols-2 gap-4" role="document">
+      <h3 id="toolModalTitle" class="col-span-2">Add Tool</h3>
+
+      <form id="toolForm" novalidate class="grid grid-cols-2 gap-4" autocomplete="off">
+        <div>
+          <label for="modalSerial">Serial Number</label>
+          <input id="modalSerial" type="text" required class="w-full border rounded px-2 py-1" />
+          <p class="text-red-500 text-sm hidden">Required</p>
+        </div>
+        <div>
+          <label for="modalSlot">Slot</label>
+          <input id="modalSlot" type="text" required class="w-full border rounded px-2 py-1" />
+          <p class="text-red-500 text-sm hidden">Required</p>
+        </div>
+        <div>
+          <label for="modalTorque">Torque</label>
+          <!-- text, not number, so you can store "0.6 Nm" or "8 in-lb" -->
+          <input id="modalTorque" type="text" required class="w-full border rounded px-2 py-1" />
+          <p class="text-red-500 text-sm hidden">Required</p>
+        </div>
+        <div>
+          <label for="modalClass">Classification</label>
+          <input id="modalClass" type="text" class="w-full border rounded px-2 py-1" />
+        </div>
+        <div>
+          <label for="modalDesc">Description</label>
+          <input id="modalDesc" type="text" class="w-full border rounded px-2 py-1" />
+        </div>
+        <div>
+          <label for="modalModel">Model</label>
+          <input id="modalModel" type="text" class="w-full border rounded px-2 py-1" />
+        </div>
+        <div>
+          <label for="modalCalStat">Cal Status</label>
+          <input id="modalCalStat" type="text" class="w-full border rounded px-2 py-1" />
+        </div>
+        <div>
+          <label for="modalCalDate">Last Cal Date</label>
+          <input id="modalCalDate" type="date" class="w-full border rounded px-2 py-1" />
+        </div>
+        <div>
+          <label for="modalNextCal">Next Cal Due</label>
+          <input id="modalNextCal" type="date" class="w-full border rounded px-2 py-1" />
+        </div>
+
+        <div class="col-span-2 flex justify-end gap-2">
+          <button type="button" id="cancelToolBtn" class="btn-secondary">Cancel</button>
+          <button type="submit" id="saveToolBtn" class="btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Employee Modal -->
+  <div id="empModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="empModalTitle" aria-hidden="true">
+    <div class="modal space-y-4" role="document">
+      <h3 id="empModalTitle">Add Employee</h3>
+
+      <form id="empForm" novalidate class="space-y-4" autocomplete="off">
+        <div class="field">
+          <label for="modalEmpId">ID</label>
+          <input id="modalEmpId" type="text" required class="w-full border rounded px-2 py-1"/>
+          <p class="text-red-500 text-sm hidden">Required</p>
+        </div>
+        <div class="field">
+          <label for="modalEmpName">Name</label>
+          <input id="modalEmpName" type="text" required class="w-full border rounded px-2 py-1"/>
+          <p class="text-red-500 text-sm hidden">Required</p>
+        </div>
+        <div class="field">
+          <label for="modalEmpRole">Role</label>
+          <input id="modalEmpRole" type="text" required class="w-full border rounded px-2 py-1"/>
+        </div>
+        <div class="field">
+          <label for="modalEmpBld">Building</label>
+          <input id="modalEmpBld" type="text" required class="w-full border rounded px-2 py-1"/>
+        </div>
+        <div class="field">
+          <label for="modalEmpShift">Shift</label>
+          <input id="modalEmpShift" type="number" min="1" max="3" required class="w-full border rounded px-2 py-1"/>
+        </div>
+
+        <div class="flex justify-end gap-2">
+          <button type="button" id="cancelEmpBtn" class="btn-secondary">Cancel</button>
+          <button type="submit" id="saveEmpBtn" class="btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toasts" aria-live="polite" class="fixed bottom-4 right-4 space-y-2 z-50"></div>
+
+  <!-- Admin App -->
+  <script defer type="module" src="admin.js"></script>
+</body>
+</html>

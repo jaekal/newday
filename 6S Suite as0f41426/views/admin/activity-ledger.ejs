@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Activity Ledger - 6S Tool Suite</title>
+  <link rel="icon" href="/images/favicon.png" type="image/png" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="/theme-init.js"></script>
+  <style>
+    body { margin:0; background:
+      radial-gradient(circle at top left, hsl(217 91% 60% / 0.09), transparent 26%),
+      radial-gradient(circle at top right, hsl(187 70% 50% / 0.08), transparent 24%),
+      var(--bg);
+      color:var(--fg);
+    }
+    .ledger-shell { max-width:1320px; margin:0 auto; padding:1rem; }
+    .ledger-hero { display:grid; grid-template-columns:1.3fr .7fr; gap:1rem; margin-bottom:1rem; }
+    .ledger-card { background:var(--surface); border:1px solid var(--border); border-radius:18px; box-shadow:var(--shadow); }
+    .ledger-hero-main { padding:1.15rem 1.2rem; position:relative; overflow:hidden; }
+    .ledger-hero-main::after { content:""; position:absolute; inset:auto -40px -40px auto; width:200px; height:200px; border-radius:999px; background:radial-gradient(circle, hsl(217 91% 60% / 0.18), transparent 65%); pointer-events:none; }
+    .ledger-kicker { font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--accent); margin-bottom:.5rem; }
+    .ledger-title { font-size:clamp(1.55rem, 2vw, 2rem); font-weight:900; letter-spacing:-.03em; margin-bottom:.45rem; }
+    .ledger-subtitle { max-width:68ch; color:var(--fg-muted); font-size:.94rem; }
+    .ledger-range-note { margin-top:.9rem; display:inline-flex; align-items:center; gap:.4rem; padding:.35rem .65rem; border:1px solid var(--border); border-radius:999px; background:var(--surface-strong); font-size:.8rem; color:var(--fg-muted); }
+    .ledger-hero-grid { display:grid; grid-template-columns:1.1fr .9fr; gap:1rem; align-items:start; }
+    .ledger-hero-copy { display:flex; flex-direction:column; gap:.75rem; }
+    .ledger-hero-copy .ledger-title { margin-bottom:0; }
+    .ledger-chip-row { display:flex; flex-wrap:wrap; gap:.45rem; }
+    .ledger-chip { display:inline-flex; align-items:center; gap:.35rem; padding:.3rem .65rem; border-radius:999px; border:1px solid var(--border); background:var(--surface-strong); color:var(--fg-muted); font-size:.76rem; font-weight:700; }
+    .ledger-chip strong { color:var(--fg); }
+    .ledger-hero-stats { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:.65rem; }
+    .ledger-hero-stat { padding:.8rem .9rem; border:1px solid var(--border); border-radius:16px; background:linear-gradient(180deg, color-mix(in srgb,var(--surface-strong) 92%, transparent), color-mix(in srgb,var(--bg) 94%, transparent)); }
+    .ledger-hero-stat-label { font-size:.68rem; text-transform:uppercase; letter-spacing:.06em; color:var(--fg-muted); font-weight:800; margin-bottom:.25rem; }
+    .ledger-hero-stat-value { font-size:1.05rem; font-weight:900; letter-spacing:-.02em; color:var(--fg); }
+    .ledger-hero-actions { display:flex; flex-wrap:wrap; gap:.55rem; }
+    .ledger-hero-link { display:inline-flex; align-items:center; justify-content:center; min-height:40px; padding:.6rem .9rem; border-radius:12px; border:1px solid var(--border); background:var(--surface-strong); color:var(--fg); text-decoration:none; font-weight:700; font-size:.82rem; }
+    .ledger-hero-link:hover { border-color:var(--accent); color:var(--accent); text-decoration:none; }
+    .ledger-kpis { display:grid; grid-template-columns:1fr 1fr; gap:.85rem; }
+    .ledger-kpi { padding:1rem; min-height:118px; display:flex; flex-direction:column; justify-content:space-between; }
+    .ledger-kpi-label { font-size:.72rem; text-transform:uppercase; letter-spacing:.06em; font-weight:800; color:var(--fg-muted); }
+    .ledger-kpi-value { font-size:2rem; line-height:1; font-weight:900; letter-spacing:-.03em; }
+    .ledger-kpi-note { font-size:.8rem; color:var(--fg-muted); }
+    .ledger-layout { display:grid; grid-template-columns:320px 1fr; gap:1rem; align-items:start; }
+    .ledger-sidebar { padding:1rem; position:sticky; top:1rem; }
+    .ledger-sidebar h2, .ledger-feed h2 { font-size:.96rem; font-weight:900; letter-spacing:-.02em; margin-bottom:.2rem; }
+    .ledger-section-sub { color:var(--fg-muted); font-size:.82rem; margin-bottom:1rem; }
+    .ledger-form { display:flex; flex-direction:column; gap:.85rem; }
+    .ledger-field { display:flex; flex-direction:column; gap:.35rem; }
+    .ledger-field label { font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--fg-muted); }
+    .ledger-field input, .ledger-field select { width:100%; padding:.72rem .8rem; border:1px solid var(--border); border-radius:12px; background:var(--surface-strong); color:var(--fg); }
+    .ledger-field-row { display:grid; grid-template-columns:1fr 1fr; gap:.65rem; }
+    .ledger-actions { display:flex; gap:.55rem; flex-wrap:wrap; margin-top:.1rem; }
+    .ledger-btn { display:inline-flex; align-items:center; justify-content:center; min-height:42px; padding:.65rem .95rem; border-radius:12px; border:1px solid var(--border); background:var(--surface-strong); color:var(--fg); text-decoration:none; font-weight:700; cursor:pointer; }
+    .ledger-btn:hover { text-decoration:none; border-color:var(--accent); color:var(--accent); }
+    .ledger-btn-primary { background:var(--accent); border-color:var(--accent); color:var(--accent-contrast); }
+    .ledger-btn-primary:hover { color:var(--accent-contrast); background:var(--accent-hover); border-color:var(--accent-hover); }
+    .ledger-feed { padding:1rem; }
+    .ledger-meta { display:flex; justify-content:space-between; gap:.75rem; flex-wrap:wrap; margin-bottom:1rem; color:var(--fg-muted); font-size:.84rem; }
+    .ledger-results { display:flex; flex-direction:column; gap:.85rem; }
+    .ledger-item { border:1px solid var(--border); border-radius:16px; background:linear-gradient(180deg, var(--surface-strong), var(--surface)); padding:1rem; display:grid; grid-template-columns:84px 1fr; gap:.95rem; }
+    .ledger-time { display:flex; flex-direction:column; gap:.2rem; align-items:flex-start; }
+    .ledger-time-date { font-size:.73rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--fg-muted); }
+    .ledger-time-clock { font-size:1.1rem; font-weight:900; letter-spacing:-.03em; }
+    .ledger-time-ms { font-size:.76rem; color:var(--fg-muted); }
+    .ledger-badges { display:flex; gap:.4rem; flex-wrap:wrap; margin-bottom:.55rem; }
+    .ledger-badge { display:inline-flex; align-items:center; gap:.35rem; padding:.23rem .55rem; border-radius:999px; font-size:.72rem; font-weight:800; border:1px solid var(--border); background:var(--surface-strong); }
+    .ledger-badge.ok { color:var(--ok); background:var(--ok-bg); border-color:color-mix(in srgb, var(--ok) 35%, var(--ok-bg)); }
+    .ledger-badge.err { color:var(--danger); background:var(--danger-bg); border-color:color-mix(in srgb, var(--danger) 35%, var(--danger-bg)); }
+    .ledger-badge.info { color:var(--info); background:var(--info-bg); border-color:color-mix(in srgb, var(--info) 35%, var(--info-bg)); }
+    .ledger-badge.warn { color:var(--warn); background:var(--warn-bg); border-color:color-mix(in srgb, var(--warn) 35%, var(--warn-bg)); }
+    .ledger-badge.actor { color:var(--fg); background:var(--surface-strong); }
+    .ledger-badge.anonymous { color:var(--warn); background:var(--warn-bg); border-color:color-mix(in srgb, var(--warn) 35%, var(--warn-bg)); }
+    .ledger-badge.system { color:var(--info); background:var(--info-bg); border-color:color-mix(in srgb, var(--info) 35%, var(--info-bg)); }
+    .ledger-badge.user { color:var(--ok); background:var(--ok-bg); border-color:color-mix(in srgb, var(--ok) 35%, var(--ok-bg)); }
+    .ledger-headline { font-size:1.05rem; font-weight:900; letter-spacing:-.02em; margin-bottom:.25rem; }
+    .ledger-explainer { color:var(--fg-muted); font-size:.9rem; line-height:1.5; margin-bottom:.8rem; }
+    .ledger-grid { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:.65rem; margin-bottom:.75rem; }
+    .ledger-detail { padding:.65rem .7rem; border:1px solid var(--border); border-radius:12px; background:var(--bg); min-height:72px; }
+    .ledger-detail-label { font-size:.7rem; text-transform:uppercase; letter-spacing:.05em; color:var(--fg-muted); font-weight:800; margin-bottom:.25rem; }
+    .ledger-detail-value { font-size:.86rem; font-weight:700; word-break:break-word; }
+    .ledger-route { font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:.79rem; color:var(--fg-muted); margin-bottom:.55rem; word-break:break-word; }
+    .ledger-json details { border:1px solid var(--border); border-radius:12px; background:var(--bg); overflow:hidden; }
+    .ledger-json summary { list-style:none; cursor:pointer; padding:.8rem .9rem; font-size:.82rem; font-weight:800; color:var(--accent); }
+    .ledger-json summary::-webkit-details-marker { display:none; }
+    .ledger-json pre { margin:0; padding:0 .9rem .9rem; white-space:pre-wrap; word-break:break-word; font-size:.76rem; color:var(--fg-muted); font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .ledger-empty { border:1px dashed var(--border); border-radius:16px; padding:2.5rem 1rem; text-align:center; color:var(--fg-muted); background:var(--surface); }
+    .ledger-empty-title { font-size:1rem; font-weight:900; color:var(--fg); margin-bottom:.35rem; }
+    @media (max-width:1120px) { .ledger-hero, .ledger-layout, .ledger-hero-grid { grid-template-columns:1fr; } .ledger-sidebar { position:static; } .ledger-grid { grid-template-columns:1fr 1fr; } }
+    @media (max-width:720px) { .ledger-shell { padding:.85rem; } .ledger-kpis, .ledger-field-row, .ledger-grid, .ledger-item, .ledger-hero-stats { grid-template-columns:1fr; } .ledger-item { gap:.75rem; } .ledger-time { flex-direction:row; align-items:baseline; flex-wrap:wrap; } }
+  </style>
+</head>
+<body>
+  <%
+    const items = Array.isArray(initialItems) ? initialItems : [];
+    const writeCount = items.filter((item) => item.action !== 'page_view').length;
+    const errorCount = items.filter((item) => String(item.status || '').toLowerCase() === 'error').length;
+    const actorSet = new Set(items.map((item) => item.actorName || item.actorId).filter(Boolean));
+    const moduleSet = new Set(items.map((item) => item.module).filter(Boolean));
+    const pageViewCount = items.filter((item) => item.action === 'page_view').length;
+    const newestItem = items[0] || null;
+    const newestTime = newestItem?.time ? new Date(newestItem.time) : null;
+    const quickStatusLink = filters?.status === 'error' ? '/admin/activity' : '/admin/activity?status=error';
+    const quickStatusLabel = filters?.status === 'error' ? 'Show all outcomes' : 'Show only errors';
+    const activeFilterChips = [
+      filters?.module ? { label: 'Module', value: niceModule(filters.module) } : null,
+      filters?.status ? { label: 'Outcome', value: humanAction(filters.status) } : null,
+      filters?.actor ? { label: 'Actor', value: filters.actor } : null,
+      filters?.q ? { label: 'Search', value: filters.q } : null,
+      filters?.from ? { label: 'From', value: toInputDate(filters.from) } : null,
+      filters?.to ? { label: 'To', value: toInputDate(filters.to) } : null
+    ].filter(Boolean);
+
+    function esc(v) {
+      return String(v == null ? '' : v)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+    function humanAction(value) {
+      return String(value || 'request').replaceAll('_', ' ').replace(/\b\w/g, (m) => m.toUpperCase());
+    }
+    function niceModule(value) {
+      const raw = String(value || 'system');
+      return raw.replaceAll('-', ' ').replace(/\b\w/g, (m) => m.toUpperCase());
+    }
+    function routeLabel(item) {
+      return [item.method, item.path].filter(Boolean).join(' ');
+    }
+    function firstPresent(...values) {
+      for (const value of values) {
+        if (value != null && String(value).trim()) return String(value).trim();
+      }
+      return '';
+    }
+    function buildHeadline(item) {
+      const actor = firstPresent(item.actorName, item.actorId, item.actorType === 'anonymous' ? 'Anonymous' : 'System');
+      const target = firstPresent(item.target?.label, item.target?.id, item.target?.type, niceModule(item.module));
+      const action = String(item.action || '').toLowerCase();
+      const path = String(item.path || '');
+      if (action === 'page_view') return `${actor} opened ${target === niceModule(item.module) ? path || target : target}`;
+      if (action === 'login') return `${actor} signed in`;
+      if (action === 'logout') return `${actor} signed out`;
+      if (action === 'checkout') return `${actor} checked out ${target}`;
+      if (action === 'checkin' || action === 'return') return `${actor} returned ${target}`;
+      if (action === 'create') return `${actor} created ${target}`;
+      if (action === 'update') return `${actor} updated ${target}`;
+      if (action === 'delete') return `${actor} deleted ${target}`;
+      if (action === 'import') return `${actor} imported ${target}`;
+      if (action === 'export') return `${actor} exported ${target}`;
+      if (action === 'move') return `${actor} moved ${target}`;
+      if (action === 'generate') return `${actor} generated ${target}`;
+      return `${actor} performed ${humanAction(item.action).toLowerCase()} on ${target}`;
+    }
+    function buildExplainer(item) {
+      const outcome = String(item.status || 'unknown').toLowerCase();
+      const statusText = item.statusCode ? `HTTP ${item.statusCode}` : 'no status code';
+      const target = firstPresent(item.target?.label, item.target?.id, item.target?.type);
+      const route = routeLabel(item) || 'unknown route';
+      const bits = [`Module: ${niceModule(item.module)}.`];
+      if (target) bits.push(`Target: ${target}.`);
+      bits.push(`Route: ${route}.`);
+      bits.push(outcome === 'success' ? `Completed successfully with ${statusText}.` : `Finished with ${outcome} using ${statusText}.`);
+      if (item.actorRole) bits.push(`Role at the time: ${item.actorRole}.`);
+      return bits.join(' ');
+    }
+    function outcomeClass(item) {
+      if (item.action === 'page_view') return 'info';
+      return String(item.status || '').toLowerCase() === 'success' ? 'ok' : 'err';
+    }
+    function outcomeLabel(item) {
+      if (item.action === 'page_view') {
+        return item.statusCode ? `Loaded ${item.statusCode}` : 'Loaded';
+      }
+      return item.statusCode ? `${humanAction(item.status || 'unknown')} ${item.statusCode}` : humanAction(item.status || 'unknown');
+    }
+    function actorTypeClass(item) {
+      const actorType = String(item.actorType || 'user').toLowerCase();
+      if (actorType === 'anonymous') return 'anonymous';
+      if (actorType === 'system') return 'system';
+      return 'user';
+    }
+    function actorTypeLabel(item) {
+      const actorType = String(item.actorType || 'user').toLowerCase();
+      if (actorType === 'anonymous') return 'Anonymous';
+      if (actorType === 'system') return 'System';
+      return 'Signed-in user';
+    }
+    function formatRange(filters) {
+      const range = String(filters?.range || '');
+      const from = String(filters?.from || '');
+      const to = String(filters?.to || '');
+      if (range === 'all') return 'Showing all recorded activity';
+      if (range === 'today') return 'Showing activity from today';
+      if (range === '7d') return 'Showing the last 7 days';
+      if (range === '30d' || !range) return 'Showing the last 30 days';
+      if (range === '90d') return 'Showing the last 90 days';
+      if (range === 'custom' && (from || to)) return `Custom range${from ? ` from ${from}` : ''}${to ? ` through ${to}` : ''}`;
+      return 'Showing filtered activity';
+    }
+    function toInputDate(value) {
+      return String(value || '').slice(0, 10);
+    }
+  %>
+
+  <%- include('../partials/suite-topbar', { title: 'Activity Ledger', subtitle: 'Follow who did what, where it happened, and whether the request completed cleanly.', homeRoute: '/home', user, allowedTools }) %>
+
+  <main class="ledger-shell">
+    <section class="ledger-hero">
+      <article class="ledger-card ledger-hero-main">
+        <div class="ledger-hero-grid">
+          <div class="ledger-hero-copy">
+            <div class="ledger-kicker">Current View</div>
+            <h1 class="ledger-title"><%= formatRange(filters) %></h1>
+            <p class="ledger-subtitle">Use this area to confirm what slice of the ledger you are reviewing before reading individual events.</p>
+            <div class="ledger-chip-row">
+              <% if (activeFilterChips.length) { %>
+                <% activeFilterChips.forEach(function(chip) { %>
+                  <span class="ledger-chip"><%= chip.label %>: <strong><%= chip.value %></strong></span>
+                <% }) %>
+              <% } else { %>
+                <span class="ledger-chip">Filters: <strong>None applied</strong></span>
+              <% } %>
+            </div>
+            <div class="ledger-hero-actions">
+              <a class="ledger-hero-link" href="/admin/activity">Reset filters</a>
+              <a class="ledger-hero-link" href="<%= quickStatusLink %>"><%= quickStatusLabel %></a>
+              <a class="ledger-hero-link" href="/admin/activity?range=all&limit=all">Open full ledger</a>
+            </div>
+          </div>
+          <div class="ledger-hero-stats">
+            <div class="ledger-hero-stat">
+              <div class="ledger-hero-stat-label">Most Recent Event</div>
+              <div class="ledger-hero-stat-value"><%= newestTime ? newestTime.toLocaleString() : 'No activity loaded' %></div>
+            </div>
+            <div class="ledger-hero-stat">
+              <div class="ledger-hero-stat-label">Event Mix</div>
+              <div class="ledger-hero-stat-value"><%= writeCount %> write · <%= pageViewCount %> page view</div>
+            </div>
+            <div class="ledger-hero-stat">
+              <div class="ledger-hero-stat-label">Modules In View</div>
+              <div class="ledger-hero-stat-value"><%= moduleSet.size %> active modules</div>
+            </div>
+            <div class="ledger-hero-stat">
+              <div class="ledger-hero-stat-label">People In View</div>
+              <div class="ledger-hero-stat-value"><%= actorSet.size %> distinct actors</div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <div class="ledger-kpis">
+        <article class="ledger-card ledger-kpi">
+          <div class="ledger-kpi-label">Entries Shown</div>
+          <div class="ledger-kpi-value"><%= items.length %></div>
+          <div class="ledger-kpi-note">Current result set after the active filters.</div>
+        </article>
+        <article class="ledger-card ledger-kpi">
+          <div class="ledger-kpi-label">Active People</div>
+          <div class="ledger-kpi-value"><%= actorSet.size %></div>
+          <div class="ledger-kpi-note">Distinct actors represented in this slice.</div>
+        </article>
+        <article class="ledger-card ledger-kpi">
+          <div class="ledger-kpi-label">Write Actions</div>
+          <div class="ledger-kpi-value"><%= writeCount %></div>
+          <div class="ledger-kpi-note">Creates, updates, deletes, checkouts, imports, and more.</div>
+        </article>
+        <article class="ledger-card ledger-kpi">
+          <div class="ledger-kpi-label">Errors</div>
+          <div class="ledger-kpi-value"><%= errorCount %></div>
+          <div class="ledger-kpi-note"><%= moduleSet.size %> modules are represented in the current view.</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="ledger-layout">
+      <aside class="ledger-card ledger-sidebar">
+        <h2>Filters</h2>
+        <p class="ledger-section-sub">Search and narrow the results.</p>
+
+        <form method="GET" action="/admin/activity" class="ledger-form">
+          <div class="ledger-field">
+            <label for="fltQ">Search</label>
+            <input id="fltQ" name="q" type="search" placeholder="User, route, tool serial, item code, title..." value="<%= esc(filters?.q || '') %>" />
+          </div>
+
+          <div class="ledger-field">
+            <label for="fltActor">Actor</label>
+            <input id="fltActor" name="actor" type="search" placeholder="Name, username, or role" value="<%= esc(filters?.actor || '') %>" />
+          </div>
+
+          <div class="ledger-field-row">
+            <div class="ledger-field">
+              <label for="fltModule">Module</label>
+              <select id="fltModule" name="module">
+                <option value="" <%= !filters?.module ? 'selected' : '' %>>All modules</option>
+                <option value="tools" <%= filters?.module === 'tools' ? 'selected' : '' %>>Tools</option>
+                <option value="inventory" <%= filters?.module === 'inventory' ? 'selected' : '' %>>Inventory</option>
+                <option value="assets" <%= filters?.module === 'assets' ? 'selected' : '' %>>Assets</option>
+                <option value="projects" <%= filters?.module === 'projects' ? 'selected' : '' %>>Projects</option>
+                <option value="audits" <%= filters?.module === 'audits' ? 'selected' : '' %>>Audits</option>
+                <option value="employees" <%= filters?.module === 'employees' ? 'selected' : '' %>>Employees</option>
+                <option value="transfers" <%= filters?.module === 'transfers' ? 'selected' : '' %>>Transfers</option>
+                <option value="auth" <%= filters?.module === 'auth' ? 'selected' : '' %>>Auth</option>
+                <option value="admin" <%= filters?.module === 'admin' ? 'selected' : '' %>>Admin</option>
+                <option value="expiration" <%= filters?.module === 'expiration' ? 'selected' : '' %>>Expiration</option>
+                <option value="integrations" <%= filters?.module === 'integrations' ? 'selected' : '' %>>Integrations</option>
+                <option value="system" <%= filters?.module === 'system' ? 'selected' : '' %>>System</option>
+              </select>
+            </div>
+
+            <div class="ledger-field">
+              <label for="fltStatus">Outcome</label>
+              <select id="fltStatus" name="status">
+                <option value="" <%= !filters?.status ? 'selected' : '' %>>All outcomes</option>
+                <option value="success" <%= filters?.status === 'success' ? 'selected' : '' %>>Success</option>
+                <option value="error" <%= filters?.status === 'error' ? 'selected' : '' %>>Error</option>
+                <option value="page_view" <%= filters?.status === 'page_view' ? 'selected' : '' %>>Page views</option>
+                <option value="write" <%= filters?.status === 'write' ? 'selected' : '' %>>Write actions</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="ledger-field">
+            <label for="fltRange">Date Window</label>
+            <select id="fltRange" name="range">
+              <option value="all" <%= filters?.range === 'all' ? 'selected' : '' %>>All recorded activity</option>
+              <option value="today" <%= filters?.range === 'today' ? 'selected' : '' %>>Today</option>
+              <option value="7d" <%= filters?.range === '7d' ? 'selected' : '' %>>Last 7 days</option>
+              <option value="30d" <%= !filters?.range || filters?.range === '30d' ? 'selected' : '' %>>Last 30 days</option>
+              <option value="90d" <%= filters?.range === '90d' ? 'selected' : '' %>>Last 90 days</option>
+              <option value="custom" <%= filters?.range === 'custom' ? 'selected' : '' %>>Custom range</option>
+            </select>
+          </div>
+
+          <div class="ledger-field-row">
+            <div class="ledger-field">
+              <label for="fltFrom">From</label>
+              <input id="fltFrom" name="from" type="date" value="<%= esc(toInputDate(filters?.from || '')) %>" />
+            </div>
+            <div class="ledger-field">
+              <label for="fltTo">To</label>
+              <input id="fltTo" name="to" type="date" value="<%= esc(toInputDate(filters?.to || '')) %>" />
+            </div>
+          </div>
+
+          <div class="ledger-field">
+            <label for="fltLimit">Rows</label>
+            <select id="fltLimit" name="limit">
+              <option value="100" <%= String(filters?.limit || '') === '100' ? 'selected' : '' %>>100</option>
+              <option value="250" <%= !filters?.limit || String(filters?.limit) === '250' ? 'selected' : '' %>>250</option>
+              <option value="500" <%= String(filters?.limit || '') === '500' ? 'selected' : '' %>>500</option>
+              <option value="1000" <%= String(filters?.limit || '') === '1000' ? 'selected' : '' %>>1000</option>
+              <option value="all" <%= String(filters?.limit || '') === 'all' ? 'selected' : '' %>>All matching rows</option>
+            </select>
+          </div>
+
+          <div class="ledger-actions">
+            <button class="ledger-btn ledger-btn-primary" type="submit">Apply Filters</button>
+            <a class="ledger-btn" href="/admin/activity">Reset</a>
+          </div>
+        </form>
+      </aside>
+
+        <section class="ledger-card ledger-feed">
+          <h2>Activity Feed</h2>
+        <p class="ledger-section-sub">Recorded events matching the current filters.</p>
+
+        <div class="ledger-meta">
+          <div><strong><%= items.length %></strong> matching <%= items.length === 1 ? 'entry' : 'entries' %></div>
+          <div>Rendered <%= new Date().toLocaleString() %></div>
+        </div>
+
+        <div class="ledger-results">
+          <% if (items.length) { %>
+            <% items.forEach(function(item) { 
+              const actorDisplay = firstPresent(item.actorName, item.actorId, item.actorType === 'anonymous' ? 'Anonymous' : 'System');
+              const targetDisplay = firstPresent(item.target?.label, item.target?.id, item.target?.type, 'No specific target');
+              const routeDisplay = routeLabel(item);
+              const detailsJson = JSON.stringify(item.details || {}, null, 2);
+              const eventDate = item.time ? new Date(item.time) : null;
+            %>
+              <article class="ledger-item">
+                <div class="ledger-time">
+                  <div class="ledger-time-date"><%= eventDate ? eventDate.toLocaleDateString() : '' %></div>
+                  <div class="ledger-time-clock"><%= eventDate ? eventDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '' %></div>
+                  <div class="ledger-time-ms"><%= item.durationMs || 0 %> ms</div>
+                </div>
+
+                <div>
+                  <div class="ledger-badges">
+                    <span class="ledger-badge <%= outcomeClass(item) %>"><%= outcomeLabel(item) %></span>
+                    <span class="ledger-badge"><%= niceModule(item.module) %></span>
+                    <span class="ledger-badge warn"><%= humanAction(item.action) %></span>
+                    <span class="ledger-badge actor <%= actorTypeClass(item) %>"><%= actorTypeLabel(item) %></span>
+                  </div>
+                  <div class="ledger-headline"><%= buildHeadline(item) %></div>
+                  <div class="ledger-explainer"><%= buildExplainer(item) %></div>
+
+                  <div class="ledger-grid">
+                    <div class="ledger-detail">
+                      <div class="ledger-detail-label">Actor</div>
+                      <div class="ledger-detail-value"><%= actorDisplay %><%= item.actorRole ? ` (${item.actorRole})` : '' %></div>
+                    </div>
+                    <div class="ledger-detail">
+                      <div class="ledger-detail-label">Target</div>
+                      <div class="ledger-detail-value"><%= targetDisplay %></div>
+                    </div>
+                    <div class="ledger-detail">
+                      <div class="ledger-detail-label">Building</div>
+                      <div class="ledger-detail-value"><%= item.building || 'Not provided' %></div>
+                    </div>
+                    <div class="ledger-detail">
+                      <div class="ledger-detail-label">Request ID</div>
+                      <div class="ledger-detail-value"><%= item.requestId || 'Not captured' %></div>
+                    </div>
+                  </div>
+
+                  <div class="ledger-route"><%= routeDisplay || 'Route not captured' %></div>
+
+                  <div class="ledger-json">
+                    <details>
+                      <summary>Inspect raw request details</summary>
+                      <pre><%= detailsJson %></pre>
+                    </details>
+                  </div>
+                </div>
+              </article>
+            <% }) %>
+          <% } else { %>
+            <div class="ledger-empty">
+              <div class="ledger-empty-title">No activity matched these filters</div>
+              <div>Try widening the date window, clearing the search terms, or switching the row limit to “All matching rows.”</div>
+            </div>
+          <% } %>
+        </div>
+      </section>
+    </section>
+  </main>
+</body>
+</html>
+

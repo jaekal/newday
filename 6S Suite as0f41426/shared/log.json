@@ -1,0 +1,233 @@
+[
+  {
+    "serialNumber": "MFG001201",
+    "action": "return",
+    "time": "2025-06-20T00:01:54.742Z"
+  },
+  {
+    "serialNumber": "MFG000838",
+    "action": "return",
+    "time": "2025-06-20T00:01:58.881Z"
+  },
+  {
+    "serialNumber": "MFG000820",
+    "operatorId": "1078",
+    "operatorName": "",
+    "action": "checkout",
+    "time": "2025-06-20T00:07:06.547Z"
+  },
+  {
+    "serialNumber": "MFG000820",
+    "action": "return",
+    "time": "2025-06-20T00:10:27.301Z"
+  },
+  {
+    "serialNumber": "MFG000837",
+    "action": "return",
+    "time": "2025-06-20T00:10:27.301Z"
+  },
+  {
+    "serialNumber": "MFG000849",
+    "action": "return",
+    "time": "2025-06-20T00:10:27.301Z"
+  },
+  {
+    "serialNumber": "MFG000828",
+    "operatorId": "1078",
+    "operatorName": "Luis Valois",
+    "action": "checkout",
+    "time": "2025-06-20T00:11:26.450Z"
+  },
+  {
+    "serialNumber": "MFG000826",
+    "action": "return",
+    "time": "2025-06-20T00:48:09.486Z"
+  },
+  {
+    "serialNumber": "MFG000827",
+    "action": "return",
+    "time": "2025-06-20T00:48:09.486Z"
+  },
+  {
+    "serialNumber": "MFG000834",
+    "action": "return",
+    "time": "2025-06-20T00:48:09.486Z"
+  },
+  {
+    "serialNumber": "MFG000835",
+    "action": "return",
+    "time": "2025-06-20T00:48:09.486Z"
+  },
+  {
+    "serialNumber": "MFG000839",
+    "action": "return",
+    "time": "2025-06-20T00:48:09.486Z"
+  },
+  {
+    "serialNumber": "MFG000843",
+    "action": "return",
+    "time": "2025-06-20T00:48:09.486Z"
+  },
+  {
+    "serialNumber": "MFG000845",
+    "action": "return",
+    "time": "2025-06-20T00:48:09.486Z"
+  },
+  {
+    "serialNumber": "MFG000847",
+    "action": "return",
+    "time": "2025-06-20T00:48:09.486Z"
+  },
+  {
+    "serialNumber": "MFG000850",
+    "action": "return",
+    "time": "2025-06-20T00:48:09.486Z"
+  },
+  {
+    "serialNumber": "MFG000851",
+    "action": "return",
+    "time": "2025-06-20T00:48:09.486Z"
+  },
+  {
+    "serialNumber": "MFG000858",
+    "action": "return",
+    "time": "2025-06-20T00:48:09.487Z"
+  },
+  {
+    "serialNumber": "MFG000825",
+    "operatorId": "1078",
+    "operatorName": "Luis Valois",
+    "action": "checkout",
+    "time": "2025-06-20T00:57:50.569Z"
+  },
+  {
+    "serialNumber": "MFG000826",
+    "operatorId": "1078",
+    "operatorName": "Luis Valois",
+    "action": "checkout",
+    "time": "2025-06-20T01:16:21.699Z"
+  },
+  {
+    "serialNumber": "MFG000825",
+    "action": "return",
+    "time": "2025-06-20T23:52:53.066Z"
+  },
+  {
+    "serialNumber": "MFG000826",
+    "action": "return",
+    "time": "2025-06-20T23:52:54.023Z"
+  },
+  {
+    "serialNumber": "MFG000828",
+    "action": "return",
+    "time": "2025-06-20T23:52:55.013Z"
+  },
+  {
+    "serialNumber": "1202",
+    "operatorId": "1078",
+    "operatorName": "Luis Valois",
+    "action": "checkout",
+    "time": "2025-06-20T23:55:24.714Z"
+  },
+  {
+    "serialNumber": "MFG000835",
+    "operatorId": "1078",
+    "operatorName": "Luis Valois",
+    "action": "checkout",
+    "time": "2025-06-21T00:25:55.144Z"
+  },
+  {
+    "serialNumber": "1202",
+    "action": "return",
+    "time": "2025-06-21T01:00:20.263Z"
+  },
+  {
+    "serialNumber": "MFG000821",
+    "operatorId": "1078",
+    "operatorName": "Luis Valois",
+    "action": "checkout",
+    "time": "2025-06-21T01:00:25.283Z"
+  },
+  {
+    "serialNumber": "MFG000822",
+    "operatorId": "1078",
+    "operatorName": "Luis Valois",
+    "action": "checkout",
+    "time": "2025-06-21T01:16:14.515Z"
+  },
+  {
+    "serialNumber": "1201",
+    "operatorId": "1078",
+    "operatorName": "Luis Valois",
+    "action": "checkout",
+    "time": "2025-06-21T01:34:47.304Z"
+  },
+  {
+    "serialNumber": "1243",
+    "operatorId": "1077",
+    "operatorName": "Jose Menjivar",
+    "action": "checkout",
+    "time": "2025-06-21T01:34:50.101Z"
+  },
+  {
+    "serialNumber": "1201",
+    "action": "return",
+    "time": "2025-06-21T01:36:23.949Z"
+  },
+  {
+    "serialNumber": "MFG000822",
+    "action": "return",
+    "time": "2025-06-21T21:01:03.145Z"
+  },
+  {
+    "serialNumber": "MFG000835",
+    "action": "return",
+    "time": "2025-06-21T21:01:04.853Z"
+  },
+  {
+    "serialNumber": "MFG000821",
+    "action": "return",
+    "time": "2025-06-21T21:01:05.788Z"
+  },
+  {
+    "serialNumber": "1243",
+    "action": "return",
+    "time": "2025-06-21T21:01:06.591Z"
+  },
+  {
+    "serialNumber": "MFG000823",
+    "operatorId": "1078",
+    "operatorName": "Luis Valois",
+    "action": "checkout",
+    "time": "2025-06-21T21:01:36.781Z"
+  },
+  {
+    "serialNumber": "1202",
+    "operatorId": "1078",
+    "operatorName": "Luis Valois",
+    "action": "checkout",
+    "time": "2025-06-21T21:39:00.155Z"
+  },
+  {
+    "serialNumber": "1243",
+    "operatorId": "1078",
+    "operatorName": "Luis Valois",
+    "action": "checkout",
+    "time": "2025-06-21T21:39:00.155Z"
+  },
+  {
+    "serialNumber": "MFG000823",
+    "action": "return",
+    "time": "2025-06-21T23:13:26.399Z"
+  },
+  {
+    "serialNumber": "1243",
+    "action": "return",
+    "time": "2025-06-21T23:13:28.424Z"
+  },
+  {
+    "serialNumber": "1202",
+    "action": "return",
+    "time": "2025-06-21T23:13:28.957Z"
+  }
+]

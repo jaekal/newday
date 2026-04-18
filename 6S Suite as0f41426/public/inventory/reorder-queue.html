@@ -1,0 +1,777 @@
+<!-- public/inventory/reorder-queue.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Reorder Queue – 6S Tool Suite</title>
+  <link rel="icon" href="/images/favicon.png" type="image/png"/>
+  <link rel="stylesheet" href="/styles.css"/>
+  <script src="/theme-init.js"></script>
+
+  <style>
+    :root {
+      --rq-radius: 14px;
+      --rq-radius-sm: 8px;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+
+    .rq-topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+      padding: 1rem 1.1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--rq-radius);
+      background: var(--surface, var(--box-bg, #fff));
+    }
+
+    .rq-brand-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -.01em;
+    }
+
+    .rq-brand-subtitle {
+      font-size: .82rem;
+      color: var(--fg-muted, #64748b);
+      margin-top: .2rem;
+    }
+
+    .rq-actions {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      flex-wrap: wrap;
+    }
+
+    .rq-btn,
+    .rq-link-btn,
+    .home-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .35rem;
+      min-height: 36px;
+      padding: .45rem .8rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface-strong, var(--box-bg, #fff));
+      color: var(--fg);
+      cursor: pointer;
+      text-decoration: none;
+      font-size: .85rem;
+      font-weight: 600;
+      transition: background .15s ease, border-color .15s ease, color .15s ease, transform .12s ease;
+    }
+
+    .rq-btn:hover,
+    .rq-link-btn:hover,
+    .home-button:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      text-decoration: none;
+      transform: translateY(-1px);
+    }
+
+    .rq-btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--accent-contrast);
+    }
+
+    .rq-btn-primary:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: var(--accent-contrast);
+    }
+
+    .rq-btn-danger {
+      background: var(--danger-bg, rgba(239,68,68,.12));
+      color: var(--danger);
+      border-color: color-mix(in srgb, var(--danger) 35%, var(--border));
+    }
+
+    .rq-btn-danger:hover {
+      background: var(--danger);
+      color: var(--accent-contrast);
+      border-color: var(--danger);
+    }
+
+    .rq-theme-select,
+    .rq-select,
+    .rq-input,
+    .rq-textarea {
+      min-height: 36px;
+      padding: .45rem .6rem;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface, var(--box-bg, #fff));
+      color: var(--fg);
+      font: inherit;
+    }
+
+    .rq-theme-select:focus,
+    .rq-select:focus,
+    .rq-input:focus,
+    .rq-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+    }
+
+    .rq-building-bar {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .5rem .9rem;
+      margin-bottom: 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--rq-radius);
+      background: var(--surface, var(--box-bg, #fff));
+    }
+
+    .rq-building-label {
+      font-size: .74rem;
+      color: var(--fg-muted, #64748b);
+    }
+
+    .rq-toolbar {
+      display: flex;
+      align-items: center;
+      gap: .65rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+      padding: .85rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--rq-radius);
+      background: var(--surface, var(--box-bg, #fff));
+    }
+
+    .rq-card {
+      background: var(--surface, var(--box-bg, #fff));
+      border: 1px solid var(--border);
+      border-radius: var(--rq-radius);
+      padding: 1rem;
+      box-shadow: var(--shadow, 0 1px 2px rgba(0,0,0,.06));
+    }
+
+    .rq-form {
+      display: none;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: .85rem;
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--rq-radius);
+      background: var(--surface-strong, var(--box-bg, #fff));
+    }
+
+    .rq-form.open {
+      display: grid;
+    }
+
+    .rq-field {
+      display: flex;
+      flex-direction: column;
+      gap: .3rem;
+    }
+
+    .rq-field label {
+      font-size: .8rem;
+      font-weight: 700;
+      color: var(--fg-muted, #64748b);
+    }
+
+    .rq-field.span-2 {
+      grid-column: 1 / -1;
+    }
+
+    .rq-form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: .5rem;
+      flex-wrap: wrap;
+    }
+
+    .rq-table-wrap {
+      width: 100%;
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--box-bg, #fff);
+    }
+
+    .rq-table {
+      width: 100%;
+      min-width: 980px;
+      border-collapse: separate;
+      border-spacing: 0;
+      table-layout: fixed;
+      background: var(--box-bg, #fff);
+      color: var(--fg);
+    }
+
+    .rq-table col:nth-child(1) { width: 120px; }
+    .rq-table col:nth-child(2) { width: 260px; }
+    .rq-table col:nth-child(3) { width: 90px; }
+    .rq-table col:nth-child(4) { width: 90px; }
+    .rq-table col:nth-child(5) { width: 150px; }
+    .rq-table col:nth-child(6) { width: 110px; }
+    .rq-table col:nth-child(7) { width: 140px; }
+    .rq-table col:nth-child(8) { width: 140px; }
+    .rq-table col:nth-child(9) { width: 220px; }
+
+    .rq-table th,
+    .rq-table td {
+      padding: .7rem .7rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .rq-table th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: var(--surface-strong, var(--box-bg, #fff));
+      color: var(--fg);
+      font-size: .75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      white-space: nowrap;
+      text-align: left;
+    }
+
+    .rq-table td {
+      font-size: .86rem;
+      background: transparent;
+      white-space: nowrap;
+    }
+
+    .rq-table td:nth-child(2) {
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      line-height: 1.35;
+    }
+
+    .rq-table tbody tr:nth-child(even) td {
+      background: color-mix(in srgb, var(--fg) 2.5%, var(--box-bg));
+    }
+
+    .rq-table tbody tr:hover td {
+      background: color-mix(in srgb, var(--accent) 5%, var(--box-bg));
+    }
+
+    .rq-code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .8rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: .18rem .58rem;
+      border-radius: 999px;
+      font-size: .74rem;
+      font-weight: 800;
+      white-space: nowrap;
+      border: 1px solid transparent;
+    }
+
+    .pill-requested { background: var(--info-bg); color: var(--info); border-color: color-mix(in srgb, var(--info) 35%, transparent); }
+    .pill-approved  { background: var(--ok-bg); color: var(--ok); border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
+    .pill-ordered   { background: var(--warn-bg); color: var(--warn); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+    .pill-received  { background: var(--ok-bg); color: var(--ok); border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
+    .pill-rejected  { background: var(--danger-bg); color: var(--danger); border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
+
+    .rq-action-btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .35rem;
+      align-items: center;
+      max-width: 100%;
+    }
+
+    .rq-action-btns button {
+      min-height: 30px;
+      padding: .25rem .5rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface-strong, var(--box-bg, #fff));
+      color: var(--fg);
+      font-size: .76rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .12s ease, border-color .12s ease, color .12s ease;
+    }
+
+    .rq-action-btns button:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 6%, var(--surface, #fff));
+    }
+
+    .btn-approve {
+      background: var(--ok-bg) !important;
+      color: var(--ok) !important;
+      border-color: color-mix(in srgb, var(--ok) 35%, var(--border)) !important;
+    }
+
+    .btn-reject {
+      background: var(--danger-bg) !important;
+      color: var(--danger) !important;
+      border-color: color-mix(in srgb, var(--danger) 35%, var(--border)) !important;
+    }
+
+    .btn-advance {
+      background: var(--info-bg) !important;
+      color: var(--info) !important;
+      border-color: color-mix(in srgb, var(--info) 35%, var(--border)) !important;
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+      text-align: center;
+      gap: .35rem;
+      color: var(--fg-muted, #64748b);
+    }
+
+    .empty-state__icon {
+      font-size: 1.8rem;
+    }
+
+    .empty-state__title {
+      font-size: .95rem;
+      font-weight: 800;
+      color: var(--fg);
+    }
+
+    .empty-state__body {
+      font-size: .84rem;
+    }
+
+    .empty-state__action {
+      margin-top: .5rem;
+    }
+
+    .skeleton {
+      border-radius: 10px;
+      background: linear-gradient(90deg,
+        color-mix(in srgb, var(--fg) 4%, transparent) 25%,
+        color-mix(in srgb, var(--fg) 9%, transparent) 37%,
+        color-mix(in srgb, var(--fg) 4%, transparent) 63%);
+      background-size: 400% 100%;
+      animation: rq-shimmer 1.2s infinite linear;
+      min-height: .9rem;
+    }
+
+    .skeleton-row { height: 14px; }
+    .skeleton-row--med { width: 70%; margin-top: .5rem; }
+    .skeleton-row--short { width: 45%; margin-top: .5rem; }
+
+    @keyframes rq-shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    .visually-hidden {
+      position: absolute !important;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 1, 1);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 900px) {
+      .rq-form {
+        grid-template-columns: 1fr;
+      }
+
+      .rq-field.span-2 {
+        grid-column: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="rq-topbar">
+      <div>
+        <div class="rq-brand-title" style="display:flex;align-items:center;gap:.4rem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 12h6"/><path d="M9 16h6"/></svg> Reorder Queue</div>
+        <div class="rq-brand-subtitle">Inventory reorder requests and approval workflow</div>
+      </div>
+
+      <div class="rq-actions">
+        <a href="/inventory/Inventory.html" class="rq-link-btn">← Inventory</a>
+        <a href="/home" class="home-button" style="display:inline-flex;align-items:center;gap:.35rem"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Home</a>
+
+        <label for="themeSelector" class="visually-hidden">Theme</label>
+        <select id="themeSelector" class="rq-theme-select" aria-label="Theme">
+          <option value="theme-command">Command</option>
+<option value="theme-beacon">Beacon</option>
+<option value="theme-atlas">Atlas</option>
+<option value="theme-carbon">Carbon</option>
+<option value="theme-grove">Grove</option>
+<option value="theme-ember">Ember</option>
+<option value="theme-harbor">Harbor</option>
+<option value="theme-slate">Slate</option>
+<option value="theme-orchid">Orchid</option>
+<option value="theme-dusk">Dusk</option>
+<option value="theme-pulse">Pulse</option>
+<option value="theme-highcontrast">High Contrast</option>
+        </select>
+      </div>
+    </header>
+
+    <div class="rq-building-bar">
+      <span class="rq-building-label">Viewing:</span>
+      <span id="buildingBadgeSlot"></span>
+    </div>
+    <script src="/js/building.js"></script>
+
+    <section class="rq-toolbar">
+      <button id="btnNew" class="rq-btn rq-btn-primary" type="button">+ New Reorder Request</button>
+      <input type="hidden" id="filterBuilding" value=""/>
+
+      <label for="filterStatus" class="visually-hidden">Filter by status</label>
+      <select id="filterStatus" class="rq-select" style="width:auto">
+        <option value="">All Statuses</option>
+        <option value="requested">Requested</option>
+        <option value="approved">Approved</option>
+        <option value="ordered">Ordered</option>
+        <option value="received">Received</option>
+        <option value="rejected">Rejected</option>
+      </select>
+
+      <a id="exportBtn" href="/inventory/reorder-queue/export.csv" class="rq-link-btn">↓ Export CSV</a>
+    </section>
+
+    <form id="newRequestForm" class="rq-form" autocomplete="off">
+      <div class="rq-field">
+        <label for="nr-code">Item Code *</label>
+        <input id="nr-code" class="rq-input" type="text" placeholder="e.g. SKU-1234" required/>
+      </div>
+
+      <div class="rq-field">
+        <label for="nr-desc">Description</label>
+        <input id="nr-desc" class="rq-input" type="text" placeholder="Item name or description"/>
+      </div>
+
+      <div class="rq-field">
+        <label for="nr-qty">Qty Requested *</label>
+        <input id="nr-qty" class="rq-input" type="number" min="1" value="1" required/>
+      </div>
+
+      <div class="rq-field">
+        <label for="nr-vendor">Vendor</label>
+        <input id="nr-vendor" class="rq-input" type="text" placeholder="Supplier name"/>
+      </div>
+
+      <div class="rq-field">
+        <label for="nr-price">Unit Price ($)</label>
+        <input id="nr-price" class="rq-input" type="number" min="0" step="0.01" placeholder="0.00"/>
+      </div>
+
+      <div class="rq-field">
+        <label for="nr-notes">Notes</label>
+        <input id="nr-notes" class="rq-input" type="text" placeholder="Reason for reorder, urgency…"/>
+      </div>
+
+      <div class="rq-field span-2">
+        <div class="rq-form-actions">
+          <button type="button" class="rq-btn" id="btnCancelNew">Cancel</button>
+          <button type="submit" class="rq-btn rq-btn-primary">Submit Request</button>
+        </div>
+      </div>
+    </form>
+
+    <div class="rq-card">
+      <div id="queueSkeleton">
+        <div class="skeleton skeleton-row" style="margin:.5rem 0"></div>
+        <div class="skeleton skeleton-row skeleton-row--med"></div>
+        <div class="skeleton skeleton-row skeleton-row--short"></div>
+      </div>
+
+      <div class="rq-table-wrap">
+        <table id="queueTable" class="rq-table" style="display:none">
+          <colgroup>
+            <col>
+            <col>
+            <col>
+            <col>
+            <col>
+            <col>
+            <col>
+            <col>
+            <col>
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Item Code</th>
+              <th>Description</th>
+              <th>Req. Qty</th>
+              <th>Appr. Qty</th>
+              <th>Vendor</th>
+              <th>Status</th>
+              <th>Requested By</th>
+              <th>Requested</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="queueBody"></tbody>
+        </table>
+      </div>
+
+      <div id="queueEmpty" class="empty-state" style="display:none">
+        <div class="empty-state__icon">📭</div>
+        <div class="empty-state__title">No reorder requests</div>
+        <div class="empty-state__body">Click “+ New Reorder Request” to submit one.</div>
+        <div class="empty-state__action">
+          <button class="rq-btn rq-btn-primary" id="btnNewEmpty" type="button">+ New Request</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/nav.js"></script>
+  <script type="module">
+    const API = '/inventory/reorder-queue';
+
+    const esc = (s) => String(s || '').replace(/[&<>"]/g, (m) => ({
+      '&':'&amp;',
+      '<':'&lt;',
+      '>':'&gt;',
+      '"':'&quot;'
+    }[m]));
+
+    const fmtDate = (iso) =>
+      iso ? new Date(iso).toLocaleString(undefined, { dateStyle:'short', timeStyle:'short' }) : '—';
+
+    const NEXT_STATUS = {
+      requested: 'approved',
+      approved: 'ordered',
+      ordered: 'received'
+    };
+
+    let currentRole = '';
+
+    async function loadRole() {
+      try {
+        const r = await fetch('/auth/whoami', { credentials: 'include' });
+        const j = await r.json();
+        currentRole = (j?.user?.role || '').toLowerCase();
+      } catch {
+        currentRole = '';
+      }
+    }
+
+    function canApprove() {
+      return ['admin', 'lead', 'management'].includes(currentRole);
+    }
+
+    async function loadQueue() {
+      const status = document.getElementById('filterStatus').value;
+      const building = document.getElementById('filterBuilding').value;
+
+      const params = new URLSearchParams();
+      if (status) params.set('status', status);
+      if (building) params.set('building', building);
+
+      const qs = params.toString();
+      const url = qs ? `${API}?${qs}` : API;
+      const r = await fetch(url, { credentials: 'include' });
+      const data = await r.json();
+      return data?.items || [];
+    }
+
+    function pillClass(status) {
+      return `pill pill-${status || 'requested'}`;
+    }
+
+    function renderRow(item) {
+      const tr = document.createElement('tr');
+      const next = NEXT_STATUS[item.status];
+
+      tr.innerHTML = `
+        <td><span class="rq-code">${esc(item.ItemCode)}</span></td>
+        <td>${esc(item.description || '—')}</td>
+        <td>${esc(item.requestedQty)}</td>
+        <td>${item.approvedQty != null ? esc(item.approvedQty) : '—'}</td>
+        <td>${esc(item.vendor || '—')}</td>
+        <td><span class="${pillClass(item.status)}">${esc(item.status)}</span></td>
+        <td>${esc(item.requestedBy || '—')}</td>
+        <td>${fmtDate(item.requestedAt)}</td>
+        <td><div class="rq-action-btns" id="actions-${item.id}"></div></td>
+      `;
+
+      const actions = tr.querySelector(`#actions-${item.id}`);
+
+      if (canApprove() && item.status === 'requested') {
+        const btnApprove = document.createElement('button');
+        btnApprove.className = 'btn-approve';
+        btnApprove.textContent = '✓ Approve';
+        btnApprove.addEventListener('click', () => updateStatus(item.id, 'approved'));
+
+        const btnReject = document.createElement('button');
+        btnReject.className = 'btn-reject';
+        btnReject.textContent = '✗ Reject';
+        btnReject.addEventListener('click', () => updateStatus(item.id, 'rejected'));
+
+        actions.appendChild(btnApprove);
+        actions.appendChild(btnReject);
+      }
+
+      if (canApprove() && next) {
+        const btnAdvance = document.createElement('button');
+        btnAdvance.className = 'btn-advance';
+        btnAdvance.textContent = `→ ${next.charAt(0).toUpperCase() + next.slice(1)}`;
+        btnAdvance.addEventListener('click', () => updateStatus(item.id, next));
+        actions.appendChild(btnAdvance);
+      }
+
+      if (canApprove() && !['received', 'rejected'].includes(item.status)) {
+        const btnDelete = document.createElement('button');
+        btnDelete.className = 'rq-btn-danger';
+        btnDelete.textContent = '🗑 Delete';
+        btnDelete.title = 'Delete';
+        btnDelete.addEventListener('click', () => deleteItem(item.id));
+        actions.appendChild(btnDelete);
+      }
+
+      return tr;
+    }
+
+    async function updateStatus(id, status) {
+      await fetch(`${API}/${id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      await render();
+    }
+
+    async function deleteItem(id) {
+      if (!confirm('Delete this reorder request?')) return;
+      await fetch(`${API}/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      await render();
+    }
+
+    async function render() {
+      const skeleton = document.getElementById('queueSkeleton');
+      const table = document.getElementById('queueTable');
+      const empty = document.getElementById('queueEmpty');
+      const tbody = document.getElementById('queueBody');
+
+      skeleton.style.display = '';
+      table.style.display = 'none';
+      empty.style.display = 'none';
+      tbody.innerHTML = '';
+
+      const items = await loadQueue();
+
+      skeleton.style.display = 'none';
+
+      if (!items.length) {
+        empty.style.display = 'flex';
+        return;
+      }
+
+      table.style.display = '';
+      for (const item of items) {
+        tbody.appendChild(renderRow(item));
+      }
+    }
+
+    function openNewForm() {
+      document.getElementById('newRequestForm').classList.add('open');
+    }
+
+    function closeNewForm() {
+      document.getElementById('newRequestForm').classList.remove('open');
+    }
+
+    document.getElementById('btnNew').addEventListener('click', openNewForm);
+    document.getElementById('btnNewEmpty').addEventListener('click', openNewForm);
+    document.getElementById('btnCancelNew').addEventListener('click', closeNewForm);
+
+    document.getElementById('newRequestForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const body = {
+        ItemCode: document.getElementById('nr-code').value.trim(),
+        description: document.getElementById('nr-desc').value.trim(),
+        requestedQty: Number(document.getElementById('nr-qty').value) || 1,
+        vendor: document.getElementById('nr-vendor').value.trim(),
+        unitPrice: Number(document.getElementById('nr-price').value) || 0,
+        notes: document.getElementById('nr-notes').value.trim(),
+      };
+
+      const r = await fetch(API, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (r.status === 409) {
+        alert('A pending reorder for this item already exists.');
+        return;
+      }
+
+      if (!r.ok) {
+        alert('Failed to submit request.');
+        return;
+      }
+
+      closeNewForm();
+      document.getElementById('newRequestForm').reset();
+      await render();
+    });
+
+    document.getElementById('filterStatus').addEventListener('change', render);
+
+    const buildingInput = document.getElementById('filterBuilding');
+    if (buildingInput) {
+      buildingInput.value = localStorage.getItem('suite.building.v1') || 'Bldg-350';
+    }
+
+    await loadRole();
+    await render();
+  </script>
+</body>
+</html>
+
+

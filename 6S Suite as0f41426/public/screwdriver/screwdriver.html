@@ -1,0 +1,605 @@
+<!--public/screwdriver/screwdriver.html-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <title>Tool &amp; ESD Management – 6S Tool Suite</title>
+  <meta name="csrf-token" content="">
+  <link rel="icon" href="/images/favicon.png" type="image/png"/>
+  <link rel="stylesheet" href="/styles.css"/>
+  <script src="/theme-init.js"></script>
+  <style>
+    /* ── Domain tab bar ── */
+    .sd-domain-tabs{display:flex;gap:2px;padding:.35rem .5rem .2rem;background:var(--surface);border-bottom:1px solid var(--border)}
+    .sd-dtab{display:inline-flex;align-items:center;gap:.35rem;padding:.38rem .85rem;border:1px solid transparent;border-radius:var(--radius-sm);background:transparent;color:var(--fg-muted);cursor:pointer;font-size:.87rem;font-weight:500;transition:background .12s,color .12s}
+    .sd-dtab:hover{background:var(--surface-strong);color:var(--fg)}
+    .sd-dtab.active{background:var(--accent);color:var(--accent-contrast);border-color:var(--accent)}
+    .sd-tab-badge{display:none;font-size:.7rem;font-weight:700;padding:.1rem .42rem;border-radius:99px;border:1px solid;margin-left:.15rem}
+
+    /* ── Toolbar ── */
+    .sd-toolbar{background:var(--surface);border-bottom:1px solid var(--border)}
+    .sd-toolbar-top{display:flex;align-items:center;gap:.35rem;padding:.4rem .75rem;flex-wrap:wrap}
+    .sd-toolbar-filters{display:flex;align-items:center;gap:.3rem;flex-wrap:wrap;padding:.35rem .75rem .45rem;border-top:1px solid var(--border);overflow:hidden;transition:max-height .22s ease,padding .22s ease,opacity .18s ease;max-height:120px;opacity:1}
+    .sd-toolbar-filters.collapsed{max-height:0;padding-top:0;padding-bottom:0;opacity:0;pointer-events:none}
+    .sd-toolbar select{padding:.28rem .42rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.8rem}
+    .sd-toolbar__actions{display:flex;align-items:center;gap:.2rem;flex-shrink:0;margin-left:auto}
+    /* Icon button */
+    .sd-icon-btn{display:inline-flex;align-items:center;justify-content:center;height:30px;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--fg-muted);cursor:pointer;font-size:.8rem;transition:background .1s,color .1s;flex-shrink:0;white-space:nowrap;gap:.28rem;padding:0 .5rem}
+    .sd-icon-btn:hover{background:var(--surface-strong);color:var(--fg);border-color:var(--accent)}
+    .sd-icon-btn.active{background:var(--accent);color:var(--accent-contrast);border-color:var(--accent)}
+    .sd-icon-btn.btn-green{color:var(--ok);border-color:var(--ok)}
+    .sd-icon-btn.btn-green:hover{background:var(--ok);color:var(--ok-contrast)}
+    .sd-icon-btn.btn-amber{color:var(--warn);border-color:var(--warn)}
+    .sd-icon-btn.btn-amber:hover{background:var(--warn);color:var(--warn-contrast)}
+    .sd-icon-btn .btn-label{font-size:.74rem;font-weight:600;letter-spacing:.01em}
+    /* Filter toggle pill */
+    .sd-filter-toggle{display:inline-flex;align-items:center;gap:.28rem;height:26px;padding:0 .6rem;border:1px solid var(--border);border-radius:999px;background:transparent;color:var(--fg-muted);cursor:pointer;font-size:.76rem;font-weight:600;transition:background .1s,color .1s;flex-shrink:0}
+    .sd-filter-toggle:hover{background:var(--surface-strong);color:var(--fg)}
+    .sd-filter-toggle.filters-on{border-color:var(--accent);color:var(--accent);background:var(--info-bg)}
+    .sd-filter-toggle .ft-arrow{font-size:.6rem;transition:transform .2s}
+    .sd-filter-toggle.open .ft-arrow{transform:rotate(180deg)}
+    /* Divider */
+    .sd-toolbar-divider{width:1px;height:18px;background:var(--border);flex-shrink:0;margin:0 .1rem}
+
+    /* ── Adaptive search (#1) ── */
+    .sd-search-wrap{position:relative;display:flex;align-items:center;gap:.3rem;flex:1;min-width:160px;max-width:320px}
+    .sd-search-wrap svg{position:absolute;left:.5rem;color:var(--fg-muted);pointer-events:none;flex-shrink:0}
+    #search{width:100%;padding:.28rem .5rem .28rem 1.7rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.8rem;resize:none;overflow:hidden;line-height:1.4;min-height:28px;transition:height .15s,border-color .15s;font-family:inherit}
+    #search:focus{outline:none;border-color:var(--accent)}
+    .sd-multi-pill{font-size:.68rem;padding:.1rem .4rem;border-radius:99px;background:var(--info-bg);color:var(--info);border:1px solid var(--info);display:none;white-space:nowrap}
+
+    /* ── KPI bar (#7) ── */
+    .sd-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:.35rem;padding:.4rem .75rem;background:var(--surface);border-bottom:1px solid var(--border)}
+    .sd-kpi-card{background:var(--surface-strong);border:1px solid var(--border);border-radius:var(--radius);padding:.38rem .6rem;cursor:pointer;transition:border-color .15s;user-select:none}
+    .sd-kpi-card:hover{border-color:var(--accent)}
+    .sd-kpi-card--warn{border-color:var(--warn);background:var(--warn-bg)}
+    .sd-kpi-card--danger{border-color:var(--danger);background:var(--danger-bg)}
+    .sd-kpi-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--fg-muted);margin-bottom:.1rem}
+    .sd-kpi-val{font-size:1.3rem;font-weight:900;line-height:1}
+    .sd-kpi-card--warn .sd-kpi-val{color:var(--warn)}
+    .sd-kpi-card--danger .sd-kpi-val{color:var(--danger)}
+
+    /* ── Overdue holds panel (#11) ── */
+    .sd-overdue{display:none;margin:.4rem .75rem;border:1px solid var(--danger);border-radius:var(--radius);background:var(--danger-bg);overflow:hidden}
+    .sd-overdue-hdr{display:flex;align-items:center;gap:.5rem;padding:.38rem .7rem;border-bottom:1px solid var(--danger);font-size:.8rem;font-weight:700;color:var(--danger)}
+    .sd-overdue-hdr button{margin-left:auto;background:transparent;border:none;cursor:pointer;color:var(--danger);font-size:.8rem}
+    .sd-overdue-body table{width:100%;border-collapse:collapse;font-size:.82rem}
+    .sd-overdue-body td{padding:.32rem .7rem;border-bottom:.5px solid color-mix(in srgb,var(--danger) 20%,transparent)}
+    .shift-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:.3rem;vertical-align:middle}
+    .shift-1 .shift-dot,.shift-dot.shift-1{background:#3b82f6}
+    .shift-2 .shift-dot,.shift-dot.shift-2{background:#f59e0b}
+    .shift-3 .shift-dot,.shift-dot.shift-3{background:#10b981}
+    .shift-WKND .shift-dot,.shift-dot.shift-WKND{background:var(--shift-wknd)}
+
+    /* ── Cal pills on cards (#5) ── */
+    .card-badges-row{display:flex;flex-wrap:wrap;gap:3px;margin:.2rem 0}
+    .cal-pill{display:inline-flex;align-items:center;font-size:.65rem;font-weight:700;padding:.1rem .4rem;border-radius:99px}
+    .cal-pill--expired{background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger)}
+    .cal-pill--due{background:var(--danger-bg);color:var(--danger);border:1px solid var(--danger)}
+    .cal-pill--soon{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn)}
+
+    /* ── Inline checkout form on card (#3) ── */
+    .inline-checkout-form{padding:.45rem .5rem;border-top:1px solid var(--border);background:var(--surface-strong)}
+    .inline-op-input{width:100%;padding:.28rem .4rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.8rem;margin-bottom:4px}
+    .inline-op-input:focus{outline:none;border-color:var(--accent)}
+    .inline-cancel{padding:.18rem .45rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--fg-muted);cursor:pointer;font-size:.72rem}
+    .inline-cancel:hover{background:var(--surface-strong)}
+    .tool-details--collapsed{display:none}
+    .tool-box.expanded .tool-details--collapsed{display:block}
+
+    /* ── List view columns (#9) ── */
+    .tool-list{display:flex;flex-direction:column;gap:0}
+    .tool-list-header,.tool-list-row{display:grid;grid-template-columns:140px 36px 80px 80px 1fr 70px 80px 80px;align-items:center;padding:.38rem .6rem;border-bottom:.5px solid var(--border);font-size:.82rem;gap:.3rem}
+    .tool-list-header{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-muted);background:var(--surface-strong)}
+    .tool-list-row.checked-out{background:color-mix(in srgb,var(--warn) 6%,var(--surface))}
+    .dur-green{color:var(--ok)}
+    .dur-amber{color:var(--warn)}
+    .dur-red{color:var(--danger);font-weight:700}
+    @media(max-width:700px){.tool-list-header span:nth-child(n+5),.tool-list-row span:nth-child(n+5){display:none}
+      .tool-list-header,.tool-list-row{grid-template-columns:120px 36px 70px 70px 70px}}
+
+/* ── Tier state containers ───────────────────────────────────────────── */
+.tier-box{
+  margin-bottom:.85rem;
+  border:1px solid var(--border);
+  border-radius:12px;
+  overflow:hidden;
+  background:var(--surface);
+  transition:background .18s ease,border-color .18s ease,box-shadow .18s ease;
+}
+
+.tier-box.tier-all-available{
+  background:var(--surface);
+  border-color:var(--border);
+}
+
+.tier-box.tier-partial-out{
+  background:color-mix(in srgb, var(--warn) 8%, var(--surface));
+  border-color:color-mix(in srgb, var(--warn) 70%, var(--border));
+  box-shadow:0 0 0 1px color-mix(in srgb, var(--warn) 18%, transparent);
+}
+
+.tier-box.tier-all-out{
+  background:color-mix(in srgb, var(--danger) 8%, var(--surface));
+  border-color:color-mix(in srgb, var(--danger) 70%, var(--border));
+  box-shadow:0 0 0 1px color-mix(in srgb, var(--danger) 18%, transparent);
+}
+
+.tier-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.75rem;
+  padding:.65rem .8rem;
+  font-weight:700;
+  border-bottom:1px solid var(--border);
+  background:var(--surface-strong);
+}
+
+.tier-box.tier-partial-out .tier-header{
+  background:color-mix(in srgb, var(--warn) 12%, var(--surface-strong));
+  border-bottom-color:color-mix(in srgb, var(--warn) 35%, var(--border));
+}
+
+.tier-box.tier-all-out .tier-header{
+  background:color-mix(in srgb, var(--danger) 12%, var(--surface-strong));
+  border-bottom-color:color-mix(in srgb, var(--danger) 35%, var(--border));
+}
+
+.tier-header-main{
+  display:flex;
+  align-items:center;
+  gap:.45rem;
+  flex-wrap:wrap;
+}
+
+.tier-title{
+  font-size:.92rem;
+  font-weight:800;
+}
+
+.tier-summary{
+  font-size:.8rem;
+  color:var(--fg-muted);
+  font-weight:600;
+}
+
+.tier-header .arrow{
+  border:1px solid var(--border);
+  background:transparent;
+  color:var(--fg);
+  border-radius:8px;
+  min-width:32px;
+  height:30px;
+  cursor:pointer;
+  font-weight:700;
+}
+
+.tier-header .arrow:hover{
+  background:var(--surface);
+}
+
+    /* ── ESD panel ── */
+    #esdPanel{display:none;padding:0}
+    #esdPanel.active{display:block}
+    .esd-layout{display:grid;grid-template-columns:1fr 1fr;gap:1rem;padding:1rem;max-width:960px}
+    @media(max-width:700px){.esd-layout{grid-template-columns:1fr}}
+    .esd-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;box-shadow:var(--shadow)}
+    .esd-card h3{font-size:.95rem;font-weight:800;margin-bottom:.75rem;display:flex;align-items:center;gap:.4rem}
+    .esd-form-row{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.5rem}
+    @media(max-width:500px){.esd-form-row{grid-template-columns:1fr}}
+    .esd-msg{font-size:.83rem;min-height:1.25rem;margin-top:.35rem}
+    .esd-msg.ok{color:var(--ok)}.esd-msg.err{color:var(--danger)}
+
+    /* ESD checklist enforced (#6) */
+    .esd-checklist-panel{border:1px solid var(--border);border-radius:var(--radius-sm);padding:.65rem .75rem;margin:.55rem 0;background:var(--surface-strong)}
+    .esd-checklist-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap;margin-bottom:.45rem}
+    .esd-checklist-title{font-size:.78rem;font-weight:700;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.04em}
+    .esd-checklist-actions{display:flex;gap:.35rem;flex-wrap:wrap}
+    .esd-checklist-actions button{font-size:.72rem;padding:.2rem .45rem;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--fg);cursor:pointer}
+    .esd-checklist-actions button:hover{border-color:var(--accent);color:var(--accent)}
+    .esd-checklist{display:flex;flex-direction:column;gap:.35rem;font-size:.85rem}
+    .esd-checklist label{display:flex;align-items:center;gap:.4rem;padding:.35rem .45rem;border-radius:4px;border:1px solid var(--border);cursor:pointer;transition:background .1s,border-color .1s;background:var(--surface)}
+    .esd-checklist label:has(input:checked){background:var(--ok-bg);border-color:var(--ok)}
+    .esd-op-row{display:flex;flex-direction:column;gap:.35rem;margin-bottom:.5rem}
+    .esd-op-profile{font-size:.84rem;display:flex;flex-wrap:wrap;align-items:center;gap:.5rem}
+    .esd-op-profile code{font-family:ui-monospace,monospace;font-size:.9em;padding:.1rem .35rem;border-radius:4px;background:var(--surface-strong);border:1px solid var(--border)}
+    .esd-op-override{display:flex;align-items:center;gap:.35rem;font-size:.8rem;color:var(--fg-muted);cursor:pointer;user-select:none}
+    .esd-op-override input{width:14px;height:14px}
+    #esdOperatorId[readonly]{opacity:.92;cursor:not-allowed;background:var(--surface-strong)}
+    .esd-comment-label{font-size:.84rem;display:block;margin-bottom:.2rem}
+    .esd-comment{width:100%;min-height:3.25rem;resize:vertical;box-sizing:border-box;padding:.45rem .5rem;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);color:var(--fg);font-family:inherit;font-size:.84rem}
+    .esd-table{width:100%;border-collapse:collapse;font-size:.84rem;margin-top:.25rem}
+    .esd-table th,.esd-table td{padding:.42rem .5rem;border-bottom:1px solid var(--border);text-align:left}
+    .esd-table th{font-size:.73rem;font-weight:700;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.03em;background:var(--surface)}
+    .esd-table tbody tr{cursor:pointer}
+    .esd-table tbody tr:hover{background:var(--row-hover)}
+    .esd-table tbody tr.esd-row-selected{background:var(--info-bg)}
+    .esd-pill{display:inline-block;padding:.12rem .45rem;border-radius:999px;font-size:.72rem;font-weight:700}
+    .esd-pill.available{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok)}
+    .esd-pill.checked_out,.esd-pill.checkedout{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn)}
+
+    /* Per-cart history drawer (#13) */
+    .esd-hist-drawer{display:none;font-size:.82rem;padding:.5rem;background:var(--surface-strong);border-top:1px solid var(--border)}
+    .esd-hist-drawer.open{display:block}
+    .esd-hist-stat{display:flex;gap:1.2rem;margin-bottom:.5rem;font-size:.78rem;color:var(--fg-muted)}
+    .esd-hist-stat strong{color:var(--fg)}
+    .esd-hist-row{display:flex;align-items:flex-start;gap:.5rem;padding:.28rem 0;border-bottom:.5px solid var(--border);font-size:.8rem}
+    .esd-hist-dot{width:7px;height:7px;border-radius:50%;margin-top:.3rem;flex-shrink:0;background:var(--ok)}
+    .esd-hist-dot.out{background:var(--warn)}
+
+    .esd-audit-log{max-height:240px;overflow-y:auto;font-size:.82rem}
+    .esd-audit-row{display:flex;align-items:flex-start;gap:.5rem;padding:.3rem 0;border-bottom:.5px solid var(--border)}
+    .esd-audit-dot{width:7px;height:7px;border-radius:50%;margin-top:.3rem;flex-shrink:0}
+    .esd-audit-dot.checkout{background:var(--warn)}.esd-audit-dot.checkin{background:var(--ok)}
+    .esd-audit-row-body{flex:1;line-height:1.35}
+    .esd-audit-time{font-size:.73rem;color:var(--fg-muted)}
+    .esd-empty{text-align:center;padding:1.5rem;color:var(--fg-muted);font-size:.85rem}
+
+    /* Screwdriver panel */
+    #toolPanel.active{display:block}
+    #toolPanel{display:none}
+    .btn-sm{padding:.18rem .45rem;font-size:.72rem}
+  </style>
+</head>
+<body>
+  <noscript><div class="noscript">This app requires JavaScript.</div></noscript>
+
+  <!-- ── Topbar ── -->
+  <div class="page" style="padding-bottom:0">
+    <header class="suite-topbar" style="margin-bottom:.4rem">
+      <div class="brand">
+        <div class="brand-title" style="display:flex;align-items:center;gap:.45rem">
+          <span class="sd-brand-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>
+          <span>Floor Tools &amp; ESD</span>
+        </div>
+        <div class="brand-subtitle">Screwdrivers · Drills · Dongles · 3D Tooling · ESD Carts</div>
+      </div>
+      <div class="suite-actions">
+        <a href="/home" class="home-button" style="display:inline-flex;align-items:center;gap:.35rem"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Home</a>
+        <a href="/admin/user-management" class="btn-icon" title="User Management" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid var(--border);border-radius:var(--radius-sm)" aria-label="User Management"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></a>
+        <button type="button" id="shortcutHelpBtn" class="btn-icon" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h8M6 16h4"/></svg></button>
+        <label for="themeSelector" class="visually-hidden">Theme</label>
+        <select id="themeSelector" class="theme-select" aria-label="Theme">
+          <option value="theme-command">Command</option>
+<option value="theme-beacon">Beacon</option>
+<option value="theme-atlas">Atlas</option>
+<option value="theme-carbon">Carbon</option>
+<option value="theme-grove">Grove</option>
+<option value="theme-ember">Ember</option>
+<option value="theme-harbor">Harbor</option>
+<option value="theme-slate">Slate</option>
+<option value="theme-orchid">Orchid</option>
+<option value="theme-dusk">Dusk</option>
+<option value="theme-pulse">Pulse</option>
+<option value="theme-highcontrast">High Contrast</option>
+        </select>
+      </div>
+    </header>
+  </div>
+
+  <!-- ── Domain Tab Bar (with badges #4, hash routing #10) ── -->
+  <div class="sd-domain-tabs" role="tablist" aria-label="Tool area">
+    <button class="sd-dtab active" data-panel="toolPanel" data-hash="tools"
+            role="tab" aria-selected="true" aria-controls="toolPanel">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      Screwdriver Tools
+      <span class="sd-tab-badge" id="toolsCheckedBadge" style="font-size:.7rem">0</span>
+    </button>
+    <button class="sd-dtab" data-panel="esdPanel" data-hash="esd"
+            role="tab" aria-selected="false" aria-controls="esdPanel">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      ESD Carts
+      <span class="lane-count sd-tab-badge" id="esdCheckedBadge" style="font-size:.7rem">0</span>
+    </button>
+  </div>
+
+  <!-- ════════════════════
+       TOOLS PANEL
+  ════════════════════ -->
+  <div id="toolPanel" class="active">
+    <div class="page" style="padding-top:.4rem">
+
+      <!-- ── Building badge (locked — change at home) ── -->
+      <div style="display:flex;align-items:center;gap:.5rem;padding:.35rem .75rem;background:var(--surface);border-bottom:1px solid var(--border)">
+        <span style="font-size:.72rem;color:var(--fg-muted)">Viewing:</span>
+        <span id="buildingBadgeSlot"></span>
+      </div>
+      <script src="/js/building.js"></script>
+
+      <!-- ── Toolbar (collapsible filters + labeled actions) ── -->
+      <header>
+        <div class="sd-toolbar" role="toolbar" aria-label="Tool controls">
+
+          <!-- Top row: search + action buttons always visible -->
+          <div class="sd-toolbar-top">
+
+            <!-- Adaptive search -->
+            <div class="sd-search-wrap">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <textarea id="search" rows="1" aria-label="Search serial numbers"
+                aria-describedby="searchHelp"
+                placeholder="Search serials… (/ to focus)"></textarea>
+              <span class="sd-multi-pill" id="searchMultiPill"></span>
+            </div>
+            <p id="searchHelp" class="visually-hidden">Paste or type serial numbers separated by comma, space, or new line.</p>
+
+            <!-- Filter toggle pill -->
+            <button id="filterToggleBtn" type="button" class="sd-filter-toggle open" aria-expanded="true" aria-controls="sdFiltersRow" title="Show/hide filters">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+              Filters
+              <span class="ft-arrow" aria-hidden="true">▼</span>
+            </button>
+
+            <div class="sd-toolbar-divider" aria-hidden="true"></div>
+
+            <div class="sd-toolbar__actions">
+              <!-- View controls -->
+              <label for="viewToggle" class="visually-hidden">View</label>
+              <select id="viewToggle" aria-label="View Mode" style="padding:.28rem .42rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.8rem">
+                <option value="grid">⊞ Grid</option>
+                <option value="list">≡ List</option>
+              </select>
+
+              <div class="sd-toolbar-divider" aria-hidden="true"></div>
+
+              <!-- Checkout / Return (colored, labeled) -->
+              <button id="bulkCheckout" type="button" class="sd-icon-btn btn-green" title="Bulk checkout selected tools" aria-label="Bulk checkout">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span class="btn-label">Check Out</span>
+              </button>
+              <button id="bulkReturn" type="button" class="sd-icon-btn btn-amber" title="Bulk return selected tools" aria-label="Bulk return">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 16 12 21 17 16"/><line x1="12" y1="21" x2="12" y2="9"/></svg>
+                <span class="btn-label">Return</span>
+              </button>
+
+              <div class="sd-toolbar-divider" aria-hidden="true"></div>
+
+              <!-- Utility actions -->
+              <button id="expandAllTiers" type="button" class="sd-icon-btn" title="Expand all tiers (E)" aria-label="Expand all tiers">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="7 13 12 18 17 13"/><polyline points="7 6 12 11 17 6"/></svg>
+                <span class="btn-label">Expand</span>
+              </button>
+              <button id="collapseAllTiers" type="button" class="sd-icon-btn" title="Collapse all tiers (C)" aria-label="Collapse all tiers">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="7 11 12 6 17 11"/><polyline points="7 18 12 13 17 18"/></svg>
+                <span class="btn-label">Collapse</span>
+              </button>
+              <button id="toggleSummary" type="button" class="sd-icon-btn" aria-controls="summaryPanel" aria-expanded="false" title="Toggle summary (S)" aria-label="Toggle summary">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                <span class="btn-label">Summary</span>
+              </button>
+              <button id="legendToggle" type="button" class="sd-icon-btn" aria-controls="legendPanel" aria-expanded="false" title="Toggle legend (L)" aria-label="Toggle legend">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span class="btn-label">Legend</span>
+              </button>
+              <button id="exportFiltered" type="button" class="sd-icon-btn" title="Export CSV (E)" aria-label="Export CSV">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span class="btn-label">Export</span>
+              </button>
+              <button id="clearSearch" type="button" class="sd-icon-btn" title="Clear search (×)" aria-label="Clear search">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <span class="btn-label">Clear</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Collapsible filter row -->
+          <div class="sd-toolbar-filters" id="sdFiltersRow" aria-label="Filter controls">
+            <label for="classificationFilter" class="visually-hidden">Classification</label>
+            <select id="classificationFilter" aria-label="Tool type">
+              <option value="">All Types</option>
+              <option value="Manual">Manual</option>
+              <option value="Wired">Wired</option>
+              <option value="Wireless">Wireless</option>
+            </select>
+
+            <label for="statusFilter" class="visually-hidden">Status</label>
+            <select id="statusFilter" aria-label="Checkout status">
+              <option value="">All Status</option>
+              <option value="in inventory">Available</option>
+              <option value="being used">Checked out</option>
+            </select>
+
+            <label for="calibrationFilter" class="visually-hidden">Calibration</label>
+            <select id="calibrationFilter" aria-label="Calibration status">
+              <option value="">All Cal Status</option>
+              <option value="Calibrated">Calibrated</option>
+              <option value="Pending Calibration">Pending calibration</option>
+              <option value="Expiring Soon">Expiring soon</option>
+              <option value="Expired">Expired</option>
+              <option value="Under Maintenance">Maintenance</option>
+            </select>
+
+            <label for="torqueFilter" class="visually-hidden">Torque</label>
+            <select id="torqueFilter" aria-label="Torque value"><option value="">All Torques</option></select>
+
+            <label for="sortFilter" class="visually-hidden">Sort by</label>
+            <select id="sortFilter" aria-label="Sort by">
+              <option value="">Sort by…</option>
+              <option value="torque">Torque</option>
+              <option value="status">Status</option>
+              <option value="duration">Duration</option>
+            </select>
+
+            <button id="sortDirectionToggle" type="button" class="sd-icon-btn" aria-label="Toggle sort direction" title="Toggle sort direction" style="width:30px;padding:0">▲</button>
+
+            <button id="clearFilters" type="button" class="sd-icon-btn" title="Reset all filters" aria-label="Reset all filters">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg>
+              <span class="btn-label">Reset</span>
+            </button>
+            <!-- Hidden building filter — driven by pill tabs above, read by applyFilters() -->
+            <select id="buildingFilter" aria-hidden="true" style="display:none">
+              <option value="Bldg-350">Bldg-350</option>
+              <option value="Bldg-4050">Bldg-4050</option>
+              <option value="all">all</option>
+            </select>
+          </div>
+
+        </div>
+
+        <!-- ── KPI bar (#7) ── -->
+        <div class="sd-kpis" aria-label="Tool status summary">
+          <div class="sd-kpi-card" id="kpi-avail-card" title="Click to filter available">
+            <div class="sd-kpi-label">Available</div>
+            <div class="sd-kpi-val" id="kpi-avail">–</div>
+          </div>
+          <div class="sd-kpi-card" id="kpi-out-card" title="Click to filter checked out">
+            <div class="sd-kpi-label">Checked out</div>
+            <div class="sd-kpi-val" id="kpi-out">–</div>
+          </div>
+          <div class="sd-kpi-card" id="kpi-cal-card" title="Click to filter cal expiring">
+            <div class="sd-kpi-label">Cal due ≤14d</div>
+            <div class="sd-kpi-val" id="kpi-cal">–</div>
+          </div>
+        </div>
+
+        <!-- ── Overdue holds panel (#11) ── -->
+        <div class="sd-overdue" id="overduePanel">
+          <div class="sd-overdue-hdr">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Tools checked out 5h+
+            <span id="overdueCount" style="font-size:.75rem;font-weight:400;margin-left:.25rem"></span>
+            <button id="overdueToggleBtn" type="button" title="Toggle overdue panel">▼</button>
+          </div>
+          <div id="overdueBody">
+            <table class="sd-overdue-body" style="width:100%;border-collapse:collapse">
+              <tbody id="overdueList"></tbody>
+            </table>
+          </div>
+        </div>
+      </header>
+
+      <main>
+        <!-- Admin login moved to /admin/user-management -->
+        <section id="summaryPanel" style="display:none" aria-live="polite"></section>
+        <section id="legendPanel" style="display:none">
+          <div class="legend">
+            <h3>Legend</h3>
+            <div class="legend-headline">Torque</div>
+            <ul class="legend-list">
+              <li>0.6 Nm = Blue <span class="legend-swatch torque-blue" aria-hidden="true"></span></li>
+              <li>1.2 Nm = Red  <span class="legend-swatch torque-red"  aria-hidden="true"></span></li>
+              <li>Below 0.6 Nm = Green  <span class="legend-swatch torque-green"  aria-hidden="true"></span></li>
+              <li>Above 1.2 Nm = Purple <span class="legend-swatch torque-purple" aria-hidden="true"></span></li>
+            </ul>
+            <div class="legend-headline">Shift</div>
+            <ul class="legend-list">
+              <li>Shift 1 <span class="legend-swatch shift-1" aria-hidden="true"></span></li>
+              <li>Shift 2 <span class="legend-swatch shift-2" aria-hidden="true"></span></li>
+              <li>Shift 3 <span class="legend-swatch shift-3" aria-hidden="true"></span></li>
+              <li>WKND <span class="legend-swatch shift-WKND" aria-hidden="true"></span></li>
+            </ul>
+            <div class="legend-headline">Classification</div>
+            <ul class="legend-list legend-left">
+              <li><span class="icon-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span><span>Manual Tool</span></li>
+              <li><span class="icon-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22v-5"/><path d="M9 7V2"/><path d="M15 7V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg></span><span>Wired Tool</span></li>
+              <li><span class="icon-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><path d="M12 20h.01"/></svg></span><span>Wireless Tool</span></li>
+            </ul>
+          </div>
+        </section>
+        <section id="toolTiers" aria-live="polite"></section>
+      </main>
+
+      <footer><small>ZT Systems &copy; 2026 &nbsp;·&nbsp; Press <kbd>?</kbd> for shortcuts</small></footer>
+    </div>
+  </div>
+
+  <!-- ════════════════════
+       ESD CARTS PANEL
+  ════════════════════ -->
+  <div id="esdPanel">
+    <div class="esd-layout">
+
+      <!-- ── Cart Action form (checklist enforced #6) ── -->
+      <div class="esd-card">
+        <h3 style="display:flex;align-items:center;gap:.4rem;margin-top:0"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Cart Action</h3>
+
+        <div class="esd-form-row">
+          <div style="grid-column:1/-1">
+            <label style="font-size:.84rem;display:block;margin-bottom:.2rem" for="esdCartId">Cart ID</label>
+            <input id="esdCartId" class="pj-dinput" style="width:100%" type="text" placeholder="e.g. CART-01" autocomplete="off"/>
+          </div>
+        </div>
+
+        <div class="esd-op-row">
+          <span style="font-size:.84rem;font-weight:600">Operator</span>
+          <div class="esd-op-profile">
+            <span>Profile ID:</span> <code id="esdProfileOpDisplay">—</code>
+            <span id="esdProfileOpWarn" style="font-size:.78rem;color:var(--warn);display:none">No tech ID on your account — use override to enter an ID.</span>
+          </div>
+          <label class="esd-op-override"><input type="checkbox" id="esdOperatorOverride"/> Override operator ID (logged)</label>
+          <div>
+            <label style="font-size:.82rem;display:block;margin-bottom:.2rem" for="esdOperatorId">Effective operator ID</label>
+            <input id="esdOperatorId" class="pj-dinput" style="width:100%" type="text" placeholder="Loaded from your profile" autocomplete="off" readonly/>
+          </div>
+        </div>
+
+        <div style="margin-bottom:.55rem">
+          <label class="esd-comment-label" for="esdComment">Comment <span style="font-weight:400;color:var(--fg-muted)">(optional)</span></label>
+          <textarea id="esdComment" class="esd-comment" maxlength="2000" placeholder="Shift note, area, or other context…" rows="2"></textarea>
+        </div>
+
+        <div class="esd-checklist-panel">
+          <div class="esd-checklist-head">
+            <span class="esd-checklist-title">Pre-checkout checklist</span>
+            <div class="esd-checklist-actions">
+              <button type="button" id="esdCheckAll">Check all</button>
+              <button type="button" id="esdCheckNone">Clear all</button>
+            </div>
+          </div>
+          <div class="esd-checklist" id="esdChecklistInner">
+            <label><input type="checkbox" id="chk-wrist"> Wrist strap tested</label>
+            <label><input type="checkbox" id="chk-mat"> Mat grounded</label>
+            <label><input type="checkbox" id="chk-damage"> No visible damage</label>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:.5rem;margin-bottom:.5rem;flex-wrap:wrap">
+          <button id="esdBtnCheckout" class="btn-checkout" style="flex:1" type="button" disabled>Check Out</button>
+          <button id="esdBtnCheckin"  class="btn-return"   style="flex:1" type="button">Check In</button>
+        </div>
+        <div class="esd-msg" id="esdMsg"></div>
+        <div style="font-size:.75rem;color:var(--fg-muted);margin-top:.35rem" id="esdChecklistHint">Complete the checklist to enable checkout</div>
+      </div>
+
+      <!-- ── Current carts table (inline actions #8, row pre-fill #8) ── -->
+      <div class="esd-card">
+        <h3>Current Carts
+          <span style="font-size:.72rem;font-weight:400;color:var(--fg-muted)" id="esdCartCount"></span>
+        </h3>
+        <table class="esd-table" id="esdCartsTable" aria-live="polite">
+          <thead><tr>
+            <th>Cart</th><th>Status</th><th>Holder</th><th>Updated</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="esdCartsBody"></tbody>
+        </table>
+        <div style="font-size:.75rem;color:var(--fg-muted);margin-top:.4rem">Click a row to pre-fill the form · ▶ to view history</div>
+      </div>
+
+      <!-- ── Audit log ── -->
+      <div class="esd-card" style="grid-column:1/-1">
+        <h3>Recent Activity
+          <button id="esdRefreshAudit" class="btn-secondary" style="font-size:.78rem;padding:.2rem .5rem;margin-left:.5rem;display:inline-flex;align-items:center;gap:.3rem" type="button"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> Refresh</button>
+        </h3>
+        <div class="esd-audit-log" id="esdAuditLog">
+          <div class="esd-empty">Loading…</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+ <script src="/nav.js"></script>
+<script src="/js/suite-icons.js"></script>
+<script src="/socket.io/socket.io.js" defer></script>
+<script type="module" src="/screwdriver/main.js" defer></script>
+<script type="module" src="/screwdriver/esd-panel.js" defer></script>
+
+</body>
+</html>
+
+
+
+
