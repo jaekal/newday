@@ -1,0 +1,791 @@
+<%- include('../layout') %>
+
+<%
+  // review is passed as plain object with Staff + StaffProfile included
+  const staff = review.Staff || null;
+  const profile = staff && staff.StaffProfile ? staff.StaffProfile : null;
+
+  function safeVal(v) {
+    return typeof v === 'number' ? v : '';
+  }
+%>
+
+<section class="page-header">
+  <div>
+    <h2>Edit Monthly Review</h2>
+    <p class="muted">
+      Update scores and comments for this review. Bucket averages will be recalculated
+      automatically based on your changes.
+    </p>
+    <p class="muted" style="margin-top:0.25rem;">
+      Need calibration? Use the
+      <a href="/reviews/criteria" target="_blank">Review Criteria Guide</a>
+      or hover the “?” bubbles beside each question.
+    </p>
+  </div>
+
+  <div>
+    <p class="muted small" style="text-align:right;">
+      Period: <strong><%= review.periodMonth %>/<%= review.periodYear %></strong><br />
+      Staff: <strong><%= staff ? staff.name : 'N/A' %></strong>
+    </p>
+  </div>
+</section>
+
+<% if (duplicateWarning) { %>
+  <section class="card" style="border-left:4px solid #f97316;">
+    <h3>Duplicate Review Detected</h3>
+    <p class="muted">
+      A review for <strong><%= staff ? staff.name : 'this staff member' %></strong> in
+      <strong><%= review.periodMonth %>/<%= review.periodYear %></strong> already exists.
+      You are now editing that review instead of creating a new one.
+    </p>
+  </section>
+<% } %>
+
+<section class="card" style="margin-bottom:1rem;">
+  <div class="section-header">
+    <h3>Staff Snapshot</h3>
+  </div>
+
+  <div class="layout-two-column">
+    <div>
+      <p class="muted small">
+        <strong>Name:</strong> <%= staff ? staff.name : 'N/A' %><br />
+        <strong>Role:</strong> <%= staff && staff.role ? staff.role : 'N/A' %>
+        <% if (profile && profile.positionType) { %>
+          • <strong>Position:</strong> <%= profile.positionType %>
+        <% } %>
+      </p>
+    </div>
+    <div>
+      <p class="muted small">
+        <% if (profile && profile.building) { %>
+          <strong>Building:</strong> <%= profile.building %><br />
+        <% } %>
+        <% if (profile && profile.shift) { %>
+          <strong>Shift:</strong> <%= profile.shift %><br />
+        <% } %>
+      </p>
+    </div>
+  </div>
+</section>
+
+<% const safeOpenIncidents = (typeof openIncidents !== 'undefined' && Array.isArray(openIncidents)) ? openIncidents : []; %>
+<% if (safeOpenIncidents.length > 0) { %>
+  <div class="review-incidents-panel">
+    <div class="review-incidents-header">
+      <span class="chip chip-warn" style="font-size:0.75rem;">⚠ <%= safeOpenIncidents.length %> open incident<%= safeOpenIncidents.length > 1 ? 's' : '' %></span>
+      <span style="font-size:0.8rem; color:var(--text-muted); margin-left:0.5rem;">Consider these when rating accountability and behavior.</span>
+    </div>
+    <ul class="review-incidents-list">
+      <% safeOpenIncidents.forEach(function(inc) { %>
+        <li>
+          <span class="review-incident-date"><%= inc.incidentDate ? String(inc.incidentDate).slice(0,10) : '—' %></span>
+          <span class="review-incident-title"><%= inc.title || '(no title)' %></span>
+          <% if (inc.severity) { %><span class="review-incident-severity chip chip-<%= inc.severity === 'HIGH' || inc.severity === 'CRITICAL' ? 'warn' : 'neutral' %>" style="font-size:0.7rem;"><%= inc.severity %></span><% } %>
+        </li>
+      <% }); %>
+    </ul>
+  </div>
+<% } %>
+
+<form method="POST" action="/reviews/<%= review.id %>/update">
+  <!-- PEOPLE FIRST -->
+  <section class="card bucket-card" data-bucket="people">
+    <header class="bucket-card-header">
+      <div>
+        <h3>People First</h3>
+        <p class="muted small">
+          Attitude, engagement, integrity, and how they show up for the team.
+        </p>
+      </div>
+      <button type="button" class="btn ghost btn-small bucket-toggle" data-target="people-body">
+        <span class="bucket-toggle-icon">▼</span> Collapse
+      </button>
+    </header>
+
+    <div class="bucket-card-body" id="people-body">
+      <div class="layout-two-column">
+        <div class="field">
+          <label for="positiveAttitude">
+            Positive Attitude
+            <span class="question-help" data-help="Shows a 'can do' attitude, participates in meetings, and communicates disagreements professionally.">
+              <span class="question-help-icon">?</span>
+            </span>
+          </label>
+          <input
+            type="number"
+            name="positiveAttitude"
+            id="positiveAttitude"
+            min="1"
+            max="5"
+            step="1"
+            value="<%= safeVal(review.positiveAttitude) %>"
+            data-comment="positiveAttitudeComment"
+          />
+          <textarea
+            class="criteria-comment"
+            name="positiveAttitudeComment"
+            rows="2"
+          ><%= review.positiveAttitudeComment || '' %></textarea>
+        </div>
+
+        <div class="field">
+          <label for="proactive">
+            Proactive
+            <span class="question-help" data-help="Anticipates needs, helps the team hit goals, and offers ideas or solutions instead of waiting.">
+              <span class="question-help-icon">?</span>
+            </span>
+          </label>
+          <input
+            type="number"
+            name="proactive"
+            id="proactive"
+            min="1"
+            max="5"
+            step="1"
+            value="<%= safeVal(review.proactive) %>"
+            data-comment="proactiveComment"
+          />
+          <textarea
+            class="criteria-comment"
+            name="proactiveComment"
+            rows="2"
+          ><%= review.proactiveComment || '' %></textarea>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="integrity">
+          Integrity
+          <span class="question-help" data-help="Follows policies, acts consistently with company values, and gives constructive feedback professionally.">
+            <span class="question-help-icon">?</span>
+          </span>
+        </label>
+        <input
+          type="number"
+          name="integrity"
+          id="integrity"
+          min="1"
+          max="5"
+          step="1"
+          value="<%= safeVal(review.integrity) %>"
+          data-comment="integrityComment"
+        />
+        <textarea
+          class="criteria-comment"
+          name="integrityComment"
+          rows="2"
+        ><%= review.integrityComment || '' %></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- OWNERSHIP MENTALITY -->
+  <section class="card bucket-card" data-bucket="ownership">
+    <header class="bucket-card-header">
+      <div>
+        <h3>Ownership Mentality</h3>
+        <p class="muted small">
+          Accountability, problem solving, and how they manage their own work.
+        </p>
+      </div>
+      <button type="button" class="btn ghost btn-small bucket-toggle" data-target="ownership-body">
+        <span class="bucket-toggle-icon">▼</span> Collapse
+      </button>
+    </header>
+
+    <div class="bucket-card-body" id="ownership-body">
+      <div class="layout-two-column">
+        <div class="field">
+          <label for="accountability2">
+            Accountability
+            <span class="question-help" data-help="Dependable, meets expectations, owns their work, and follows through without excuses.">
+              <span class="question-help-icon">?</span>
+            </span>
+          </label>
+          <input
+            type="number"
+            name="accountability2"
+            id="accountability2"
+            min="1"
+            max="5"
+            step="1"
+            value="<%= safeVal(review.accountability2) %>"
+            data-comment="accountability2Comment"
+          />
+          <textarea class="criteria-comment" name="accountability2Comment" rows="2"><%= review.accountability2Comment || '' %></textarea>
+        </div>
+
+        <div class="field">
+          <label for="problemSolving">
+            Problem Solving
+            <span class="question-help" data-help="Addresses day-to-day issues, escalates appropriately, and contributes ideas to improve work.">
+              <span class="question-help-icon">?</span>
+            </span>
+          </label>
+          <input
+            type="number"
+            name="problemSolving"
+            id="problemSolving"
+            min="1"
+            max="5"
+            step="1"
+            value="<%= safeVal(review.problemSolving) %>"
+            data-comment="problemSolvingComment"
+          />
+          <textarea class="criteria-comment" name="problemSolvingComment" rows="2"><%= review.problemSolvingComment || '' %></textarea>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="efficiency">
+          Efficiency
+          <span class="question-help" data-help="Organizes their work, uses time well (including downtime), and makes effective day-to-day decisions.">
+            <span class="question-help-icon">?</span>
+          </span>
+        </label>
+        <input
+          type="number"
+          name="efficiency"
+          id="efficiency"
+          min="1"
+          max="5"
+          step="1"
+          value="<%= safeVal(review.efficiency) %>"
+          data-comment="efficiencyComment"
+        />
+        <textarea class="criteria-comment" name="efficiencyComment" rows="2"><%= review.efficiencyComment || '' %></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUALITY -->
+  <section class="card bucket-card" data-bucket="quality">
+    <header class="bucket-card-header">
+      <div>
+        <h3>Quality</h3>
+        <p class="muted small">
+          Results, attention to standards, and consistency of output.
+        </p>
+      </div>
+      <button type="button" class="btn ghost btn-small bucket-toggle" data-target="quality-body">
+        <span class="bucket-toggle-icon">▼</span> Collapse
+      </button>
+    </header>
+
+    <div class="bucket-card-body" id="quality-body">
+      <div class="layout-two-column">
+        <div class="field">
+          <label for="resultsOrientation">
+            Results
+            <span class="question-help" data-help="Delivers the expected workload with quality, contributes to team output, and meets repair/test expectations.">
+              <span class="question-help-icon">?</span>
+            </span>
+          </label>
+          <input
+            type="number"
+            name="resultsOrientation"
+            id="resultsOrientation"
+            min="1"
+            max="5"
+            step="1"
+            value="<%= safeVal(review.resultsOrientation) %>"
+            data-comment="resultsOrientationComment"
+          />
+          <textarea class="criteria-comment" name="resultsOrientationComment" rows="2"><%= review.resultsOrientationComment || '' %></textarea>
+        </div>
+
+        <div class="field">
+          <label for="communication">
+            Communication
+            <span class="question-help" data-help="Keeps others informed, escalates blockers, and is open to feedback from the team and management.">
+              <span class="question-help-icon">?</span>
+            </span>
+          </label>
+          <input
+            type="number"
+            name="communication"
+            id="communication"
+            min="1"
+            max="5"
+            step="1"
+            value="<%= safeVal(review.communication) %>"
+            data-comment="communicationComment"
+          />
+          <textarea class="criteria-comment" name="communicationComment" rows="2"><%= review.communicationComment || '' %></textarea>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="continuousImprovement">
+          Continuous Improvement
+          <span class="question-help" data-help="Grows their knowledge of tests, processes, and products, and applies learning to improve daily work.">
+            <span class="question-help-icon">?</span>
+          </span>
+        </label>
+        <input
+          type="number"
+          name="continuousImprovement"
+          id="continuousImprovement"
+          min="1"
+          max="5"
+          step="1"
+          value="<%= safeVal(review.continuousImprovement) %>"
+          data-comment="continuousImprovementComment"
+        />
+        <textarea class="criteria-comment" name="continuousImprovementComment" rows="2"><%= review.continuousImprovementComment || '' %></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- PARTNERSHIP -->
+  <section class="card bucket-card" data-bucket="partnership">
+    <header class="bucket-card-header">
+      <div>
+        <h3>Partnership</h3>
+        <p class="muted small">
+          Teamwork, collaboration, and how they build trust in the team.
+        </p>
+      </div>
+      <button type="button" class="btn ghost btn-small bucket-toggle" data-target="partnership-body">
+        <span class="bucket-toggle-icon">▼</span> Collapse
+      </button>
+    </header>
+
+    <div class="bucket-card-body" id="partnership-body">
+      <div class="layout-two-column">
+        <div class="field">
+          <label for="teamwork2">
+            Teamwork
+            <span class="question-help" data-help="Shares knowledge, is willing to help others, and supports the overall success of the team.">
+              <span class="question-help-icon">?</span>
+            </span>
+          </label>
+          <input
+            type="number"
+            name="teamwork2"
+            id="teamwork2"
+            min="1"
+            max="5"
+            step="1"
+            value="<%= safeVal(review.teamwork2) %>"
+            data-comment="teamwork2Comment"
+          />
+          <textarea class="criteria-comment" name="teamwork2Comment" rows="2"><%= review.teamwork2Comment || '' %></textarea>
+        </div>
+
+        <div class="field">
+          <label for="collaboration">
+            Collaboration
+            <span class="question-help" data-help="Respects different perspectives, works well with diverse teammates, and contributes in meetings and discussions.">
+              <span class="question-help-icon">?</span>
+            </span>
+          </label>
+          <input
+            type="number"
+            name="collaboration"
+            id="collaboration"
+            min="1"
+            max="5"
+            step="1"
+            value="<%= safeVal(review.collaboration) %>"
+            data-comment="collaborationComment"
+          />
+          <textarea class="criteria-comment" name="collaborationComment" rows="2"><%= review.collaborationComment || '' %></textarea>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="buildTrust">
+          Build Trust
+          <span class="question-help" data-help="Consistently reliable, respectful, and able to work independently without constant supervision.">
+            <span class="question-help-icon">?</span>
+          </span>
+        </label>
+        <input
+          type="number"
+          name="buildTrust"
+          id="buildTrust"
+          min="1"
+          max="5"
+          step="1"
+          value="<%= safeVal(review.buildTrust) %>"
+          data-comment="buildTrustComment"
+        />
+        <textarea class="criteria-comment" name="buildTrustComment" rows="2"><%= review.buildTrustComment || '' %></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- LEADING PEOPLE -->
+  <section class="card bucket-card" data-bucket="leading">
+    <header class="bucket-card-header">
+      <div>
+        <h3>Leading People</h3>
+        <p class="muted small">
+          For leads/supervisors: decision-making, enabling the team, and developing people.
+        </p>
+      </div>
+      <button type="button" class="btn ghost btn-small bucket-toggle" data-target="leading-body">
+        <span class="bucket-toggle-icon">▼</span> Collapse
+      </button>
+    </header>
+
+    <div class="bucket-card-body" id="leading-body">
+      <div class="layout-two-column">
+        <div class="field">
+          <label for="decisionMakingWithRisk">
+            Decision Making with Risk
+            <span class="question-help" data-help="Makes timely decisions with incomplete data, balances risk, and keeps work moving.">
+              <span class="question-help-icon">?</span>
+            </span>
+          </label>
+          <input
+            type="number"
+            name="decisionMakingWithRisk"
+            id="decisionMakingWithRisk"
+            min="1"
+            max="5"
+            step="1"
+            value="<%= safeVal(review.decisionMakingWithRisk) %>"
+            data-comment="decisionMakingWithRiskComment"
+          />
+          <textarea class="criteria-comment" name="decisionMakingWithRiskComment" rows="2"><%= review.decisionMakingWithRiskComment || '' %></textarea>
+        </div>
+
+        <div class="field">
+          <label for="enableTheTeam">
+            Enable the Team
+            <span class="question-help" data-help="Provides clear direction, removes blockers, and leads by example as a 'player-coach'.">
+              <span class="question-help-icon">?</span>
+            </span>
+          </label>
+          <input
+            type="number"
+            name="enableTheTeam"
+            id="enableTheTeam"
+            min="1"
+            max="5"
+            step="1"
+            value="<%= safeVal(review.enableTheTeam) %>"
+            data-comment="enableTheTeamComment"
+          />
+          <textarea class="criteria-comment" name="enableTheTeamComment" rows="2"><%= review.enableTheTeamComment || '' %></textarea>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="hireDevelopManage">
+          Hire / Develop / Manage Effectively
+          <span class="question-help" data-help="Builds high-performing teams, develops people, and addresses performance (good and bad) effectively.">
+            <span class="question-help-icon">?</span>
+          </span>
+        </label>
+        <input
+          type="number"
+          name="hireDevelopManage"
+          id="hireDevelopManage"
+          min="1"
+          max="5"
+          step="1"
+          value="<%= safeVal(review.hireDevelopManage) %>"
+          data-comment="hireDevelopManageComment"
+        />
+        <textarea class="criteria-comment" name="hireDevelopManageComment" rows="2"><%= review.hireDevelopManageComment || '' %></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- REVIEWER NOTES (summary) -->
+  <section class="card">
+    <h3>Reviewer Notes</h3>
+    <div class="field" id="comment-field-wrap">
+      <label for="comment">Comments</label>
+      <textarea
+        id="comment"
+        name="comment"
+        rows="4"
+      ><%= review.comment || '' %></textarea>
+    </div>
+
+    <div style="margin-top:1rem; display:flex; gap:0.75rem; justify-content:flex-end;">
+      <a href="/reviews/my" class="btn ghost">Cancel</a>
+      <button type="submit" class="btn primary">Save Changes</button>
+    </div>
+  </section>
+</form>
+
+<!-- Floating Criteria Guide button -->
+<button type="button" class="criteria-fab" id="criteriaFabEdit">
+  <span class="criteria-fab-icon">?</span>
+  <span class="criteria-fab-text">Review Criteria</span>
+</button>
+
+<script>
+  (function () {
+    const editForm = document.querySelector('form[method="POST"]');
+
+    // Bucket expand / collapse
+    document.querySelectorAll('.bucket-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.getAttribute('data-target');
+        const body = document.getElementById(targetId);
+        if (!body) return;
+
+        const icon = btn.querySelector('.bucket-toggle-icon');
+        const isHidden = body.style.display === 'none';
+
+        body.style.display = isHidden ? 'block' : 'none';
+        if (icon) icon.textContent = isHidden ? '\u25BC' : '\u25B2';
+        btn.textContent = '';
+        btn.appendChild(icon);
+        btn.insertAdjacentText('beforeend', isHidden ? ' Collapse' : ' Expand');
+      });
+    });
+
+    // Hover help tooltips
+    let tooltipEl = null;
+    let hideTimer = null;
+
+    function showTooltip(el) {
+      const text = el.getAttribute('data-help');
+      if (!text) return;
+
+      if (!tooltipEl) {
+        tooltipEl = document.createElement('div');
+        tooltipEl.className = 'criteria-tooltip';
+        document.body.appendChild(tooltipEl);
+      }
+
+      tooltipEl.textContent = text;
+
+      const rect = el.getBoundingClientRect();
+      const top = rect.bottom + 6;
+      const left = rect.left;
+
+      tooltipEl.style.top = top + 'px';
+      tooltipEl.style.left = left + 'px';
+      tooltipEl.style.display = 'block';
+    }
+
+    function hideTooltip() {
+      if (tooltipEl) tooltipEl.style.display = 'none';
+    }
+
+    document.addEventListener('mouseover', (evt) => {
+      const target = evt.target.closest('.question-help');
+      if (!target) {
+        if (hideTimer) clearTimeout(hideTimer);
+        hideTimer = setTimeout(hideTooltip, 80);
+        return;
+      }
+      if (hideTimer) clearTimeout(hideTimer);
+      showTooltip(target);
+    });
+
+    document.addEventListener('mouseout', (evt) => {
+      const target = evt.target.closest('.question-help');
+      if (target && hideTimer) {
+        hideTimer = setTimeout(hideTooltip, 80);
+      }
+    });
+
+    // Floating criteria guide button
+    const fab = document.getElementById('criteriaFabEdit');
+    if (fab) {
+      fab.addEventListener('click', function () {
+        window.open('/reviews/criteria', '_blank');
+      });
+    }
+
+    // -- Hide empty comment fields; show "Add comment" toggle --
+    document.querySelectorAll('.criteria-comment').forEach(function (ta) {
+      if ((ta.value || '').trim() !== '') return; // already has content - leave visible
+
+      ta.style.display = 'none';
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = '+ Add comment';
+      btn.className = 'btn ghost btn-sm';
+      btn.style.cssText = 'margin-top:4px;font-size:0.78rem;padding:2px 8px;';
+
+      btn.addEventListener('click', function () {
+        ta.style.display = '';
+        ta.focus();
+        btn.remove();
+      });
+
+      ta.parentNode.insertBefore(btn, ta.nextSibling);
+    });
+
+    // -- Hide main comment if empty; show "Add comment" button --
+    (function () {
+      const wrap = document.getElementById('comment-field-wrap');
+      const ta = wrap && wrap.querySelector('textarea#comment');
+      if (!ta || (ta.value || '').trim() !== '') return;
+
+      ta.style.display = 'none';
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = '+ Add comment';
+      btn.className = 'btn ghost btn-sm';
+      btn.style.cssText = 'margin-top:4px;font-size:0.78rem;';
+
+      btn.addEventListener('click', function () {
+        ta.style.display = '';
+        ta.focus();
+        btn.remove();
+      });
+
+      ta.parentNode.insertBefore(btn, ta.nextSibling);
+    })();
+
+    // -- Track original values + highlight changed scores --
+    const originalValues = {};
+    editForm && editForm.querySelectorAll('input[type="number"][name]').forEach(function (inp) {
+      originalValues[inp.name] = inp.value;
+      inp.addEventListener('input', function () {
+        const changed = inp.value !== originalValues[inp.name];
+        inp.style.outline = changed ? '2px solid rgba(251,191,36,0.6)' : '';
+        inp.title = changed ? 'Changed from ' + (originalValues[inp.name] || 'blank') + ' -> ' + inp.value : '';
+      });
+    });
+
+    // -- Confirm before leaving with unsaved edits --
+    let editFormDirty = false;
+    editForm && editForm.querySelectorAll('input, textarea').forEach(function (el) {
+      el.addEventListener('input', function () { editFormDirty = true; });
+    });
+    editForm && editForm.addEventListener('submit', function () { editFormDirty = false; });
+    window.addEventListener('beforeunload', function (e) {
+      if (editFormDirty) { e.preventDefault(); e.returnValue = ''; }
+    });
+
+    // -- Comment validation on submit --
+    // Comments are required for any score that is 1, 2, 4, or 5.
+    const LEADING_FIELDS_EDIT = ['decisionMakingWithRisk', 'enableTheTeam', 'hireDevelopManage'];
+    const COMMENT_MAP_EDIT = {
+      positiveAttitude:       'positiveAttitudeComment',
+      proactive:              'proactiveComment',
+      integrity:              'integrityComment',
+      accountability2:        'accountability2Comment',
+      problemSolving:         'problemSolvingComment',
+      efficiency:             'efficiencyComment',
+      resultsOrientation:     'resultsOrientationComment',
+      communication:          'communicationComment',
+      continuousImprovement:  'continuousImprovementComment',
+      teamwork2:              'teamwork2Comment',
+      collaboration:          'collaborationComment',
+      buildTrust:             'buildTrustComment',
+      decisionMakingWithRisk: 'decisionMakingWithRiskComment',
+      enableTheTeam:          'enableTheTeamComment',
+      hireDevelopManage:      'hireDevelopManageComment',
+    };
+
+    if (editForm) {
+      editForm.addEventListener('submit', function (evt) {
+        const scoreInputs = editForm.querySelectorAll('input[type="number"][data-comment]');
+        let errors = [];
+        let firstErrorEl = null;
+
+        scoreInputs.forEach(function (input) {
+          const raw = (input.value || '').trim();
+          if (!raw) return;
+          const n = Number(raw);
+          if (!Number.isFinite(n) || !Number.isInteger(n) || n === 3) return;
+
+          const commentName = COMMENT_MAP_EDIT[input.name];
+          if (!commentName) return;
+          const ta = editForm.querySelector('textarea[name="' + commentName + '"]');
+          if (!ta) return;
+
+          const hasText = (ta.value || '').trim().length > 0;
+          if (!hasText) {
+            // Show inline error on the textarea
+            let errEl = ta._editCommentErr;
+            if (!errEl) {
+              errEl = document.createElement('span');
+              errEl.style.cssText = 'display:block;margin-top:3px;font-size:0.76rem;font-weight:500;color:var(--danger,#ef4444);';
+              ta.after(errEl);
+              ta._editCommentErr = errEl;
+            }
+            errEl.textContent = 'A comment is required for scores of 1, 2, 4, or 5.';
+            ta.style.borderColor = 'var(--danger,#ef4444)';
+            errors.push(input.name);
+            if (!firstErrorEl) firstErrorEl = ta;
+          } else {
+            // Clear any existing error
+            if (ta._editCommentErr) ta._editCommentErr.textContent = '';
+            ta.style.borderColor = '';
+          }
+        });
+
+        if (errors.length > 0) {
+          evt.preventDefault();
+          evt.stopPropagation();
+          if (firstErrorEl) firstErrorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Show summary banner if present
+          let banner = document.getElementById('edit-validation-summary');
+          if (!banner) {
+            banner = document.createElement('div');
+            banner.id = 'edit-validation-summary';
+            banner.style.cssText = 'margin-top:0.75rem;padding:0.6rem 0.9rem;border-radius:0.5rem;border:1px solid rgba(239,68,68,0.5);background:rgba(127,29,29,0.35);color:#fecaca;font-size:0.85rem;';
+            const saveBtn = editForm.querySelector('button[type="submit"]');
+            if (saveBtn) saveBtn.parentNode.insertBefore(banner, saveBtn);
+          }
+          banner.textContent = errors.length + (errors.length === 1 ? ' comment is' : ' comments are') + ' required for non-average scores before you can save.';
+          banner.style.display = 'block';
+        } else {
+          const banner = document.getElementById('edit-validation-summary');
+          if (banner) banner.style.display = 'none';
+        }
+      });
+
+      // Clear comment errors as the user types into a textarea
+      editForm.querySelectorAll('textarea[name]').forEach(function (ta) {
+        ta.addEventListener('input', function () {
+          if ((ta.value || '').trim().length > 0) {
+            if (ta._editCommentErr) ta._editCommentErr.textContent = '';
+            ta.style.borderColor = '';
+          }
+        });
+      });
+    }
+  })();
+</script>
+
+<script id="positionCriteriaData" type="application/json"><%- JSON.stringify(typeof positionCriteria !== 'undefined' ? positionCriteria : {}) %></script>
+<script>
+  (function () {
+    let criteriaData = {};
+    try {
+      const el = document.getElementById('positionCriteriaData');
+      if (el) criteriaData = JSON.parse(el.textContent || '{}');
+    } catch (e) {}
+    const positionType = '<%= review && review.positionTypeSnapshot ? String(review.positionTypeSnapshot).toUpperCase() : "" %>';
+    const criteria = criteriaData[positionType] || null;
+    if (!criteria) return;
+    document.querySelectorAll('.criteria-comment-row').forEach(function (row) {
+      const field = row.getAttribute('data-for') || '';
+      const key = field.replace('Comment', '');
+      const hint = criteria[key];
+      if (!hint) return;
+      let hintEl = row.querySelector('.criteria-position-hint');
+      if (!hintEl) {
+        hintEl = document.createElement('p');
+        hintEl.className = 'muted small criteria-position-hint';
+        hintEl.style.marginTop = '0.35rem';
+        row.appendChild(hintEl);
+      }
+      hintEl.textContent = positionType + ': ' + hint;
+    });
+  })();
+</script>
+
+</main>
+</body>
+</html>

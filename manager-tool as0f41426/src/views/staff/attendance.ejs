@@ -1,0 +1,118 @@
+<!-- src/views/staff/attendance.ejs -->
+<%- include('../layout') %>
+
+<%
+  const attTracked = attendanceStats ? attendanceStats.totalDays : 0;
+  const attPresent = attendanceStats ? attendanceStats.presentDays : 0;
+  const attAbsent = attendanceStats ? attendanceStats.absentDays : 0;
+  const attLate = attendanceStats ? attendanceStats.lateDaysByBucket : 0;
+
+  const presentRate = attTracked > 0 ? Math.round((attPresent / attTracked) * 100) : null;
+  const punctualRate = attTracked > 0 ? Math.round(((attendanceStats.onTimeDays || 0) / attTracked) * 100) : null;
+%>
+
+<section class="page-header">
+  <div>
+    <h2>Attendance &amp; Punctuality Details</h2>
+    <p class="muted">
+      Full daily attendance history for <strong><%= staff.name %></strong>.
+    </p>
+  </div>
+  <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+    <a class="btn ghost" href="/staff/<%= staff.id %>">Back to Profile</a>
+  </div>
+</section>
+
+<div class="card" style="margin-bottom:1rem;">
+  <div class="section-header">
+    <h3>Quick Summary</h3>
+    <p class="muted small">Use filters to narrow the visible date range.</p>
+  </div>
+
+  <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.75rem;">
+    <span class="chip muted small">Tracked days: <strong><%= attTracked %></strong></span>
+    <span class="chip muted small">Present: <strong><%= attPresent %></strong></span>
+    <span class="chip muted small">Absent: <strong><%= attAbsent %></strong></span>
+    <span class="chip muted small">Late: <strong><%= attLate %></strong></span>
+    <span class="chip muted small">Present rate: <strong><%= presentRate != null ? (presentRate + '%') : 'N/A' %></strong></span>
+    <span class="chip muted small">On-time rate: <strong><%= punctualRate != null ? (punctualRate + '%') : 'N/A' %></strong></span>
+    <span class="chip muted small">Avg minutes late: <strong><%= attendanceStats.avgMinutesLateOnLateDays != null ? attendanceStats.avgMinutesLateOnLateDays : 'N/A' %></strong></span>
+  </div>
+
+  <form method="GET" action="/staff/<%= staff.id %>/attendance" class="layout-three-column" style="row-gap:0.75rem;">
+    <div>
+      <label>From
+        <input type="date" name="from" value="<%= filters && filters.from ? filters.from : '' %>"/>
+      </label>
+    </div>
+    <div>
+      <label>To
+        <input type="date" name="to" value="<%= filters && filters.to ? filters.to : '' %>"/>
+      </label>
+    </div>
+    <div style="display:flex; gap:0.5rem; align-items:flex-end;">
+      <button class="btn primary btn-sm" type="submit">Apply</button>
+      <a class="btn ghost btn-sm" href="/staff/<%= staff.id %>/attendance">Reset</a>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="section-header">
+    <h3>Daily Attendance Records</h3>
+    <p class="muted small">
+      Showing <strong><%= attendanceDailySummary ? attendanceDailySummary.length : 0 %></strong> day rows in this view.
+    </p>
+  </div>
+
+  <% if (!attendanceDailySummary || attendanceDailySummary.length === 0) { %>
+    <p class="muted">No attendance days match your filters.</p>
+  <% } else { %>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Attendance Status</th>
+          <th>Punctuality</th>
+          <th>Minutes Late</th>
+          <th>Raw Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% attendanceDailySummary.forEach(function(day) { %>
+          <tr>
+            <td><%= day.date %></td>
+            <td>
+              <% if (day.status === 'PRESENT') { %>
+                <span class="status-badge status-done">Present</span>
+              <% } else if (day.status === 'LATE') { %>
+                <span class="status-badge status-open">Late</span>
+              <% } else if (day.status === 'ABSENT') { %>
+                <span class="status-badge status-open">Absent</span>
+              <% } else { %>
+                <span class="status-badge status-open"><%= day.status || 'Unknown' %></span>
+              <% } %>
+            </td>
+            <td>
+              <% if (day.punctualityBucket === 'ON_TIME') { %>
+                <span class="status-badge status-done">On time</span>
+              <% } else if (day.punctualityBucket === 'UNPUNCTUAL') { %>
+                <span class="status-badge status-open">Unpunctual</span>
+              <% } else if (day.punctualityBucket === 'LATE') { %>
+                <span class="status-badge status-open">Late</span>
+              <% } else { %>
+                <span class="muted small">N/A</span>
+              <% } %>
+            </td>
+            <td><%= day.minutesLate != null ? day.minutesLate : '—' %></td>
+            <td class="muted small"><%= day.rawStatusSummary || '—' %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+</main>
+</body>
+</html>

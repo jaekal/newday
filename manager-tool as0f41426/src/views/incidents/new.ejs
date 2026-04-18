@@ -1,0 +1,33 @@
+<!-- src/views/incidents/new.ejs -->
+<%- include('../layout') %>
+
+<section class="page-header incident-shell">
+  <div>
+    <h2>Log New Incident</h2>
+    <p class="muted">
+      Create a cleaner record with guided type selection, smart tone choices, and structured incident capture.
+    </p>
+  </div>
+  <div>
+    <a href="<%= returnTo && returnTo.startsWith('/') ? returnTo : '/incidents' %>" class="btn ghost">Back</a>
+  </div>
+</section>
+
+<%- include('_form', {
+  mode: 'new',
+  submitAction: '/incidents',
+  submitLabel: 'Save Incident',
+  incident,
+  error,
+  returnTo,
+  staffOptions,
+  viewerRole,
+  types,
+  toneMap,
+  typeMeta,
+  impactAreas,
+  themes,
+  severityOptions,
+  followUpStatuses,
+  templates
+}) %>

@@ -1,0 +1,1114 @@
+<!-- src/views/incidents/index.ejs -->
+<%- include('../layout') %>
+
+<%
+  const _filters = (typeof filters !== 'undefined' && filters) ? filters : {};
+  const _staffOptions = (typeof staffOptions !== 'undefined' && staffOptions) ? staffOptions : [];
+  const _viewerRole = (typeof viewerRole !== 'undefined' && viewerRole) ? viewerRole : '';
+  const _filterSummary = (typeof filterSummary !== 'undefined' && filterSummary) ? filterSummary : 'All records';
+
+  const _stats = (typeof stats !== 'undefined' && stats) ? stats : {};
+  const statsSafe = {
+    totalEvents:          _stats.totalEvents          ?? 0,
+    positiveCount:        _stats.positiveCount        ?? 0,
+    coachingCount:        _stats.coachingCount        ?? 0,
+    formalCount:          _stats.formalCount          ?? 0,
+    infoCount:            _stats.infoCount            ?? 0,
+    recognitionCount:     _stats.recognitionCount     ?? 0,
+    needsImprovementCount:_stats.needsImprovementCount?? 0,
+    neutralCount:         _stats.neutralCount         ?? 0,
+    openFollowUps:        _stats.openFollowUps        ?? 0,
+    overdueFollowUps:     _stats.overdueFollowUps     ?? 0,
+    lowSeverityCount:     _stats.lowSeverityCount     ?? 0,
+    mediumSeverityCount:  _stats.mediumSeverityCount  ?? 0,
+    highSeverityCount:    _stats.highSeverityCount    ?? 0,
+  };
+
+  const TYPE_OPTIONS     = ['POSITIVE','COACHING','FORMAL','INFO'];
+  const TONE_OPTIONS     = ['RECOGNITION','ACHIEVEMENT','ENCOURAGEMENT','PROFESSIONAL_COMMENDATION','NEEDS_IMPROVEMENT','GUIDANCE','REDIRECTION','ACCOUNTABILITY_REMINDER','PERFORMANCE_CONCERN','POLICY_VIOLATION','CONDUCT_CONCERN','ESCALATED_DOCUMENTATION','NEUTRAL_RECORD','ATTENDANCE_NOTE','OPERATIONAL_NOTE','ADMINISTRATIVE_UPDATE'];
+  const IMPACT_OPTIONS   = ['SAFETY','QUALITY','DELIVERY','PEOPLE','COST','COMPLIANCE','PROCESS','OTHER'];
+  const THEME_OPTIONS    = ['OWNERSHIP','TEAMWORK','COMMUNICATION','INITIATIVE','ENGAGEMENT','ATTENDANCE','TRAINING','CONDUCT','PROCESS_IMPROVEMENT','OTHER'];
+  const SEVERITY_OPTIONS = ['LOW','MEDIUM','HIGH'];
+
+  const _rawIncidents = (typeof incidents !== 'undefined' && incidents) ? incidents : [];
+  const incidentVMs = _rawIncidents.map((x) => {
+    if (x && typeof x === 'object' && x.inc) return x;
+    return { inc: x, followUpHealth: null };
+  });
+
+  /* ── helpers ── */
+  function buildQS(obj) {
+    try {
+      return new URLSearchParams(Object.fromEntries(Object.entries(obj||{}).filter(([_,v])=>v!==undefined&&v!==null))).toString();
+    } catch(e) {
+      return Object.keys(obj||{}).filter(k=>obj[k]!==undefined&&obj[k]!==null).map(k=>encodeURIComponent(k)+'='+encodeURIComponent(String(obj[k]))).join('&');
+    }
+  }
+  function isoToday() { try { return new Date().toISOString().slice(0,10); } catch(e) { return ''; } }
+  function safeDateOnly(v) {
+    if (!v) return '';
+    try { return typeof v==='string'?v.slice(0,10):new Date(v).toISOString().slice(0,10); } catch(e) { return ''; }
+  }
+  function safeCreatedAt(v) {
+    if (!v) return '';
+    try { return typeof v?.toISOString==='function'?v.toISOString().slice(0,10):new Date(v).toISOString().slice(0,10); } catch(e) { return ''; }
+  }
+  function safeDateObj(v) {
+    try { if(!v)return null; const d=new Date(v); return isNaN(d.getTime())?null:d; } catch(e){return null;}
+  }
+  function normalized(v) { return String(v||'').trim().toUpperCase(); }
+  function humanize(v) { return String(v||'').replace(/_/g,' ').toLowerCase().replace(/^\w/,c=>c.toUpperCase()); }
+
+  function monthKey(inc) {
+    const d = safeDateObj(inc?.createdAt || inc?.incidentDate);
+    if (!d) return 'unknown';
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  }
+  function monthLabel(key) {
+    if (!key || key==='unknown') return 'Unknown Period';
+    try { const [y,m]=key.split('-').map(Number); return new Date(y,m-1,1).toLocaleString('en-US',{month:'long',year:'numeric'}); } catch(e){return key;}
+  }
+
+  function typePill(type) {
+    const t = normalized(type);
+    if (t==='POSITIVE') return 'ldg-type-positive';
+    if (t==='COACHING') return 'ldg-type-coaching';
+    if (t==='FORMAL')   return 'ldg-type-formal';
+    return 'ldg-type-info';
+  }
+  function severityCls(sev) {
+    const s = normalized(sev);
+    if (s==='HIGH')   return 'ldg-sev-high';
+    if (s==='MEDIUM') return 'ldg-sev-medium';
+    return 'ldg-sev-low';
+  }
+  function healthCls(level) {
+    if (level==='ok')  return 'ldg-health-ok';
+    if (level==='bad') return 'ldg-health-bad';
+    if (level==='warn')return 'ldg-health-warn';
+    return '';
+  }
+
+  /* group by month */
+  const groupMap = {};
+  incidentVMs.forEach(vm => {
+    const k = monthKey(vm.inc||{});
+    if (!groupMap[k]) groupMap[k]=[];
+    groupMap[k].push(vm);
+  });
+  const monthGroups = Object.keys(groupMap).sort((a,b)=>{
+    if(a==='unknown')return 1; if(b==='unknown')return -1; return a<b?1:-1;
+  }).map((key,i)=>({ key, label: monthLabel(key), items: groupMap[key], open: i===0 }));
+
+  /* active filter count */
+  const _activeFilterKeys = ['q','staffId','type','tone','impactArea','theme','severity','fromDate','toDate','followUp','mine'];
+  const _activeCount = _activeFilterKeys.filter(k => _filters[k] && String(_filters[k]).trim()).length;
+
+  const currentQS = buildQS(_filters);
+%>
+
+<style>
+/* ═══════════════════════════════════════════════════════
+   ACTIVITY LEDGER — page-scoped styles
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Layout shell ───────────────────────────────────── */
+.ldg-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ── Page header ────────────────────────────────────── */
+.ldg-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.ldg-header-meta h2 {
+  margin: 0 0 .2rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.ldg-header-meta p {
+  margin: 0;
+  font-size: .82rem;
+  color: var(--text-muted);
+}
+.ldg-header-actions {
+  display: flex;
+  gap: .5rem;
+  align-items: center;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+/* ── KPI strip ──────────────────────────────────────── */
+.ldg-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: .7rem;
+}
+.ldg-kpi {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: .8rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+  position: relative;
+  overflow: hidden;
+}
+.ldg-kpi::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--ldg-accent, var(--brand-primary));
+}
+.ldg-kpi-label {
+  font-size: .7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-muted);
+}
+.ldg-kpi-value {
+  font-size: 1.7rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text-primary);
+}
+.ldg-kpi-sub {
+  font-size: .72rem;
+  color: var(--text-muted);
+  margin-top: .15rem;
+}
+.ldg-kpi--positive { --ldg-accent: #22c55e; }
+.ldg-kpi--coaching  { --ldg-accent: #3b82f6; }
+.ldg-kpi--formal    { --ldg-accent: #ef4444; }
+.ldg-kpi--followup  { --ldg-accent: #f59e0b; }
+.ldg-kpi--overdue   { --ldg-accent: #ef4444; }
+
+/* ── Toolbar / filter bar ───────────────────────────── */
+.ldg-toolbar {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: .65rem .9rem;
+  display: flex;
+  gap: .6rem;
+  align-items: center;
+  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(12px);
+}
+.ldg-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+  max-width: 340px;
+}
+.ldg-search-wrap svg {
+  position: absolute;
+  left: .65rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.ldg-search {
+  width: 100%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-pill);
+  padding: .38rem .75rem .38rem 2.1rem;
+  font-size: .83rem;
+  color: var(--text-primary);
+  font-family: inherit;
+}
+.ldg-search:focus {
+  outline: none;
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px var(--brand-primary-muted);
+}
+.ldg-search::placeholder { color: var(--text-muted); }
+
+.ldg-quick-filters {
+  display: flex;
+  gap: .35rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.ldg-qf {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .3rem .65rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-default);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: .78rem;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background .14s, border-color .14s, color .14s;
+}
+.ldg-qf:hover { background: var(--state-hover); border-color: var(--border-strong); color: var(--text-primary); }
+.ldg-qf.active {
+  background: var(--brand-primary-muted);
+  border-color: var(--brand-primary);
+  color: var(--brand-primary);
+  font-weight: 600;
+}
+.ldg-qf-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  background: currentColor;
+}
+
+.ldg-toolbar-divider {
+  width: 1px; height: 22px;
+  background: var(--border-default);
+  flex-shrink: 0;
+}
+.ldg-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .3rem .65rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-default);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: .78rem;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ldg-filter-btn:hover { border-color: var(--border-strong); color: var(--text-primary); }
+.ldg-filter-btn.has-filters {
+  border-color: var(--brand-primary);
+  color: var(--brand-primary);
+  background: var(--brand-primary-muted);
+}
+.ldg-filter-badge {
+  background: var(--brand-primary);
+  color: #fff;
+  font-size: .62rem;
+  font-weight: 700;
+  border-radius: 99px;
+  padding: 0 5px;
+  min-width: 16px;
+  text-align: center;
+}
+
+/* ── Advanced filter drawer ─────────────────────────── */
+.ldg-filter-drawer {
+  display: none;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  animation: slideDown .18s ease;
+}
+@keyframes slideDown { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
+.ldg-filter-drawer.open { display: block; }
+.ldg-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: .65rem;
+  margin-bottom: .75rem;
+}
+.ldg-filter-field label {
+  display: block;
+  font-size: .7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--text-muted);
+  margin-bottom: .3rem;
+}
+.ldg-filter-field select,
+.ldg-filter-field input {
+  width: 100%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: .38rem .6rem;
+  font-size: .82rem;
+  color: var(--text-primary);
+  font-family: inherit;
+}
+.ldg-filter-field select:focus,
+.ldg-filter-field input:focus {
+  outline: none;
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 2px var(--brand-primary-muted);
+}
+.ldg-filter-actions {
+  display: flex;
+  gap: .5rem;
+  align-items: center;
+  padding-top: .65rem;
+  border-top: 1px solid var(--border-default);
+}
+.ldg-filter-summary {
+  font-size: .75rem;
+  color: var(--text-muted);
+  flex: 1;
+  font-style: italic;
+}
+
+/* ── Month group ────────────────────────────────────── */
+.ldg-month-group {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.ldg-month-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: .8rem 1rem;
+  background: var(--bg-elevated);
+  border: none;
+  color: var(--text-primary);
+  font-family: inherit;
+  cursor: pointer;
+  gap: 1rem;
+  text-align: left;
+  transition: background .14s;
+}
+.ldg-month-toggle:hover { background: var(--bg-overlay); }
+.ldg-month-toggle-left {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+.ldg-month-label {
+  font-weight: 700;
+  font-size: .95rem;
+}
+.ldg-month-count {
+  font-size: .75rem;
+  color: var(--text-muted);
+  background: var(--bg-overlay);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-pill);
+  padding: .1rem .55rem;
+}
+.ldg-month-caret {
+  color: var(--text-muted);
+  transition: transform .2s ease;
+  flex-shrink: 0;
+}
+.ldg-month-group.open .ldg-month-caret { transform: rotate(180deg); }
+.ldg-month-body {
+  display: none;
+  border-top: 1px solid var(--border-default);
+}
+.ldg-month-group.open .ldg-month-body { display: block; }
+
+/* ── Entry cards ────────────────────────────────────── */
+.ldg-entries {
+  display: flex;
+  flex-direction: column;
+}
+.ldg-entry {
+  display: grid;
+  grid-template-columns: 4px 88px 1fr auto;
+  gap: 0 .85rem;
+  align-items: start;
+  padding: .85rem 1rem;
+  border-bottom: 1px solid var(--border-default);
+  transition: background .12s;
+  position: relative;
+  cursor: pointer;
+}
+.ldg-entry:last-child { border-bottom: none; }
+.ldg-entry:hover { background: var(--state-hover); }
+.ldg-entry.expanded { background: var(--bg-elevated); }
+.ldg-entry-accent {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  border-radius: 0;
+}
+.ldg-entry-accent.positive { background: #22c55e; }
+.ldg-entry-accent.coaching  { background: #3b82f6; }
+.ldg-entry-accent.formal    { background: #ef4444; }
+.ldg-entry-accent.info      { background: #94a3b8; }
+
+.ldg-entry-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: .15rem;
+  flex-shrink: 0;
+}
+.ldg-entry-day {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text-primary);
+}
+.ldg-entry-month {
+  font-size: .68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-muted);
+}
+.ldg-entry-year {
+  font-size: .62rem;
+  color: var(--text-muted);
+}
+
+.ldg-entry-main { min-width: 0; }
+.ldg-entry-title {
+  font-weight: 600;
+  font-size: .92rem;
+  color: var(--text-primary);
+  margin: 0 0 .25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ldg-entry-staff {
+  font-size: .8rem;
+  color: var(--text-secondary);
+  margin-bottom: .35rem;
+}
+.ldg-entry-staff a { color: var(--text-secondary); font-weight: 500; }
+.ldg-entry-staff a:hover { color: var(--brand-primary); }
+.ldg-entry-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .3rem;
+  align-items: center;
+}
+
+.ldg-entry-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: .4rem;
+  flex-shrink: 0;
+  min-width: 110px;
+}
+.ldg-entry-submitter {
+  font-size: .7rem;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+/* ── Inline tag / badge ─────────────────────────────── */
+.ldg-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .15rem .5rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  font-size: .72rem;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+/* Type */
+.ldg-type-positive { background: rgba(34,197,94,.12);  border-color: rgba(34,197,94,.28);  color: #4ade80; }
+.ldg-type-coaching  { background: rgba(59,130,246,.12); border-color: rgba(59,130,246,.28); color: #60a5fa; }
+.ldg-type-formal    { background: rgba(239,68,68,.12);  border-color: rgba(239,68,68,.28);  color: #f87171; }
+.ldg-type-info      { background: rgba(148,163,184,.10);border-color: rgba(148,163,184,.22);color: #94a3b8; }
+/* Severity */
+.ldg-sev-low    { background: rgba(34,197,94,.10);  border-color: rgba(34,197,94,.22);  color: #4ade80; }
+.ldg-sev-medium { background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.28); color: #fbbf24; }
+.ldg-sev-high   { background: rgba(239,68,68,.12);  border-color: rgba(239,68,68,.28);  color: #f87171; }
+/* Follow-up health */
+.ldg-health-ok   { background: rgba(34,197,94,.12);  border-color: rgba(34,197,94,.28);  color: #4ade80; }
+.ldg-health-warn { background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.28); color: #fbbf24; }
+.ldg-health-bad  { background: rgba(239,68,68,.12);  border-color: rgba(239,68,68,.28);  color: #f87171; }
+/* Tone — neutral */
+.ldg-tone { background: var(--bg-elevated); border-color: var(--border-default); color: var(--text-muted); }
+
+/* ── Expand panel ───────────────────────────────────── */
+.ldg-expand {
+  display: none;
+  border-top: 1px solid var(--border-default);
+  background: var(--bg-elevated);
+}
+.ldg-expand.open { display: grid; }
+.ldg-expand-inner {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 1rem;
+  padding: 1rem 1rem 1rem calc(4px + .85rem + 88px + .85rem);
+}
+.ldg-expand-label {
+  font-size: .68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-muted);
+  margin-bottom: .35rem;
+}
+.ldg-expand-pre {
+  white-space: pre-wrap;
+  background: var(--bg-overlay);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: .65rem .8rem;
+  font-size: .82rem;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.6;
+}
+.ldg-expand-meta {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+.ldg-expand-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: .8rem;
+  padding: .3rem 0;
+  border-bottom: 1px solid var(--border-default);
+  gap: .5rem;
+}
+.ldg-expand-row:last-child { border-bottom: none; }
+.ldg-expand-row-label { color: var(--text-muted); flex-shrink: 0; }
+.ldg-expand-row-val   { color: var(--text-primary); font-weight: 500; text-align: right; }
+.ldg-expand-actions {
+  display: flex;
+  gap: .4rem;
+  flex-wrap: wrap;
+  padding-top: .6rem;
+  border-top: 1px solid var(--border-default);
+  margin-top: .2rem;
+}
+
+/* ── Empty state ────────────────────────────────────── */
+.ldg-empty {
+  text-align: center;
+  padding: 3.5rem 1rem;
+  color: var(--text-muted);
+}
+.ldg-empty svg { opacity: .3; margin-bottom: .75rem; display: block; margin-inline: auto; }
+.ldg-empty h3 { margin: 0 0 .4rem; font-size: 1rem; color: var(--text-secondary); }
+.ldg-empty p  { margin: 0; font-size: .85rem; }
+
+/* ── Canvas theme overrides ─────────────────────────── */
+[data-theme="canvas"] .ldg-type-positive { color: #15803d; }
+[data-theme="canvas"] .ldg-type-coaching  { color: #1d4ed8; }
+[data-theme="canvas"] .ldg-type-formal    { color: #b91c1c; }
+[data-theme="canvas"] .ldg-type-info      { color: #475569; }
+[data-theme="canvas"] .ldg-sev-low    { color: #15803d; }
+[data-theme="canvas"] .ldg-sev-medium { color: #92400e; }
+[data-theme="canvas"] .ldg-sev-high   { color: #b91c1c; }
+[data-theme="canvas"] .ldg-health-ok   { color: #15803d; }
+[data-theme="canvas"] .ldg-health-warn { color: #92400e; }
+[data-theme="canvas"] .ldg-health-bad  { color: #b91c1c; }
+
+/* ── Responsive ─────────────────────────────────────── */
+@media (max-width: 700px) {
+  .ldg-entry { grid-template-columns: 4px 64px 1fr; }
+  .ldg-entry-right { display: none; }
+  .ldg-expand-inner { grid-template-columns: 1fr; padding-left: 1rem; }
+  .ldg-kpi-strip { grid-template-columns: repeat(2, 1fr); }
+  .ldg-filter-grid { grid-template-columns: 1fr 1fr; }
+  .ldg-entry-accent { position: static; width: 100%; height: 4px; }
+}
+</style>
+
+<div class="ldg-shell">
+
+  <!-- ══════════════════════════════════════════════════
+       PAGE HEADER
+  ═══════════════════════════════════════════════════ -->
+  <div class="ldg-header">
+    <div class="ldg-header-meta">
+      <h2>Activity Ledger</h2>
+      <p>Recognition, coaching events, and formal incidents across your scope</p>
+    </div>
+    <div class="ldg-header-actions">
+      <% if (['ADMIN','SENIOR_MANAGER','MANAGER','SUPERVISOR','LEAD'].includes(_viewerRole)) { %>
+        <a href="/incidents/new?returnTo=/incidents" class="btn primary">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Log Event
+        </a>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       KPI STRIP
+  ═══════════════════════════════════════════════════ -->
+  <div class="ldg-kpi-strip">
+    <div class="ldg-kpi">
+      <span class="ldg-kpi-label">Total Events</span>
+      <span class="ldg-kpi-value"><%= statsSafe.totalEvents %></span>
+      <span class="ldg-kpi-sub">in current view</span>
+    </div>
+    <div class="ldg-kpi ldg-kpi--positive">
+      <span class="ldg-kpi-label">Positive</span>
+      <span class="ldg-kpi-value"><%= statsSafe.positiveCount %></span>
+      <span class="ldg-kpi-sub">Recognition &amp; achievement</span>
+    </div>
+    <div class="ldg-kpi ldg-kpi--coaching">
+      <span class="ldg-kpi-label">Coaching</span>
+      <span class="ldg-kpi-value"><%= statsSafe.coachingCount %></span>
+      <span class="ldg-kpi-sub">Guidance &amp; development</span>
+    </div>
+    <div class="ldg-kpi ldg-kpi--formal">
+      <span class="ldg-kpi-label">Formal</span>
+      <span class="ldg-kpi-value"><%= statsSafe.formalCount %></span>
+      <span class="ldg-kpi-sub">Documented incidents</span>
+    </div>
+    <div class="ldg-kpi ldg-kpi--followup">
+      <span class="ldg-kpi-label">Open Follow-ups</span>
+      <span class="ldg-kpi-value"><%= statsSafe.openFollowUps %></span>
+      <span class="ldg-kpi-sub">Awaiting resolution</span>
+    </div>
+    <div class="ldg-kpi ldg-kpi--overdue">
+      <span class="ldg-kpi-label">Overdue</span>
+      <span class="ldg-kpi-value"><%= statsSafe.overdueFollowUps %></span>
+      <span class="ldg-kpi-sub">Past due date</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       STICKY TOOLBAR
+  ═══════════════════════════════════════════════════ -->
+  <form method="GET" action="/incidents" id="ldg-filter-form">
+    <div class="ldg-toolbar">
+
+      <%/* Live search */%>
+      <div class="ldg-search-wrap">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M11 11l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <input class="ldg-search" type="text" name="q" value="<%= _filters.q || '' %>"
+               placeholder="Search title, details, staff…" id="ldg-search-input" autocomplete="off" />
+      </div>
+
+      <div class="ldg-toolbar-divider"></div>
+
+      <%/* Quick-filter chips */%>
+      <div class="ldg-quick-filters">
+        <a class="ldg-qf <%= _filters.followUp === 'open' ? 'active' : '' %>"
+           href="/incidents?<%= buildQS({..._filters, followUp: _filters.followUp==='open'?'':'open'}) %>">
+          <span class="ldg-qf-dot"></span>Open Follow-ups
+        </a>
+        <a class="ldg-qf <%= _filters.followUp === 'overdue' ? 'active' : '' %>"
+           href="/incidents?<%= buildQS({..._filters, followUp: _filters.followUp==='overdue'?'':'overdue'}) %>">
+          <span class="ldg-qf-dot"></span>Overdue
+        </a>
+        <a class="ldg-qf <%= _filters.mine === '1' ? 'active' : '' %>"
+           href="/incidents?<%= buildQS({..._filters, mine: _filters.mine==='1'?'':'1'}) %>">Mine only</a>
+        <a class="ldg-qf" href="/incidents?<%= buildQS({..._filters, fromDate: isoToday(), toDate: '', followUp: ''}) %>">Today</a>
+      </div>
+
+      <div class="ldg-toolbar-divider"></div>
+
+      <%/* Filter toggle */%>
+      <button type="button" class="ldg-filter-btn <%= _activeCount > 0 ? 'has-filters' : '' %>" id="ldg-filter-toggle">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Filters
+        <% if (_activeCount > 0) { %><span class="ldg-filter-badge"><%= _activeCount %></span><% } %>
+      </button>
+
+      <% if (_activeCount > 0) { %>
+        <a href="/incidents" class="ldg-qf" style="color:var(--text-muted);">
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          Clear
+        </a>
+      <% } %>
+    </div>
+
+    <!-- Advanced filter drawer -->
+    <div class="ldg-filter-drawer <%= _activeCount > 0 ? 'open' : '' %>" id="ldg-filter-drawer">
+      <div class="ldg-filter-grid">
+
+        <div class="ldg-filter-field">
+          <label>Staff</label>
+          <select name="staffId">
+            <option value="">All staff</option>
+            <% _staffOptions.forEach(function(s) { %>
+              <option value="<%= s.id %>" <%= String(_filters.staffId||'')===String(s.id)?'selected':'' %>><%= s.name %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="ldg-filter-field">
+          <label>Type</label>
+          <select name="type">
+            <option value="">All types</option>
+            <% TYPE_OPTIONS.forEach(function(t) { %>
+              <option value="<%= t %>" <%= normalized(_filters.type)===t?'selected':'' %>><%= humanize(t) %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="ldg-filter-field">
+          <label>Tone</label>
+          <select name="tone">
+            <option value="">All tones</option>
+            <% TONE_OPTIONS.forEach(function(t) { %>
+              <option value="<%= t %>" <%= normalized(_filters.tone)===t?'selected':'' %>><%= humanize(t) %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="ldg-filter-field">
+          <label>Impact Area</label>
+          <select name="impactArea">
+            <option value="">All areas</option>
+            <% IMPACT_OPTIONS.forEach(function(a) { %>
+              <option value="<%= a %>" <%= normalized(_filters.impactArea)===a?'selected':'' %>><%= humanize(a) %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="ldg-filter-field">
+          <label>Theme</label>
+          <select name="theme">
+            <option value="">All themes</option>
+            <% THEME_OPTIONS.forEach(function(t) { %>
+              <option value="<%= t %>" <%= normalized(_filters.theme)===t?'selected':'' %>><%= humanize(t) %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="ldg-filter-field">
+          <label>Severity</label>
+          <select name="severity">
+            <option value="">All severity</option>
+            <% SEVERITY_OPTIONS.forEach(function(s) { %>
+              <option value="<%= s %>" <%= normalized(_filters.severity)===s?'selected':'' %>><%= humanize(s) %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="ldg-filter-field">
+          <label>Follow-up Status</label>
+          <select name="followUp">
+            <option value="">All</option>
+            <option value="open"    <%= _filters.followUp==='open'?'selected':'' %>>Open</option>
+            <option value="overdue" <%= _filters.followUp==='overdue'?'selected':'' %>>Overdue</option>
+          </select>
+        </div>
+
+        <div class="ldg-filter-field">
+          <label>From Date</label>
+          <input type="date" name="fromDate" value="<%= _filters.fromDate||'' %>" />
+        </div>
+
+        <div class="ldg-filter-field">
+          <label>To Date</label>
+          <input type="date" name="toDate" value="<%= _filters.toDate||'' %>" />
+        </div>
+
+        <div class="ldg-filter-field">
+          <label>Ownership</label>
+          <select name="mine">
+            <option value="">All records</option>
+            <option value="1" <%= _filters.mine==='1'?'selected':'' %>>Mine only</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="ldg-filter-actions">
+        <span class="ldg-filter-summary"><%= _filterSummary %></span>
+        <a href="/incidents" class="btn ghost" style="font-size:.8rem; padding:.3rem .7rem;">Reset all</a>
+        <button type="submit" class="btn primary" style="font-size:.8rem; padding:.3rem .8rem;">Apply filters</button>
+      </div>
+    </div>
+  </form>
+
+  <!-- ══════════════════════════════════════════════════
+       LEDGER — grouped by month
+  ═══════════════════════════════════════════════════ -->
+  <div>
+    <% if (!incidentVMs.length) { %>
+      <div class="ldg-empty">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <path d="M8 12h8M8 8h8M8 16h4"/>
+        </svg>
+        <h3>No events found</h3>
+        <p>
+          <% if (_activeCount > 0) { %>
+            No records match your current filters. <a href="/incidents">Clear filters</a> to see all records.
+          <% } else { %>
+            No activity has been logged yet. <a href="/incidents/new?returnTo=/incidents">Log the first event.</a>
+          <% } %>
+        </p>
+      </div>
+
+    <% } else { %>
+
+      <% monthGroups.forEach(function(group) { %>
+        <div class="ldg-month-group <%= group.open ? 'open' : '' %>" data-month-group style="margin-bottom:.75rem;">
+
+          <button class="ldg-month-toggle" type="button" data-month-toggle
+                  aria-expanded="<%= group.open ? 'true' : 'false' %>">
+            <div class="ldg-month-toggle-left">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M5 6h6M5 9h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+              </svg>
+              <span class="ldg-month-label"><%= group.label %></span>
+              <span class="ldg-month-count"><%= group.items.length %> event<%= group.items.length===1?'':'s' %></span>
+            </div>
+            <svg class="ldg-month-caret" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+
+          <div class="ldg-month-body" data-month-body>
+            <div class="ldg-entries">
+              <% group.items.forEach(function(vm) {
+                   const inc    = vm.inc || {};
+                   const health = vm.followUpHealth || { label: '—', level: 'none' };
+                   const tCls   = typePill(inc.type);
+                   const sCls   = severityCls(inc.severity);
+                   const hCls   = healthCls(health.level);
+
+                   /* date parts */
+                   const incDate = safeDateObj(inc.incidentDate || inc.createdAt);
+                   const dayNum  = incDate ? incDate.getDate() : '—';
+                   const monStr  = incDate ? incDate.toLocaleString('en-US',{month:'short'}) : '';
+                   const yrStr   = incDate ? incDate.getFullYear() : '';
+
+                   const accentCls = normalized(inc.type)==='POSITIVE' ? 'positive'
+                                   : normalized(inc.type)==='COACHING'  ? 'coaching'
+                                   : normalized(inc.type)==='FORMAL'    ? 'formal' : 'info';
+              %>
+              <%/* Entry row */%>
+              <div class="ldg-entry" data-entry-id="<%= inc.id %>">
+                <div class="ldg-entry-accent <%= accentCls %>"></div>
+
+                <div class="ldg-entry-date">
+                  <span class="ldg-entry-day"><%= dayNum %></span>
+                  <span class="ldg-entry-month"><%= monStr %></span>
+                  <span class="ldg-entry-year"><%= yrStr %></span>
+                </div>
+
+                <div class="ldg-entry-main">
+                  <div class="ldg-entry-title"><%= inc.title || 'Untitled event' %></div>
+                  <div class="ldg-entry-staff">
+                    <% if (inc.Staff) { %>
+                      <a href="/staff/<%= inc.Staff.id %>" onclick="event.stopPropagation()"><%= inc.Staff.name %></a>
+                    <% } else { %>
+                      <span>No staff linked</span>
+                    <% } %>
+                  </div>
+                  <div class="ldg-entry-tags">
+                    <span class="ldg-tag <%= tCls %>"><%= humanize(inc.type) %></span>
+                    <% if (inc.severity && normalized(inc.severity) !== 'LOW') { %>
+                      <span class="ldg-tag <%= sCls %>"><%= humanize(inc.severity) %></span>
+                    <% } %>
+                    <% if (inc.tone) { %><span class="ldg-tag ldg-tone"><%= humanize(inc.tone) %></span><% } %>
+                    <% if (inc.impactArea) { %><span class="ldg-tag ldg-tone"><%= humanize(inc.impactArea) %></span><% } %>
+                    <% if (inc.requiresFollowUp) { %>
+                      <span class="ldg-tag <%= hCls %>">
+                        <svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.4"/><path d="M6 4v3M6 8.5v.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                        <%= health.label %>
+                      </span>
+                    <% } %>
+                  </div>
+                </div>
+
+                <div class="ldg-entry-right">
+                  <div class="ldg-entry-submitter">
+                    <% if (inc.Submitter) { %>By <%= inc.Submitter.name.split(' ')[0] %><% } %>
+                    <br/><span style="font-size:.65rem;">Logged <%= safeCreatedAt(inc.createdAt) %></span>
+                  </div>
+                  <div style="display:flex; gap:.3rem;" onclick="event.stopPropagation()">
+                    <a class="btn ghost" style="font-size:.72rem; padding:.25rem .55rem;"
+                       href="/incidents/<%= inc.id %>/edit?returnTo=/incidents<%= currentQS?'?'+currentQS:'' %>">Edit</a>
+                    <% if (['ADMIN','SENIOR_MANAGER','MANAGER','SUPERVISOR'].includes(_viewerRole)) { %>
+                      <form method="POST" action="/incidents/<%= inc.id %>/delete" style="display:inline;"
+                            onsubmit="return confirm('Permanently delete this event?');">
+                        <input type="hidden" name="returnTo" value="/incidents<%= currentQS?'?'+currentQS:'' %>" />
+                        <button type="submit" class="btn danger" style="font-size:.72rem; padding:.25rem .55rem;">Del</button>
+                      </form>
+                    <% } %>
+                  </div>
+                </div>
+              </div>
+
+              <%/* Expand panel */%>
+              <div class="ldg-expand" id="ldg-expand-<%= inc.id %>">
+                <div class="ldg-expand-inner">
+                  <div>
+                    <p class="ldg-expand-label">Details</p>
+                    <% if (String(inc.details||'').trim()) { %>
+                      <pre class="ldg-expand-pre"><%= inc.details %></pre>
+                    <% } else { %>
+                      <p style="font-size:.82rem; color:var(--text-muted); margin:0;">No details recorded.</p>
+                    <% } %>
+
+                    <% if (String(inc.followUpOutcome||'').trim()) { %>
+                      <p class="ldg-expand-label" style="margin-top:.85rem;">Follow-up Notes</p>
+                      <pre class="ldg-expand-pre"><%= inc.followUpOutcome %></pre>
+                    <% } %>
+
+                    <div class="ldg-expand-actions">
+                      <a class="btn ghost" style="font-size:.8rem;"
+                         href="/incidents/<%= inc.id %>/edit?returnTo=/incidents<%= currentQS?'?'+currentQS:'' %>">Open full edit</a>
+                      <% if (inc.Staff && inc.Staff.id) { %>
+                        <a class="btn ghost" style="font-size:.8rem;" href="/staff/<%= inc.Staff.id %>">View staff profile</a>
+                      <% } %>
+                    </div>
+                  </div>
+
+                  <div class="ldg-expand-meta">
+                    <p class="ldg-expand-label">Record Details</p>
+                    <div class="ldg-expand-row">
+                      <span class="ldg-expand-row-label">Type</span>
+                      <span class="ldg-expand-row-val ldg-tag <%= tCls %>"><%= humanize(inc.type) %></span>
+                    </div>
+                    <div class="ldg-expand-row">
+                      <span class="ldg-expand-row-label">Severity</span>
+                      <span class="ldg-expand-row-val ldg-tag <%= sCls %>"><%= humanize(inc.severity||'Low') %></span>
+                    </div>
+                    <div class="ldg-expand-row">
+                      <span class="ldg-expand-row-label">Tone</span>
+                      <span class="ldg-expand-row-val"><%= humanize(inc.tone||'—') %></span>
+                    </div>
+                    <div class="ldg-expand-row">
+                      <span class="ldg-expand-row-label">Impact Area</span>
+                      <span class="ldg-expand-row-val"><%= humanize(inc.impactArea||'—') %></span>
+                    </div>
+                    <div class="ldg-expand-row">
+                      <span class="ldg-expand-row-label">Theme</span>
+                      <span class="ldg-expand-row-val"><%= humanize(inc.theme||'—') %></span>
+                    </div>
+                    <div class="ldg-expand-row">
+                      <span class="ldg-expand-row-label">Follow-up Required</span>
+                      <span class="ldg-expand-row-val"><%= inc.requiresFollowUp ? 'Yes' : 'No' %></span>
+                    </div>
+                    <% if (inc.requiresFollowUp) { %>
+                    <div class="ldg-expand-row">
+                      <span class="ldg-expand-row-label">Due Date</span>
+                      <span class="ldg-expand-row-val"><%= safeDateOnly(inc.followUpDueDate)||'—' %></span>
+                    </div>
+                    <div class="ldg-expand-row">
+                      <span class="ldg-expand-row-label">Status</span>
+                      <span class="ldg-expand-row-val ldg-tag <%= hCls %>"><%= health.label %></span>
+                    </div>
+                    <% } %>
+                    <div class="ldg-expand-row">
+                      <span class="ldg-expand-row-label">Event Date</span>
+                      <span class="ldg-expand-row-val"><%= safeDateOnly(inc.incidentDate)||'—' %></span>
+                    </div>
+                    <div class="ldg-expand-row">
+                      <span class="ldg-expand-row-label">Logged</span>
+                      <span class="ldg-expand-row-val"><%= safeCreatedAt(inc.createdAt) %></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <% }); %>
+            </div>
+          </div>
+        </div>
+      <% }); %>
+
+    <% } %>
+  </div>
+
+</div>
+
+<script>
+(function() {
+  /* ── Month group collapse/expand ── */
+  document.querySelectorAll('[data-month-group]').forEach(function(group) {
+    var btn = group.querySelector('[data-month-toggle]');
+    if (!btn) return;
+    btn.addEventListener('click', function() {
+      var open = group.classList.toggle('open');
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  });
+
+  /* ── Entry expand on row click ── */
+  document.querySelectorAll('.ldg-entry').forEach(function(entry) {
+    entry.addEventListener('click', function() {
+      var id = entry.getAttribute('data-entry-id');
+      var panel = document.getElementById('ldg-expand-' + id);
+      if (!panel) return;
+
+      var isOpen = panel.classList.contains('open');
+
+      /* Close all others */
+      document.querySelectorAll('.ldg-expand.open').forEach(function(p) {
+        if (p !== panel) {
+          p.classList.remove('open');
+          var sibling = p.previousElementSibling;
+          if (sibling) sibling.classList.remove('expanded');
+        }
+      });
+
+      panel.classList.toggle('open', !isOpen);
+      entry.classList.toggle('expanded', !isOpen);
+    });
+  });
+
+  /* ── Filter drawer toggle ── */
+  var filterToggle  = document.getElementById('ldg-filter-toggle');
+  var filterDrawer  = document.getElementById('ldg-filter-drawer');
+  if (filterToggle && filterDrawer) {
+    filterToggle.addEventListener('click', function() {
+      filterDrawer.classList.toggle('open');
+    });
+  }
+
+  /* ── Live client-side search (immediate feedback before form submit) ── */
+  var searchInput = document.getElementById('ldg-search-input');
+  if (searchInput) {
+    var debounce;
+    searchInput.addEventListener('input', function() {
+      clearTimeout(debounce);
+      var q = this.value.trim().toLowerCase();
+
+      debounce = setTimeout(function() {
+        document.querySelectorAll('.ldg-entry').forEach(function(entry) {
+          var text = (entry.textContent || '').toLowerCase();
+          var panel = document.getElementById('ldg-expand-' + entry.getAttribute('data-entry-id'));
+          var matches = !q || text.includes(q);
+          entry.style.display = matches ? '' : 'none';
+          if (panel) panel.style.display = matches ? '' : 'none';
+        });
+
+        /* Hide empty month groups */
+        document.querySelectorAll('[data-month-group]').forEach(function(group) {
+          var visible = group.querySelectorAll('.ldg-entry:not([style*="display: none"])').length;
+          group.style.display = visible ? '' : 'none';
+        });
+      }, 200);
+    });
+  }
+})();
+</script>
+
+</main>
+</body>
+</html>

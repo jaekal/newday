@@ -1,0 +1,344 @@
+<!-- src/views/training/list.ejs -->
+<%- include('../layout') %>
+
+<%
+  const ct = courseType || '';
+  const cn = courseName || '';
+  const sq = searchQuery || '';
+  const showDup = !!showDuplicates;
+
+  function qsWith(extra) {
+    const params = [];
+    if (ct) params.push('courseType=' + encodeURIComponent(ct));
+    if (cn) params.push('courseName=' + encodeURIComponent(cn));
+    if (sq) params.push('q=' + encodeURIComponent(sq));
+    if (extra && extra.showDuplicates) params.push('showDuplicates=1');
+    return params.length ? ('?' + params.join('&')) : '';
+  }
+%>
+
+<section class="page-header">
+  <div>
+    <h2>Training Import & Records</h2>
+    <p class="muted">
+      Manage imported training and certification records from the Imports workflow.
+      This page is intended for Manager and Admin use and validates records against the User Management roster.
+      <% if (isAdmin) { %>
+        Duplicate clusters can also be reviewed using the data quality tools below.
+      <% } %>
+    </p>
+  </div>
+
+  <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+    <a href="/imports" class="btn ghost">← Back to Imports</a>
+    <a href="/training/new" class="btn ghost">+ Add Training Record</a>
+
+    <form
+      method="POST"
+      action="/training/import"
+      enctype="multipart/form-data"
+      style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;"
+    >
+      <label class="btn primary" style="margin:0;">
+        <span>Import CSV/XLSX</span>
+        <input
+          type="file"
+          name="file"
+          accept=".csv,.xlsx,.xls"
+          style="display:none;"
+          onchange="this.form.submit();"
+        />
+      </label>
+    </form>
+  </div>
+</section>
+
+<section class="card" style="margin-bottom:1rem;">
+  <div class="section-header">
+    <div>
+      <h3>Import Guidance</h3>
+      <p class="muted small">
+        Use this page to load course completions, certification records, and related readiness data.
+      </p>
+    </div>
+  </div>
+
+  <ul class="muted" style="margin:0; padding-left:1.1rem;">
+    <li>Only rows with an Employee ID already present in Staff Profile / roster data will be imported.</li>
+    <li>CSV and Excel formats are supported.</li>
+    <li>Duplicate detection runs automatically after imports and edits.</li>
+    <li>Use the Training Template from the Imports page for best results.</li>
+  </ul>
+</section>
+
+<!-- ADMIN ONLY: DATA QUALITY PANEL -->
+<% if (isAdmin) { %>
+  <section class="card" style="margin-bottom:1rem;">
+    <div class="section-header">
+      <div>
+        <h3>Data Quality</h3>
+        <p class="muted small">
+          Admin-only tools to inspect duplicate training clusters and clean imported data.
+        </p>
+      </div>
+
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+        <% if (!showDup) { %>
+          <a href="/training<%= qsWith({ showDuplicates: true }) %>" class="btn ghost btn-sm">
+            View Duplicates Only (<%= duplicateCount %>)
+          </a>
+        <% } else { %>
+          <a href="/training<%= qsWith(null) %>" class="btn ghost btn-sm">
+            View All Records
+          </a>
+        <% } %>
+      </div>
+    </div>
+
+    <% if (showDup) { %>
+      <p class="muted small">
+        You are viewing <strong>duplicates only</strong>. Active filters and search terms still apply.
+      </p>
+    <% } else if (duplicateCount > 0) { %>
+      <p class="muted small">
+        Duplicate rows are highlighted below. Review carefully before removing extra entries.
+      </p>
+    <% } else { %>
+      <p class="muted small">No duplicates currently detected in the filtered view.</p>
+    <% } %>
+  </section>
+<% } %>
+
+<div class="card" style="margin-bottom:1rem;">
+  <div class="section-header">
+    <h3>Filters & Search</h3>
+    <p class="muted small">
+      Select a course type to narrow course names. Search by employee, course, or start date.
+    </p>
+  </div>
+
+  <form
+    method="GET"
+    action="/training"
+    class="layout-three-column"
+    style="row-gap:0.75rem;"
+  >
+    <div>
+      <label>Course Type
+        <select name="courseType" onchange="this.form.submit()">
+          <option value="">All Types</option>
+          <% courseTypeOptions.forEach(function(t) { %>
+            <option value="<%= t %>" <%= ct === t ? 'selected' : '' %>>
+              <%= t %>
+            </option>
+          <% }) %>
+        </select>
+      </label>
+    </div>
+
+    <div>
+      <label>Course Name
+        <select
+          name="courseName"
+          <%= ct ? '' : 'disabled' %>
+          onchange="this.form.submit()"
+        >
+          <option value="">All Courses</option>
+          <% if (ct) { %>
+            <% courseNameOptions.forEach(function(n) { %>
+              <option value="<%= n %>" <%= cn === n ? 'selected' : '' %>>
+                <%= n %>
+              </option>
+            <% }) %>
+          <% } %>
+        </select>
+      </label>
+      <% if (!ct) { %>
+        <p class="muted small" style="margin-top:0.25rem;">
+          Select a course type first to unlock course name filtering.
+        </p>
+      <% } %>
+    </div>
+
+    <div>
+      <label>Search
+        <input
+          type="text"
+          name="q"
+          value="<%= sq %>"
+          placeholder="Employee, course, or start date"
+        />
+      </label>
+
+      <% if (isAdmin && showDup) { %>
+        <input type="hidden" name="showDuplicates" value="1" />
+      <% } %>
+
+      <div style="margin-top:0.35rem; display:flex; gap:0.5rem;">
+        <button type="submit" class="btn primary btn-sm">Apply</button>
+        <a href="/training" class="btn ghost btn-sm">Reset</a>
+      </div>
+    </div>
+  </form>
+</div>
+
+<% if (isAdmin || isManager) { %>
+  <form
+    method="POST"
+    action="/training/purge"
+    onsubmit="return confirm('Are you SURE you want to delete ALL training records? This cannot be undone.');"
+    style="margin-bottom:1rem;"
+  >
+    <button class="btn danger btn-sm">Purge All Records</button>
+  </form>
+<% } %>
+
+<div class="card">
+  <div class="section-header">
+    <div>
+      <h3>Training Record Table</h3>
+      <p class="muted small">
+        Showing <strong><%= totalCount %></strong> records
+        <% if (isAdmin && showDup) { %>
+          (duplicates only).
+        <% } else { %>
+          .
+        <% } %>
+
+        <% if (duplicateCount > 0 && (!isAdmin || !showDup)) { %>
+          <span style="margin-left:0.5rem;">
+            Potential duplicates in this view: <strong><%= duplicateCount %></strong>.
+          </span>
+        <% } %>
+      </p>
+    </div>
+
+    <div class="muted small">
+      <span style="display:inline-flex; align-items:center; gap:0.35rem;">
+        <span
+          style="
+            width:12px;
+            height:12px;
+            border-radius:999px;
+            display:inline-block;
+            background:rgba(248,113,113,0.35);
+          "
+        ></span>
+        Duplicate cluster
+      </span>
+    </div>
+  </div>
+
+  <% if (importError) { %>
+    <pre class="alert alert-error"><%= importError %></pre>
+  <% } %>
+
+  <% if (importSummary) { %>
+    <pre class="alert alert-info" style="white-space:pre-wrap;"><%= importSummary %></pre>
+  <% } %>
+
+  <form method="POST" action="/training/bulk-delete">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>
+            <input
+              type="checkbox"
+              id="select-all-training"
+              onclick="toggleAllTraining(this)"
+            />
+          </th>
+          <th>Employee ID</th>
+          <th>Employee Name</th>
+          <th>Course Name</th>
+          <th>Course Type</th>
+          <th>Overall Progress</th>
+          <th>Start Date</th>
+          <th>End Date</th>
+          <th>Cert Frequency</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!trainings || trainings.length === 0) { %>
+          <tr>
+            <td colspan="10" class="muted">
+              No training records found for the selected filters.
+            </td>
+          </tr>
+        <% } else { %>
+          <% trainings.forEach(function(t) { %>
+            <tr
+              class="<%= t.isDuplicate ? 'training-duplicate-row' : '' %>"
+              style="<% if (t.isDuplicate) { %>background:rgba(248,113,113,0.12);<% } %>"
+            >
+              <td>
+                <input type="checkbox" name="ids" value="<%= t.id %>" />
+              </td>
+              <td><%= t.employeeId || '—' %></td>
+              <td><%= t.employeeName || '—' %></td>
+              <td><%= t.courseName || '—' %></td>
+              <td><%= t.courseType || '—' %></td>
+              <td>
+                <% if (t.overallProgress != null) { %>
+                  <%= t.overallProgress %>%
+                <% } else { %>
+                  —
+                <% } %>
+              </td>
+              <td><%= t.startDate || '—' %></td>
+              <td><%= t.endDate || '—' %></td>
+              <td><%= t.certificationFrequency || '—' %></td>
+              <td>
+                <div style="display:flex; gap:0.25rem; flex-wrap:wrap;">
+                  <a href="/training/<%= t.id %>/edit" class="btn ghost btn-sm">
+                    Edit
+                  </a>
+
+                  <form
+                    method="POST"
+                    action="/training/<%= t.id %>/delete"
+                    style="display:inline;"
+                    onsubmit="return confirm('Delete this training record?');"
+                  >
+                    <button type="submit" class="btn danger btn-sm">
+                      Delete
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        <% } %>
+      </tbody>
+    </table>
+
+    <div style="margin-top:0.75rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+      <p class="muted small">
+        Use the checkboxes to bulk delete rows that are outdated, duplicated, or imported in error.
+      </p>
+      <button
+        type="submit"
+        class="btn danger btn-sm"
+        onclick="return confirm('Delete all selected training records?');"
+      >
+        Delete Selected
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  function toggleAllTraining(source) {
+    const checkboxes = document.querySelectorAll(
+      'input[type="checkbox"][name="ids"]'
+    );
+    checkboxes.forEach((cb) => {
+      cb.checked = source.checked;
+    });
+  }
+</script>
+
+</main>
+</body>
+</html>

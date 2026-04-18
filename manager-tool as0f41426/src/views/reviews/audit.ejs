@@ -1,0 +1,67 @@
+<%- include('../layout') %>
+
+<section class="page-header">
+  <div>
+    <h2>Review Change Log</h2>
+    <p class="muted">
+      Manager-only view of all edits made to monthly reviews. Each row shows who changed what, and when.
+    </p>
+  </div>
+</section>
+
+<section class="card">
+  <% if (!logs || logs.length === 0) { %>
+    <p class="muted">No changes have been recorded yet.</p>
+  <% } else { %>
+    <table>
+      <thead>
+        <tr>
+          <th>When</th>
+          <th>Changed By</th>
+          <th>Staff</th>
+          <th>Original Submitter</th>
+          <th>Period</th>
+          <th>Field</th>
+          <th>Old Value</th>
+          <th>New Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% logs.forEach(function (log) { %>
+          <tr>
+            <td><%= log.changedAt.toISOString().replace('T', ' ').substring(0, 19) %></td>
+            <td><%= log.ChangedBy ? log.ChangedBy.name : 'N/A' %></td>
+            <td>
+              <% if (log.MonthlyReview && log.MonthlyReview.Staff) { %>
+                <%= log.MonthlyReview.Staff.name %>
+              <% } else { %>
+                N/A
+              <% } %>
+            </td>
+            <td>
+              <% if (log.MonthlyReview && log.MonthlyReview.Submitter) { %>
+                <%= log.MonthlyReview.Submitter.name %>
+              <% } else { %>
+                N/A
+              <% } %>
+            </td>
+            <td>
+              <% if (log.MonthlyReview) { %>
+                <%= log.MonthlyReview.periodMonth %>/<%= log.MonthlyReview.periodYear %>
+              <% } else { %>
+                N/A
+              <% } %>
+            </td>
+            <td><code><%= log.field %></code></td>
+            <td><%= log.oldValue === null ? '—' : log.oldValue %></td>
+            <td><%= log.newValue === null ? '—' : log.newValue %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  <% } %>
+</section>
+
+</main>
+</body>
+</html>

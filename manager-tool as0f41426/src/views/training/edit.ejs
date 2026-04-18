@@ -1,0 +1,148 @@
+<!-- src/views/training/edit.ejs -->
+<%- include('../layout') %>
+
+<%
+  const isEdit = training && training.id;
+  const formAction = isEdit
+    ? ('/training/' + training.id + '/update')
+    : '/training/create';
+%>
+
+<section class="page-header">
+  <div>
+    <h2>
+      <%= isEdit ? 'Edit Training Record' : 'New Training Record' %>
+    </h2>
+    <p class="muted">
+      <%= isEdit
+        ? 'Update details for this employee training entry.'
+        : 'Create a new training or certification record for an employee.' %>
+    </p>
+  </div>
+  <div>
+    <a href="/training" class="btn ghost">Back to Training Overview</a>
+  </div>
+</section>
+
+<div class="card">
+  <% if (error) { %>
+    <p class="alert alert-error"><%= error %></p>
+  <% } %>
+
+  <form method="POST" action="<%= formAction %>" class="layout-two-column">
+    <div>
+      <h3>Employee Details</h3>
+
+      <label>Employee ID
+        <input
+          type="text"
+          name="employeeId"
+          value="<%= (training && training.employeeId) || '' %>"
+          placeholder="e.g. 12345"
+          required
+        />
+      </label>
+
+      <label>Employee Name
+        <input
+          type="text"
+          name="employeeName"
+          value="<%= (training && training.employeeName) || '' %>"
+          placeholder="e.g. Jane Doe"
+          required
+        />
+      </label>
+    </div>
+
+    <div>
+      <h3>Course Details</h3>
+
+      <label>Course Name
+        <input
+          type="text"
+          name="courseName"
+          value="<%= (training && training.courseName) || '' %>"
+          placeholder="e.g. ESD Certification, Server+ Prep"
+          required
+        />
+      </label>
+
+      <label>Course Type
+        <input
+          type="text"
+          name="courseType"
+          value="<%= (training && training.courseType) || '' %>"
+          placeholder="e.g. Safety, Technical, Leadership"
+        />
+      </label>
+    </div>
+
+    <div>
+      <h3>Progress & Dates</h3>
+
+      <label>Overall Progress
+        <input
+          type="text"
+          name="overallProgress"
+          value="<%= (training && training.overallProgress) || '' %>"
+          placeholder="e.g. 100%, In Progress, Completed"
+        />
+      </label>
+
+      <label>Start Date
+        <input
+          type="date"
+          name="startDate"
+          value="<%= (training && training.startDate) || '' %>"
+        />
+      </label>
+
+      <label>End Date
+        <input
+          type="date"
+          name="endDate"
+          value="<%= (training && training.endDate) || '' %>"
+        />
+      </label>
+    </div>
+
+    <div>
+      <h3>Certification</h3>
+
+      <label>Certification Frequency
+        <input
+          type="text"
+          name="certificationFrequency"
+          value="<%= (training && training.certificationFrequency) || '' %>"
+          placeholder="e.g. Annual, Every 2 years"
+        />
+      </label>
+
+      <% if (isEdit && training.isDuplicate) { %>
+        <p class="alert alert-warning" style="margin-top:1rem;">
+          This record is currently flagged as a <strong>duplicate</strong>. If this is intentional,
+          you may update the details to differentiate it, or choose to delete it from the overview page.
+        </p>
+      <% } %>
+    </div>
+
+    <div
+      style="
+        grid-column:1 / -1;
+        margin-top:1rem;
+        display:flex;
+        justify-content:flex-end;
+        gap:0.5rem;
+      "
+    >
+      <a href="/training" class="btn ghost">Cancel</a>
+      <button type="submit" class="btn primary">
+        <%= isEdit ? 'Save Changes' : 'Create Record' %>
+      </button>
+    </div>
+  </form>
+</div>
+
+</main>
+</body>
+</html>

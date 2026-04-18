@@ -1,0 +1,64 @@
+<%- include('../layout') %>
+
+<section class="page-header">
+  <div>
+    <h2>Add SKU Exposure</h2>
+    <p class="muted">
+      Staff: <strong><%= staff.name %></strong> (<%= staff.role || 'STAFF' %>)
+    </p>
+  </div>
+</section>
+
+<section class="card">
+  <% if (error) { %>
+    <div class="alert error"><%= error %></div>
+  <% } %>
+
+  <form method="POST" action="/staff/<%= staff.id %>/sku">
+    <div class="field">
+      <label for="sku">SKU</label>
+      <input
+        type="text"
+        id="sku"
+        name="sku"
+        required
+        value="<%= form && form.sku ? form.sku : '' %>"
+        placeholder="e.g. AZ33682" />
+    </div>
+
+    <div class="field">
+      <label for="timesWorked">Times Worked</label>
+      <input
+        type="number"
+        id="timesWorked"
+        name="timesWorked"
+        min="1"
+        step="1"
+        value="<%= form && form.timesWorked ? form.timesWorked : '1' %>" />
+      <p class="muted small">
+        Approximate count is okay – this helps trend experience and depth.
+      </p>
+    </div>
+
+    <div class="field">
+      <label for="lastWorkedAt">Last Worked At</label>
+      <input
+        type="date"
+        id="lastWorkedAt"
+        name="lastWorkedAt"
+        value="<%= form && form.lastWorkedAt ? form.lastWorkedAt : '' %>" />
+      <p class="muted small">
+        Leave blank if unknown – you can refine later or via bulk import.
+      </p>
+    </div>
+
+    <div style="margin-top:1rem; display:flex; justify-content:flex-end; gap:0.75rem;">
+      <a href="/staff/<%= staff.id %>" class="btn ghost">Cancel</a>
+      <button type="submit" class="btn primary">Save</button>
+    </div>
+  </form>
+</section>
+
+</main>
+</body>
+</html>

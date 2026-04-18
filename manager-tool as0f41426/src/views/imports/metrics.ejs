@@ -1,0 +1,370 @@
+<!-- src/views/imports/metrics.ejs -->
+<%- include('../layout') %>
+
+<%
+  const meta = (typeof metricImportMeta !== 'undefined' && metricImportMeta) ? metricImportMeta : null;
+  const issuesPreview = Array.isArray(metricImportIssuesPreview) ? metricImportIssuesPreview : [];
+  const issuesRemaining = Number.isFinite(metricImportIssuesRemaining) ? metricImportIssuesRemaining : 0;
+
+  const metricFileTotal = meta?.technicianMetrics?.totalRows ?? null;
+  const metricFileAccepted = meta?.technicianMetrics?.acceptedRows ?? null;
+  const metricFileRejected =
+    (metricFileTotal != null && metricFileAccepted != null)
+      ? Math.max(0, metricFileTotal - metricFileAccepted)
+      : null;
+
+  const presenceFileTotal = meta?.presence?.totalRows ?? null;
+  const presenceFileAccepted = meta?.presence?.acceptedRows ?? null;
+  const presenceFileRejected =
+    (presenceFileTotal != null && presenceFileAccepted != null)
+      ? Math.max(0, presenceFileTotal - presenceFileAccepted)
+      : null;
+%>
+
+<section class="page-header">
+  <div>
+    <h2>KPI Imports</h2>
+    <p class="muted">
+      Upload technician daily metrics and optional presence data, then automatically rebuild shift rollups and technician score snapshots.
+    </p>
+  </div>
+</section>
+
+<% if (metricImportError) { %>
+  <div class="card" style="border-left:4px solid #ef4444; margin-bottom:1rem;">
+    <h3 style="margin-top:0; color:#ef4444;">Import Error</h3>
+    <pre style="white-space:pre-wrap; margin-bottom:0;"><%= metricImportError %></pre>
+  </div>
+<% } %>
+
+<% if (metricImportSummary) { %>
+  <div class="card" style="border-left:4px solid #22c55e; margin-bottom:1rem;">
+    <h3 style="margin-top:0; color:#22c55e;">Import Summary</h3>
+    <pre style="white-space:pre-wrap; margin-bottom:0;"><%= metricImportSummary %></pre>
+  </div>
+<% } %>
+
+<% if (meta) { %>
+  <section class="kpi-grid" style="margin-bottom:1rem;">
+    <div class="card kpi-card">
+      <h3>Metric File Rows</h3>
+      <p class="kpi-value"><%= metricFileTotal != null ? metricFileTotal : 'N/A' %></p>
+      <p class="muted">Total rows parsed from the technician metrics file.</p>
+    </div>
+
+    <div class="card kpi-card">
+      <h3>Metric Rows Accepted</h3>
+      <p class="kpi-value"><%= metricFileAccepted != null ? metricFileAccepted : 'N/A' %></p>
+      <p class="muted">Rows accepted into normalization and pipeline processing.</p>
+    </div>
+
+    <div class="card kpi-card">
+      <h3>Metric Rows Rejected</h3>
+      <p class="kpi-value"><%= metricFileRejected != null ? metricFileRejected : 'N/A' %></p>
+      <p class="muted">Rows rejected during parsing or validation.</p>
+    </div>
+
+    <div class="card kpi-card">
+      <h3>Presence File Rows</h3>
+      <p class="kpi-value"><%= presenceFileTotal != null ? presenceFileTotal : 'N/A' %></p>
+      <p class="muted">Total rows parsed from the optional presence file.</p>
+    </div>
+
+    <div class="card kpi-card">
+      <h3>Presence Rows Accepted</h3>
+      <p class="kpi-value"><%= presenceFileAccepted != null ? presenceFileAccepted : 'N/A' %></p>
+      <p class="muted">Presence rows accepted into the daily pipeline.</p>
+    </div>
+
+    <div class="card kpi-card">
+      <h3>Presence Rows Rejected</h3>
+      <p class="kpi-value"><%= presenceFileRejected != null ? presenceFileRejected : 'N/A' %></p>
+      <p class="muted">Presence rows rejected during parsing or validation.</p>
+    </div>
+  </section>
+<% } %>
+
+<% if (issuesPreview.length) { %>
+  <section class="card" style="margin-bottom:1rem;">
+    <div class="section-header">
+      <div>
+        <h3 style="margin:0;">Issue Preview</h3>
+        <p class="muted" style="margin:0;">
+          The parser found some rows that need cleanup before they can be fully trusted.
+        </p>
+      </div>
+    </div>
+
+    <ul class="compact-list" style="margin-top:0.75rem;">
+      <% issuesPreview.forEach(function(issue) { %>
+        <li class="compact-row">
+          <span class="muted" style="white-space:pre-wrap;"><%= issue %></span>
+        </li>
+      <% }) %>
+    </ul>
+
+    <% if (issuesRemaining > 0) { %>
+      <div class="more-row" style="margin-top:0.75rem;">
+        <span class="muted"><%= issuesRemaining %> more issues not shown</span>
+      </div>
+    <% } %>
+  </section>
+<% } %>
+
+<!-- ── Tab Navigation ── -->
+<style>
+  .import-tabs { display:flex; gap:0; margin-bottom:1.5rem; border-bottom:2px solid #1e293b; }
+  .import-tabs a {
+    padding:10px 20px; text-decoration:none; color:#94a3b8; font-weight:500; font-size:0.95rem;
+    border-bottom:2px solid transparent; margin-bottom:-2px; transition:all 0.15s;
+  }
+  .import-tabs a:hover { color:#e2e8f0; }
+  .import-tabs a.active { color:#60a5fa; border-bottom-color:#3b82f6; }
+  .import-tab-panel { display:none; }
+  .import-tab-panel.active { display:block; }
+  .source-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem; }
+  @media (max-width:768px) { .source-grid { grid-template-columns:1fr; } }
+  .source-card { background:#1e293b; border:1px solid #334155; border-radius:8px; padding:1rem; }
+  .source-card h4 { margin:0 0 0.25rem; color:#e2e8f0; font-size:0.9rem; }
+  .source-card .muted { font-size:0.8rem; }
+  .source-card input[type="file"] { margin-top:0.5rem; }
+  .source-badge { display:inline-block; font-size:0.7rem; padding:2px 8px; border-radius:4px; font-weight:600; margin-left:6px; vertical-align:middle; }
+  .source-badge.productivity { background:#1e3a5f; color:#60a5fa; }
+  .source-badge.troubleshooting { background:#3b1f4a; color:#c084fc; }
+  .source-badge.compliance { background:#1a3a2a; color:#4ade80; }
+  .source-badge.development { background:#3b3010; color:#fbbf24; }
+  .source-badge.quality { background:#3b1f1f; color:#f87171; }
+</style>
+
+<div class="import-tabs">
+  <a href="#" class="active" data-tab="consolidated">Consolidated Upload</a>
+  <a href="#" data-tab="multi-source">Multi-Source Upload</a>
+</div>
+
+<!-- ── Tab 1: Consolidated Upload (existing) ── -->
+<div class="import-tab-panel active" id="tab-consolidated">
+  <section class="layout-two-column">
+    <div class="card">
+      <h3>Import KPI Files</h3>
+      <p class="muted" style="margin-top:0;">
+        Use the technician metrics file as the main input. Add the presence file when you want active technician counts,
+        attendance-readiness context, and shift-day presence rollups.
+      </p>
+
+      <form method="POST" action="/imports/metrics/process" enctype="multipart/form-data">
+        <label>Date
+          <input type="date" name="date" value="<%= today %>" required />
+        </label>
+
+        <label>Calculation Version
+          <input type="text" name="calculationVersion" value="v1" />
+          <div class="muted small">Use this to track scoring logic revisions over time.</div>
+        </label>
+
+        <label>Technician Metrics File
+          <input type="file" name="technicianMetricsFile" accept=".csv,.xlsx,.xls" required />
+          <div class="muted small">Required. Supports CSV or Excel.</div>
+        </label>
+
+        <label>Presence File (optional)
+          <input type="file" name="presenceFile" accept=".csv,.xlsx,.xls" />
+          <div class="muted small">Optional, but recommended for technician activity and readiness context.</div>
+        </label>
+
+        <div style="margin-top:1rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <button type="submit" class="btn primary">Process KPI Import</button>
+          <a href="/metrics/admin" class="btn ghost">Open Metrics Admin</a>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3>Templates & Flow</h3>
+
+      <ul class="muted" style="margin:0; padding-left:1.1rem;">
+        <li>
+          <a href="/imports/templates/technicianDailyMetrics.csv">Download Technician Daily Metrics Template</a>
+        </li>
+        <li>
+          <a href="/imports/templates/technicianPresenceDaily.csv">Download Technician Presence Daily Template</a>
+        </li>
+      </ul>
+
+      <hr style="margin:1rem 0; opacity:0.35;" />
+
+      <h4 style="margin-bottom:0.5rem;">What happens after upload</h4>
+      <ul class="muted" style="margin:0; padding-left:1.1rem;">
+        <li>Parse and normalize technician metric rows</li>
+        <li>Parse and normalize presence rows</li>
+        <li>Upsert technician daily metrics</li>
+        <li>Upsert technician presence rows</li>
+        <li>Rebuild shift daily metrics</li>
+        <li>Rebuild technician score snapshots</li>
+      </ul>
+
+      <hr style="margin:1rem 0; opacity:0.35;" />
+
+      <h4 style="margin-bottom:0.5rem;">Best practices</h4>
+      <ul class="muted" style="margin:0; padding-left:1.1rem;">
+        <li>Import Roster first if your source files rely on usernames instead of employee IDs.</li>
+        <li>Keep one operating date per upload batch whenever possible.</li>
+        <li>Review parser issues after every import so bad headers or incomplete rows do not pile up quietly.</li>
+        <li>Use calculation version updates when scoring logic changes, so historical score snapshots stay explainable.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<!-- ── Tab 2: Multi-Source Upload ── -->
+<div class="import-tab-panel" id="tab-multi-source">
+  <section class="card" style="margin-bottom:1rem;">
+    <h3>Multi-Source KPI Import</h3>
+    <p class="muted" style="margin-top:0;">
+      Upload files from individual data sources. The system parses each source, merges them by employee ID + date + shift,
+      then runs the full KPI pipeline. Upload at least one source file.
+    </p>
+    <div class="alert alert-info" style="margin-top:0.5rem; padding:0.75rem 1rem; background:#1e3a5f; border-left:3px solid #3b82f6; border-radius:4px; font-size:0.85rem;">
+      <strong>Important — Daily row format required:</strong> Each source CSV must have <strong>one row per employee per day</strong>.
+      For a 3-month import of 60 employees, expect ~5,400 rows per source file.
+      If your file has one row per employee (pre-aggregated totals), the system will treat the entire period as a single day
+      and KPI averages will not reflect the correct time window.
+    </div>
+
+    <form method="POST" action="/imports/metrics/multi-source" enctype="multipart/form-data">
+      <div style="display:flex; gap:1rem; flex-wrap:wrap; margin-bottom:1rem;">
+        <label style="flex:1; min-width:200px;">Date
+          <input type="date" name="date" value="<%= today %>" required />
+        </label>
+        <label style="flex:1; min-width:200px;">Calculation Version
+          <input type="text" name="calculationVersion" value="v1" />
+        </label>
+      </div>
+
+      <h4 style="margin-bottom:0.75rem; color:#e2e8f0;">Source Files</h4>
+
+      <div class="source-grid">
+        <!-- MES -->
+        <div class="source-card">
+          <h4>MES (Shop Floor Control)
+            <span class="source-badge productivity">Productivity</span>
+          </h4>
+          <p class="muted">Servers, racks, check actions, inspections, unit handling, exclusion times.</p>
+          <input type="file" name="mesFile" accept=".csv,.xlsx,.xls" />
+          <div class="muted small" style="margin-top:4px;">
+            <a href="/imports/templates/mesExport.csv">Download template</a>
+          </div>
+        </div>
+
+        <!-- Testing Dashboard -->
+        <div class="source-card">
+          <h4>Testing Dashboard
+            <span class="source-badge troubleshooting">Troubleshooting</span>
+            <span class="source-badge quality">Quality</span>
+          </h4>
+          <p class="muted">FTFR, reruns, MTTR, escapes, repeat failures, repair actions, defects.</p>
+          <input type="file" name="testDashFile" accept=".csv,.xlsx,.xls" />
+          <div class="muted small" style="margin-top:4px;">
+            <a href="/imports/templates/testingDashboard.csv">Download template</a>
+          </div>
+        </div>
+
+        <!-- Attendance -->
+        <div class="source-card">
+          <h4>HR / Attendance
+            <span class="source-badge compliance">Compliance</span>
+          </h4>
+          <p class="muted">Schedules, on-time shifts, days worked, infractions, presence flags.</p>
+          <input type="file" name="attendanceFile" accept=".csv,.xlsx,.xls" />
+          <div class="muted small" style="margin-top:4px;">
+            <a href="/imports/templates/attendanceHr.csv">Download template</a>
+          </div>
+        </div>
+
+        <!-- ESD -->
+        <div class="source-card">
+          <h4>ESD Badge System
+            <span class="source-badge compliance">Compliance</span>
+          </h4>
+          <p class="muted">ESD pass/fail, first-pass rate, running ESD day totals.</p>
+          <input type="file" name="esdFile" accept=".csv,.xlsx,.xls" />
+          <div class="muted small" style="margin-top:4px;">
+            <a href="/imports/templates/esdBadge.csv">Download template</a>
+          </div>
+        </div>
+
+        <!-- Training -->
+        <div class="source-card">
+          <h4>Training / LMS
+            <span class="source-badge development">Development</span>
+          </h4>
+          <p class="muted">Cross-training module progress, certification readiness.</p>
+          <input type="file" name="trainingFile" accept=".csv,.xlsx,.xls" />
+          <div class="muted small" style="margin-top:4px;">
+            <a href="/imports/templates/trainingLms.csv">Download template</a>
+          </div>
+        </div>
+
+        <!-- Manual -->
+        <div class="source-card">
+          <h4>Supervisor Manual Entry
+            <span class="source-badge development">Development</span>
+          </h4>
+          <p class="muted">Knowledge sharing, CI participation, leadership support events.</p>
+          <input type="file" name="manualFile" accept=".csv,.xlsx,.xls" />
+          <div class="muted small" style="margin-top:4px;">
+            <a href="/imports/templates/supervisorManual.csv">Download template</a>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:1rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+        <button type="submit" class="btn primary">Merge & Process All Sources</button>
+        <a href="/metrics/admin" class="btn ghost">Open Metrics Admin</a>
+      </div>
+    </form>
+  </section>
+
+  <!-- Data flow reference -->
+  <section class="card">
+    <h3>How Multi-Source Merge Works</h3>
+    <div class="muted" style="font-size:0.85rem; line-height:1.6;">
+      <p style="margin-top:0;"><strong>Join Key:</strong> Every source file must include <code>employeeId</code> and <code>date</code>. Optionally include <code>shift</code> for multi-shift technicians.</p>
+      <p><strong>Merge Order:</strong> MES &rarr; Testing Dashboard &rarr; Attendance &rarr; ESD &rarr; Training &rarr; Manual Entry. Each source fills in its own columns on the consolidated row. If two sources write the same field, the later source wins and a warning is logged.</p>
+      <p><strong>Pipeline:</strong> After merge, the consolidated rows feed into the same pipeline as a direct upload &mdash; upsert metrics, upsert presence, rebuild shift summaries, rebuild score snapshots.</p>
+      <p style="margin-bottom:0;"><strong>Partial uploads:</strong> You can upload any subset of sources. Missing sources simply leave their columns empty. Scores that depend on missing data will show as insufficient.</p>
+    </div>
+  </section>
+</div>
+
+<% if (!metricImportSummary && !metricImportError) { %>
+  <section class="card" style="margin-top:1rem;">
+    <h3>Quick Guidance</h3>
+    <p class="muted" style="margin-bottom:0.5rem;">
+      This page is the front door for dashboard-ready KPI data.
+    </p>
+    <ul class="muted" style="margin:0; padding-left:1.1rem;">
+      <li>Technician Daily Metrics drives productivity, troubleshooting, quality, and score calculations.</li>
+      <li>Technician Presence Daily helps determine active technicians, readiness, attendance, and ESD context.</li>
+      <li>After processing, the dashboard can immediately consume rebuilt KPI artifacts for executive and operational views.</li>
+    </ul>
+  </section>
+<% } %>
+
+<!-- Tab switching script -->
+<script>
+  document.querySelectorAll('.import-tabs a').forEach(function(tab) {
+    tab.addEventListener('click', function(e) {
+      e.preventDefault();
+      var target = this.getAttribute('data-tab');
+      document.querySelectorAll('.import-tabs a').forEach(function(t) { t.classList.remove('active'); });
+      document.querySelectorAll('.import-tab-panel').forEach(function(p) { p.classList.remove('active'); });
+      this.classList.add('active');
+      var panel = document.getElementById('tab-' + target);
+      if (panel) panel.classList.add('active');
+    });
+  });
+</script>
+
+</main>
+</body>
+</html>

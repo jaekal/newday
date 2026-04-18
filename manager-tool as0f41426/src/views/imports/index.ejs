@@ -1,0 +1,155 @@
+<!-- src/views/imports/index.ejs -->
+<%- include('../layout') %>
+
+<%
+  const role = String(currentUserRole || '').toUpperCase();
+  const canAccessPersonnel = ['ADMIN', 'MANAGER'].includes(role);
+  const canAccessOperational = ['ADMIN', 'MANAGER', 'SUPERVISOR', 'LEAD'].includes(role);
+  const canAccessCompliance = ['ADMIN', 'MANAGER', 'SUPERVISOR', 'LEAD'].includes(role);
+  const canAccessTraining = ['ADMIN', 'MANAGER'].includes(role);
+%>
+
+<section class="page-header imports-page-header">
+  <h2>Data Imports</h2>
+  <p class="muted">
+    Central import hub for personnel, operational, compliance, and training data.
+    Choose the lane that matches the type of data you’re loading.
+  </p>
+</section>
+
+<section class="imports-section">
+  <div class="card-grid">
+    <% if (canAccessPersonnel) { %>
+      <article class="card import-card">
+        <h3>Personnel Data Import</h3>
+        <p class="muted">
+          Combined entry point for employee identity and profile data. Use this lane for roster mapping and staff profile updates.
+        </p>
+
+        <ul class="import-card-list">
+          <li>Roster / domain username mapping</li>
+          <li>Staff users and staff profiles</li>
+          <li>Building, shift, education, vehicle, and profile attributes</li>
+          <li>Manager and Admin access only</li>
+        </ul>
+
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <a class="btn primary" href="/roster/import">Roster Import</a>
+          <a class="btn primary" href="/staff/import">Staff Import</a>
+        </div>
+
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.75rem;">
+          <a class="btn ghost" href="/imports/templates/roster.csv">Roster Template</a>
+          <a class="btn ghost" href="/imports/templates/staff.csv">Staff Template</a>
+          <a class="btn ghost" href="/roster">View Roster</a>
+        </div>
+
+        <p class="muted small" style="margin-top:0.75rem;">
+          Tip: Load roster first when downstream files identify people by domain username instead of employee ID.
+        </p>
+      </article>
+    <% } %>
+
+    <% if (canAccessOperational) { %>
+      <article class="card import-card">
+        <h3>Operational Data Import</h3>
+        <p class="muted">
+          Combined entry point for workload and execution data. Use this lane for rack assignments and KPI operational metrics.
+        </p>
+
+        <ul class="import-card-list">
+          <li>Rack assignment history</li>
+          <li>KPI metrics pipeline</li>
+          <li>Technician daily metrics and presence data</li>
+          <li>Accessible to Lead, Supervisor, Manager, and Admin</li>
+        </ul>
+
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <a class="btn primary" href="/rack-assignments/import">Rack Assignment Import</a>
+          <a class="btn primary" href="/imports/metrics">KPI Metrics Import</a>
+        </div>
+
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.75rem;">
+          <a class="btn ghost" href="/imports/templates/rackAssignments.csv">Rack Assignment Template</a>
+          <a class="btn ghost" href="/imports/templates/technicianDailyMetrics.csv">KPI Metric Template</a>
+          <a class="btn ghost" href="/imports/templates/technicianPresenceDaily.csv">Presence Template</a>
+        </div>
+
+        <p class="muted small" style="margin-top:0.75rem;">
+          SKU exposure is no longer imported here. It should be derived on the backend from operational workload history.
+        </p>
+      </article>
+    <% } %>
+
+    <% if (canAccessCompliance) { %>
+      <article class="card import-card">
+        <h3>Compliance Import</h3>
+        <p class="muted">
+          Combined entry point for compliance and readiness data. Use this lane for ESD logs and attendance records.
+        </p>
+
+        <ul class="import-card-list">
+          <li>ESD compliance logs</li>
+          <li>Attendance and lateness records</li>
+          <li>Supports compliance and readiness visibility</li>
+          <li>Accessible to Lead, Supervisor, Manager, and Admin</li>
+        </ul>
+
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <a class="btn primary" href="/esd/import">ESD Import</a>
+          <a class="btn primary" href="/attendance/import">Attendance Import</a>
+        </div>
+
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.75rem;">
+          <a class="btn ghost" href="/imports/templates/esd.csv">ESD Template</a>
+          <a class="btn ghost" href="/imports/templates/attendance.csv">Attendance Template</a>
+        </div>
+
+        <p class="muted small" style="margin-top:0.75rem;">
+          Tip: Use this lane for compliance tracking and attendance readiness inputs.
+        </p>
+      </article>
+    <% } %>
+
+    <% if (canAccessTraining) { %>
+      <article class="card import-card">
+        <h3>Training Import</h3>
+        <p class="muted">
+          Central import lane for certifications, course completion, and training readiness records.
+        </p>
+
+        <ul class="import-card-list">
+          <li>Training completion history</li>
+          <li>Certification status and expirations</li>
+          <li>Supports profile readiness and development visibility</li>
+          <li>Manager and Admin access only</li>
+        </ul>
+
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <a class="btn primary" href="/training/import">Training Import</a>
+        </div>
+
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.75rem;">
+          <a class="btn ghost" href="/imports/templates/training.csv">Training Template</a>
+        </div>
+
+        <p class="muted small" style="margin-top:0.75rem;">
+          Tip: Keep certification names and expiry dates consistent to improve downstream reporting.
+        </p>
+      </article>
+    <% } %>
+  </div>
+</section>
+
+<% if (!canAccessPersonnel && !canAccessOperational && !canAccessCompliance && !canAccessTraining) { %>
+  <section class="card">
+    <h3>Imports Not Available</h3>
+    <p class="muted" style="margin-bottom:0;">
+      Your role does not currently have access to any import lanes from this page.
+    </p>
+  </section>
+<% } %>
+
+</main>
+</body>
+</html>

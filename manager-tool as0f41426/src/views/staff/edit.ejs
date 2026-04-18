@@ -1,0 +1,375 @@
+<!-- src/views/staff/edit.ejs -->
+<%- include('../layout') %>
+
+<style>
+  .uf-page { max-width: 860px; }
+
+  .uf-alert {
+    display: flex; align-items: flex-start; gap: 0.625rem;
+    background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.35);
+    border-radius: 6px; padding: 0.75rem 1rem;
+    color: #fca5a5; font-size: 0.875rem; white-space: pre-line;
+    margin-bottom: 1.25rem;
+  }
+  .uf-alert svg { flex-shrink: 0; margin-top: 1px; }
+
+  .uf-section {
+    background: rgba(17,24,39,0.6); border: 1px solid rgba(55,65,81,0.7);
+    border-radius: 8px; margin-bottom: 0.75rem; overflow: hidden;
+  }
+  .uf-section summary {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.875rem 1.125rem; cursor: pointer; list-style: none; user-select: none;
+  }
+  .uf-section summary::-webkit-details-marker { display: none; }
+  .uf-section summary:hover { background: rgba(255,255,255,0.03); }
+  .uf-section-title {
+    display: flex; align-items: center; gap: 0.625rem;
+    font-size: 0.9375rem; font-weight: 600; color: #e5e7eb;
+  }
+  .uf-section-chevron { color: #6b7280; transition: transform 0.2s; flex-shrink: 0; }
+  details[open] .uf-section-chevron { transform: rotate(180deg); }
+  .uf-section-body { padding: 1rem 1.125rem 1.125rem; border-top: 1px solid rgba(55,65,81,0.5); }
+
+  .uf-grid { display: grid; gap: 0.875rem; }
+  .uf-grid-2 { grid-template-columns: 1fr 1fr; }
+  .uf-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 600px) {
+    .uf-grid-2, .uf-grid-3 { grid-template-columns: 1fr; }
+  }
+
+  .uf-field { display: flex; flex-direction: column; gap: 0.3rem; }
+  .uf-field label { font-size: 0.8125rem; font-weight: 500; color: #d1d5db; }
+  .uf-field .uf-hint { font-size: 0.75rem; color: #6b7280; }
+  .uf-field input, .uf-field select, .uf-field textarea { width: 100%; box-sizing: border-box; }
+  .uf-field textarea { resize: vertical; }
+
+  .uf-divider { height: 1px; background: rgba(55,65,81,0.5); margin: 0.875rem 0; }
+
+  .uf-readonly-row {
+    display: flex; flex-direction: column; gap: 0.3rem;
+  }
+  .uf-readonly-row label { font-size: 0.8125rem; font-weight: 500; color: #d1d5db; }
+  .uf-readonly-row .val {
+    font-size: 0.875rem; color: #9ca3af;
+    padding: 0.45rem 0.625rem;
+    background: rgba(31,41,55,0.5); border: 1px solid rgba(55,65,81,0.5);
+    border-radius: 5px;
+  }
+
+  .uf-birthday-chip {
+    display: inline-flex; gap: 0.35rem; align-items: center;
+    padding: 0.2rem 0.55rem; border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(15,23,42,0.55); color: rgba(229,231,235,0.95);
+    font-size: 0.8rem; margin-top: 0.35rem;
+  }
+  .uf-birthday-chip strong { font-weight: 700; }
+
+  .uf-actions {
+    position: sticky; bottom: 0;
+    background: rgba(11,18,32,0.95); backdrop-filter: blur(6px);
+    border-top: 1px solid rgba(55,65,81,0.6);
+    padding: 0.75rem 0; margin-top: 1rem;
+    display: flex; align-items: center; gap: 0.75rem;
+  }
+</style>
+
+<%
+  const profile = (staff && staff.StaffProfile) ? staff.StaffProfile : {};
+
+  const buildingOpts = (typeof buildingOptions !== 'undefined' && Array.isArray(buildingOptions)) ? buildingOptions : [];
+  const shiftOpts    = (typeof shiftOptions    !== 'undefined' && Array.isArray(shiftOptions))    ? shiftOptions    : [];
+
+  const positionTypes = ['TECHNICIAN', 'LEAD', 'SUPERVISOR', 'CHAMPION', 'MANAGER', 'ADMIN'];
+
+  let birthdayPreview = '';
+  if (profile && profile.dateOfBirth) {
+    const dobStr = String(profile.dateOfBirth);
+    const m = dobStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) {
+      const mm = Number(m[2]);
+      const dd = Number(m[3]);
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) {
+        birthdayPreview = `${months[mm - 1]} ${String(dd).padStart(2,'0')}`;
+      }
+    }
+  }
+%>
+
+<div class="uf-page">
+
+  <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1.25rem; flex-wrap:wrap; gap:0.5rem;">
+    <div>
+      <h2 style="margin:0 0 0.2rem; font-size:1.25rem;">Edit Staff Profile – <%= staff?.name || 'Staff' %></h2>
+      <p style="margin:0; font-size:0.8125rem; color:#9ca3af;">Update core profile details, education, skills, and basic info.</p>
+    </div>
+    <a href="/staff/<%= staff.id %>" class="btn ghost">Back to Profile</a>
+  </div>
+
+  <% if (error) { %>
+    <div class="uf-alert">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="8" cy="8" r="7" stroke="#f87171" stroke-width="1.5"/>
+        <path d="M8 5v3.5M8 10.5v.5" stroke="#f87171" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <%= error %>
+    </div>
+  <% } %>
+
+  <form method="POST" action="/staff/<%= staff.id %>/update">
+
+    <!-- ── CORE DETAILS (open) ──────────────────────────────────── -->
+    <details class="uf-section" open>
+      <summary>
+        <span class="uf-section-title">Core Details</span>
+        <svg class="uf-section-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </summary>
+      <div class="uf-section-body">
+        <div class="uf-grid uf-grid-2">
+          <div class="uf-field">
+            <label for="s_empId">Employee ID</label>
+            <input type="text" id="s_empId" name="employeeId" value="<%= profile.employeeId || '' %>" placeholder="e.g. 12345" />
+          </div>
+          <div class="uf-field">
+            <label for="s_posType">Position Type</label>
+            <select id="s_posType" name="positionType">
+              <option value="">(Select)</option>
+              <% positionTypes.forEach(function (pt) { %>
+                <option value="<%= pt %>" <%= (profile.positionType === pt) ? 'selected' : '' %>><%= pt %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="uf-field">
+            <label for="s_startDate">Start Date</label>
+            <input type="date" id="s_startDate" name="startDate" value="<%= profile.startDate || '' %>" />
+          </div>
+          <div class="uf-field">
+            <label for="s_dob">Birthday
+              <span style="font-weight:400; color:#6b7280;">(Month &amp; Day shown on profile)</span>
+            </label>
+            <input type="date" id="birthdayInput" name="dateOfBirth" value="<%= profile.dateOfBirth || '' %>" />
+            <span class="uf-hint">Full date stored; only Month + Day is displayed on the profile.</span>
+            <div class="uf-birthday-chip" id="birthdayPreview" style="<%= birthdayPreview ? '' : 'display:none;' %>">
+              Preview: <strong><%= birthdayPreview || '' %></strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="uf-divider"></div>
+
+        <div style="font-size:0.78rem; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:0.5rem;">Building &amp; Shift</div>
+        <div class="uf-grid uf-grid-2">
+          <div class="uf-field">
+            <label for="s_building">Building</label>
+            <% if (buildingOpts.length) { %>
+              <select id="s_building" name="rosterBuilding">
+                <option value="">(None)</option>
+                <% buildingOpts.forEach(function (b) { %>
+                  <option value="<%= b %>" <%= (profile.building === b) ? 'selected' : '' %>><%= b %></option>
+                <% }) %>
+              </select>
+            <% } else { %>
+              <input type="text" id="s_building" name="rosterBuilding" value="<%= profile.building || '' %>" placeholder="e.g. 4050, 4040, NJ-1" />
+              <span class="uf-hint">No building options configured. Free text.</span>
+            <% } %>
+          </div>
+          <div class="uf-field">
+            <label for="s_shift">Shift</label>
+            <% if (shiftOpts.length) { %>
+              <select id="s_shift" name="rosterShift">
+                <option value="">(None)</option>
+                <% shiftOpts.forEach(function (sh) { %>
+                  <option value="<%= sh %>" <%= (profile.shift === sh) ? 'selected' : '' %>><%= sh %></option>
+                <% }) %>
+              </select>
+            <% } else { %>
+              <input type="text" id="s_shift" name="rosterShift" value="<%= profile.shift || '' %>" placeholder="e.g. 1st / 2nd / Weekend" />
+              <span class="uf-hint">No shift options configured. Free text.</span>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ── PROFILE SUMMARY ─────────────────────────────────────── -->
+    <details class="uf-section">
+      <summary>
+        <span class="uf-section-title">Profile Summary</span>
+        <svg class="uf-section-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </summary>
+      <div class="uf-section-body">
+        <div class="uf-grid uf-grid-2">
+          <div class="uf-field" style="grid-column: 1 / -1;">
+            <label for="s_aboutMe">About Me / Summary</label>
+            <textarea id="s_aboutMe" name="aboutMe" rows="3" placeholder="Short summary about this staff member, role, and focus..."><%= profile.aboutMe || '' %></textarea>
+          </div>
+          <div class="uf-field">
+            <label for="s_strengths">Key Strengths</label>
+            <textarea id="s_strengths" name="keyStrengths" rows="3" placeholder="e.g. Troubleshooting, Mentoring, Server Consolidation"><%= profile.keyStrengths || '' %></textarea>
+          </div>
+          <div class="uf-field">
+            <label for="s_devFocus">Development Focus</label>
+            <textarea id="s_devFocus" name="developmentFocus" rows="3" placeholder="e.g. Grow leadership behaviors, improve data storytelling"><%= profile.developmentFocus || '' %></textarea>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ── SKILLS ──────────────────────────────────────────────── -->
+    <details class="uf-section">
+      <summary>
+        <span class="uf-section-title">Skills</span>
+        <svg class="uf-section-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </summary>
+      <div class="uf-section-body">
+        <div class="uf-grid uf-grid-2">
+          <div class="uf-field">
+            <label for="s_techSkills">Technical Skills</label>
+            <textarea id="s_techSkills" name="technicalSkills" rows="3" placeholder="e.g. RLT, SLT, iDRAC/IPMI, Linux, Networking, Liquid Cooling"><%= profile.technicalSkills || '' %></textarea>
+          </div>
+          <div class="uf-field">
+            <label for="s_softSkills">Soft Skills</label>
+            <textarea id="s_softSkills" name="softSkills" rows="3" placeholder="e.g. Teamwork, Communication, Coaching, Leadership"><%= profile.softSkills || '' %></textarea>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ── VEHICLE & PARKING ────────────────────────────────────── -->
+    <details class="uf-section">
+      <summary>
+        <span class="uf-section-title">Vehicle &amp; Parking</span>
+        <svg class="uf-section-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </summary>
+      <div class="uf-section-body">
+        <div class="uf-grid uf-grid-3">
+          <div class="uf-field">
+            <label for="s_carMake">Car Make</label>
+            <input type="text" id="s_carMake" name="carMake" value="<%= profile.carMake || '' %>" placeholder="e.g. Toyota" />
+          </div>
+          <div class="uf-field">
+            <label for="s_carModel">Car Model</label>
+            <input type="text" id="s_carModel" name="carModel" value="<%= profile.carModel || '' %>" placeholder="e.g. Corolla" />
+          </div>
+          <div class="uf-field">
+            <label for="s_plate">License Plate</label>
+            <input type="text" id="s_plate" name="licensePlate" value="<%= profile.licensePlate || '' %>" placeholder="e.g. ABC-1234" />
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ── EDUCATION & CREDENTIALS ──────────────────────────────── -->
+    <details class="uf-section">
+      <summary>
+        <span class="uf-section-title">Education &amp; Credentials</span>
+        <svg class="uf-section-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </summary>
+      <div class="uf-section-body">
+        <div class="uf-grid uf-grid-2">
+          <div class="uf-field">
+            <label for="s_eduLevel">Highest Education Level</label>
+            <input type="text" id="s_eduLevel" name="highestEducationLevel" value="<%= profile.highestEducationLevel || '' %>" placeholder="e.g. High School, Associate, Bachelor" />
+          </div>
+          <div class="uf-field">
+            <label for="s_school">School / Institution</label>
+            <input type="text" id="s_school" name="schoolName" value="<%= profile.schoolName || '' %>" placeholder="e.g. Bergen Community College" />
+          </div>
+          <div class="uf-field">
+            <label for="s_degree">Degree Name</label>
+            <input type="text" id="s_degree" name="degreeName" value="<%= profile.degreeName || '' %>" placeholder="e.g. Associate of Science" />
+          </div>
+          <div class="uf-field">
+            <label for="s_fos">Field of Study / Program</label>
+            <input type="text" id="s_fos" name="fieldOfStudy" value="<%= profile.fieldOfStudy || '' %>" placeholder="e.g. Computer Science, Networking" />
+          </div>
+          <div class="uf-field">
+            <label for="s_gradYear">Graduation Year</label>
+            <input type="text" id="s_gradYear" name="graduationYear" value="<%= profile.graduationYear || '' %>" placeholder="e.g. 2022" />
+          </div>
+          <div class="uf-field">
+            <label for="s_certs">Certifications &amp; Licenses</label>
+            <textarea id="s_certs" name="certificationsText" rows="3" placeholder="List key certifications (one per line or comma-separated)..."><%= profile.certificationsText || '' %></textarea>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ── ACCOUNT INFO (read-only) ─────────────────────────────── -->
+    <details class="uf-section">
+      <summary>
+        <span class="uf-section-title">Account Info</span>
+        <svg class="uf-section-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </summary>
+      <div class="uf-section-body">
+        <p style="margin:0 0 0.75rem; font-size:0.8125rem; color:#9ca3af;">
+          These fields come from the User record and can be changed from the
+          <a href="/admin/users/<%= staff.id %>/edit" style="color:#93c5fd;">User edit page</a>.
+        </p>
+        <div class="uf-grid uf-grid-3">
+          <div class="uf-readonly-row">
+            <label>Username</label>
+            <div class="val"><%= staff.username || '—' %></div>
+          </div>
+          <div class="uf-readonly-row">
+            <label>Email</label>
+            <div class="val"><%= staff.email || '—' %></div>
+          </div>
+          <div class="uf-readonly-row">
+            <label>Phone</label>
+            <div class="val"><%= staff.phone || '—' %></div>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <div class="uf-actions">
+      <button type="submit" class="btn primary">Save Changes</button>
+      <a href="/staff/<%= staff.id %>" class="btn ghost">Cancel</a>
+    </div>
+
+  </form>
+</div>
+
+<script>
+(function () {
+  /* ── Birthday preview chip ── */
+  const birthdayInput   = document.getElementById('birthdayInput');
+  const birthdayPreview = document.getElementById('birthdayPreview');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  function renderBirthday(v) {
+    if (!birthdayPreview) return;
+    if (!v) { birthdayPreview.style.display = 'none'; birthdayPreview.innerHTML = ''; return; }
+    const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!m) { birthdayPreview.style.display = 'none'; return; }
+    const mm = Number(m[2]), dd = Number(m[3]);
+    if (!(mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31)) { birthdayPreview.style.display = 'none'; return; }
+    birthdayPreview.style.display = 'inline-flex';
+    birthdayPreview.innerHTML = 'Preview: <strong>' + months[mm - 1] + ' ' + String(dd).padStart(2, '0') + '</strong>';
+  }
+
+  if (birthdayInput) {
+    renderBirthday(birthdayInput.value);
+    birthdayInput.addEventListener('change', function () { renderBirthday(birthdayInput.value); });
+  }
+})();
+</script>
+
+</main>
+</body>
+</html>

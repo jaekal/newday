@@ -1,0 +1,89 @@
+<%- include('../layout') %>
+
+<%
+  // ✅ Defensive locals: prevents "ReferenceError: importError is not defined"
+  const importErrorSafe =
+    (typeof importError !== 'undefined' && importError)
+      ? importError
+      : ((typeof errorMessage !== 'undefined' && errorMessage) ? errorMessage : null);
+
+  const importSummarySafe =
+    (typeof importSummary !== 'undefined' && importSummary)
+      ? importSummary
+      : ((typeof summaryMessage !== 'undefined' && summaryMessage) ? summaryMessage : null);
+%>
+
+<section class="page-header">
+  <div>
+    <h2>Import Staff &amp; User Records</h2>
+    <p class="muted">
+      Upload a CSV or Excel file to bulk create or update Users and StaffProfiles.
+      This will POST to <code>/staff/import</code>.
+    </p>
+  </div>
+
+  <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+    <a href="/imports/templates/staff.csv" class="btn ghost">Download Template CSV</a>
+    <a href="/staff" class="btn ghost">Back to Staff Roster</a>
+  </div>
+</section>
+
+<div class="card">
+  <% if (importErrorSafe) { %>
+    <p class="alert alert-error" style="white-space:pre-line;"><%= importErrorSafe %></p>
+  <% } %>
+
+  <% if (importSummarySafe) { %>
+    <p class="alert alert-success" style="white-space:pre-line;"><%= importSummarySafe %></p>
+  <% } %>
+
+  <form method="POST" action="/staff/import" enctype="multipart/form-data">
+    <label>
+      File (CSV, XLSX, XLS)
+      <input type="file" name="file" accept=".csv,.xlsx,.xls" required />
+    </label>
+
+    <p class="muted" style="margin-top:0.75rem;">
+      <strong>Required columns:</strong>
+      <code>name</code>,
+      <code>employeeId</code>,
+      <code>role</code>,
+      <code>positionType</code>.
+    </p>
+
+    <p class="muted">
+      <strong>Optional identity fields:</strong>
+      <code>userId</code>,
+      <code>username</code>,
+      <code>email</code>,
+      <code>phone</code>,
+      <code>password</code>.
+    </p>
+
+    <p class="muted">
+      <strong>Optional StaffProfile fields:</strong>
+      <code>building</code>,
+      <code>shift</code>,
+      <code>startDate</code>,
+      <code>dateOfBirth</code>,
+      <code>domainName</code>,
+      <code>domainUsername</code>,
+      <code>carMake</code>,
+      <code>carModel</code>,
+      <code>licensePlate</code>.
+    </p>
+
+    <p class="muted">
+      <strong>Note:</strong>
+      <code>createdAt</code> and <code>updatedAt</code> are ignored on import.
+    </p>
+
+    <button type="submit" class="btn primary" style="margin-top:0.75rem;">
+      Upload &amp; Import
+    </button>
+  </form>
+</div>
+
+</main>
+</body>
+</html>

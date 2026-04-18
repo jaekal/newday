@@ -1,0 +1,38 @@
+<!-- src/views/incidents/edit.ejs -->
+<%- include('../layout') %>
+
+<%
+  const _returnTo =
+    (typeof returnTo !== 'undefined' && returnTo && returnTo.startsWith('/'))
+      ? returnTo
+      : (incident && incident.staffId ? '/staff/' + incident.staffId : '/incidents');
+%>
+
+<section class="page-header incident-shell">
+  <div>
+    <h2>Edit Incident</h2>
+    <p class="muted">Update classification, narrative, and follow-up status.</p>
+  </div>
+  <div>
+    <a href="<%= _returnTo %>" class="btn ghost">Back</a>
+  </div>
+</section>
+
+<%- include('_form', {
+  mode: 'edit',
+  submitAction: `/incidents/${incident.id}/update`,
+  submitLabel: 'Save Changes',
+  incident,
+  error,
+  returnTo: _returnTo,
+  staffOptions,
+  viewerRole,
+  types,
+  toneMap,
+  typeMeta,
+  impactAreas,
+  themes,
+  severityOptions,
+  followUpStatuses,
+  templates
+}) %>

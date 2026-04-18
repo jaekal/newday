@@ -1,0 +1,129 @@
+<%- include('../layout') %>
+
+<%
+const monthNames = ['January','February','March','April','May','June',
+  'July','August','September','October','November','December'];
+const periodLabel = (monthNames[month-1] || month) + ' ' + year;
+
+function scoreColor(s) {
+  if (s == null) return '#6b7280';
+  if (s >= 4.5) return '#34d399';
+  if (s >= 4)   return '#6ee7b7';
+  if (s >= 3)   return '#fbbf24';
+  if (s >= 2)   return '#f97316';
+  return '#f87171';
+}
+
+function scoreBar(s) {
+  if (s == null) return '';
+  const pct = Math.round((s / 5) * 100);
+  const col = scoreColor(s);
+  return '<div class="calib-bar-wrap"><div class="calib-bar" style="width:' + pct + '%;background:' + col + ';"></div></div>';
+}
+%>
+
+<div class="page-header" style="padding:1.5rem 1.5rem 0;">
+  <div>
+    <h1>Calibration — <%= periodLabel %></h1>
+    <p class="muted"><%= rows.length %> review<%= rows.length !== 1 ? 's' : '' %><% if (periodAvg != null) { %> · Period avg: <strong><%= periodAvg.toFixed(2) %></strong><% } %></p>
+  </div>
+  <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+    <% if (availablePeriods.length) { %>
+      <form method="GET" action="/reviews/calibration" style="display:flex; gap:0.4rem; align-items:center;">
+        <select name="period" onchange="this.form.submit()" style="min-width:150px;">
+          <% availablePeriods.forEach(function(p) {
+            const selected = (p.m === month && p.y === year) ? 'selected' : '';
+            const label = monthNames[p.m-1] + ' ' + p.y;
+            const val = p.m + '-' + p.y;
+          %>
+            <option value="<%= val %>" <%= selected %>><%= label %></option>
+          <% }); %>
+        </select>
+        <noscript><button type="submit" class="btn ghost btn-sm">Go</button></noscript>
+      </form>
+    <% } %>
+    <a href="/reviews/submitted" class="btn ghost btn-sm">Submitted Reviews</a>
+  </div>
+</div>
+
+<div style="padding:1rem 1.5rem 2rem;">
+  <% if (!rows.length) { %>
+    <p class="muted">No reviews found for <%= periodLabel %>.</p>
+  <% } else { %>
+
+    <div style="margin-bottom:0.75rem;">
+      <button id="calib-toggle" class="btn ghost btn-sm calib-toggle-btn" type="button">
+        Show scores
+      </button>
+    </div>
+
+    <div class="table-scroll">
+      <table id="calib-table" class="data-table calib-table calib-scores-hidden">
+        <thead>
+          <tr>
+            <th class="calib-sticky">Staff</th>
+            <th>Position</th>
+            <th>Reviewer</th>
+            <th>Score</th>
+            <th class="calib-sticky-last">Bar</th>
+            <% scoreFields.forEach(function(f) { %>
+              <th class="calib-field-col"><%= f.replace(/([A-Z])/g, ' $1').replace(/2$/, '').trim() %></th>
+            <% }); %>
+          </tr>
+        </thead>
+        <tbody>
+          <% rows.forEach(function(r) { %>
+            <tr>
+              <td class="calib-sticky"><a href="/staff/<%= r.staffId %>"><strong><%= r.staffName %></strong></a></td>
+              <td><span class="muted small"><%= r.positionType || '—' %></span></td>
+              <td><span class="muted small"><%= r.submitterName %></span></td>
+              <td>
+                <% if (r.overallScore != null) { %>
+                  <span style="color:<%= scoreColor(r.overallScore) %>; font-weight:600;">
+                    <%= r.overallScore.toFixed(2) %>
+                  </span>
+                <% } else { %>
+                  <span class="muted">—</span>
+                <% } %>
+              </td>
+              <td class="calib-sticky-last" style="min-width:80px;"><%- scoreBar(r.overallScore) %></td>
+              <% scoreFields.forEach(function(f) { %>
+                <td class="calib-field-col">
+                  <% if (r.scores[f] != null) { %>
+                    <span style="color:<%= scoreColor(r.scores[f]) %>"><%= r.scores[f] %></span>
+                  <% } else { %>
+                    <span class="muted">—</span>
+                  <% } %>
+                </td>
+              <% }); %>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+
+    <script>
+      (function () {
+        const btn = document.getElementById('calib-toggle');
+        const table = document.getElementById('calib-table');
+        if (!btn || !table) return;
+
+        btn.addEventListener('click', function () {
+          const hidden = table.classList.toggle('calib-scores-hidden');
+          btn.textContent = hidden ? 'Show scores' : 'Hide scores';
+          btn.classList.toggle('active', !hidden);
+        });
+      })();
+    </script>
+
+    <% if (periodAvg != null) { %>
+      <p class="muted small" style="margin-top:0.75rem;">
+        Period average: <strong><%= periodAvg.toFixed(2) %></strong> across <%= rows.filter(function(r){return r.overallScore != null;}).length %> scored review<%= rows.filter(function(r){return r.overallScore != null;}).length !== 1 ? 's' : '' %>.
+      </p>
+    <% } %>
+  <% } %>
+</div>
+
+</main>
+</body>
+</html>

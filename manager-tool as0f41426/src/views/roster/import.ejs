@@ -1,0 +1,63 @@
+<!-- src/views/roster/import.ejs -->
+<%- include('../layout') %>
+
+<section class="page-header">
+  <div>
+    <h2>Roster Mapping Import</h2>
+    <p class="muted">
+      Upload a CSV or Excel file to map domain usernames to employee IDs, names, email addresses, and placement details.
+      This roster is used to resolve identity across imports and linked staff records.
+    </p>
+  </div>
+
+  <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+    <a href="/imports" class="btn ghost">Back to Imports</a>
+    <a href="/roster" class="btn ghost">View Roster</a>
+  </div>
+</section>
+
+<div class="card" style="padding:1rem;">
+  <% if (importError) { %>
+    <pre class="alert alert-error" style="white-space:pre-wrap;"><%= importError %></pre>
+  <% } %>
+
+  <% if (importSummary) { %>
+    <pre class="alert alert-success" style="white-space:pre-wrap;"><%= importSummary %></pre>
+  <% } %>
+
+  <form
+    method="POST"
+    action="/roster/import"
+    enctype="multipart/form-data"
+    style="display:flex; flex-direction:column; gap:1rem; max-width:560px;"
+  >
+    <label style="display:flex; flex-direction:column; gap:0.4rem;">
+      <span>Roster Mapping File (CSV or Excel)</span>
+      <input type="file" name="file" accept=".csv,.xlsx,.xls" required />
+    </label>
+
+    <div class="muted small">
+      <div><strong>Expected columns</strong> (case-insensitive):</div>
+      <ul style="margin-top:0.35rem; padding-left:1.1rem;">
+        <li><code>domainUsername</code> or <code>username</code> <strong>(required)</strong></li>
+        <li><code>employeeId</code> <strong>(required)</strong></li>
+        <li><code>fullName</code> or <code>name</code> <em>(optional)</em></li>
+        <li><code>email</code> <em>(optional)</em></li>
+        <li><code>building</code> <em>(optional)</em></li>
+        <li><code>shift</code> <em>(optional)</em></li>
+        <li><code>notes</code> <em>(optional)</em></li>
+      </ul>
+    </div>
+
+    <div class="muted small" style="line-height:1.45;">
+      <strong>Import behavior:</strong>
+      existing entries are merged by employee ID first, then by domain username when applicable.
+      Duplicate employee IDs are cleaned up after import.
+    </div>
+
+    <div style="display:flex; gap:0.5rem; justify-content:flex-end; flex-wrap:wrap;">
+      <a href="/roster" class="btn ghost">Cancel</a>
+      <button type="submit" class="btn primary">Upload &amp; Import</button>
+    </div>
+  </form>
+</div>

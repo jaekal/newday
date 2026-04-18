@@ -1,0 +1,522 @@
+<%
+  const _mode = mode || 'new';
+  const _submitAction =
+    submitAction ||
+    (_mode === 'edit' && incident && incident.id
+      ? `/incidents/${incident.id}/update`
+      : '/incidents');
+
+  const _submitLabel = submitLabel || (_mode === 'edit' ? 'Save Changes' : 'Save Incident');
+  const _returnTo =
+    (typeof returnTo !== 'undefined' && returnTo && returnTo.startsWith('/'))
+      ? returnTo
+      : '/incidents';
+
+  const _incident = incident || {};
+  const _staffOptions = Array.isArray(staffOptions) ? staffOptions : [];
+  const _types = Array.isArray(types) ? types : [];
+  const _toneMap = toneMap || {};
+  const _typeMeta = typeMeta || {};
+  const _impactAreas = Array.isArray(impactAreas) ? impactAreas : [];
+  const _themes = Array.isArray(themes) ? themes : [];
+  const _severityOptions = Array.isArray(severityOptions) ? severityOptions : ['LOW', 'MEDIUM', 'HIGH'];
+  const _followUpStatuses = Array.isArray(followUpStatuses) ? followUpStatuses : ['NO_ACTION', 'OPEN', 'IN_PROGRESS', 'CLOSED'];
+  const _templates = Array.isArray(templates) ? templates : [];
+  const _viewerRole = viewerRole || '';
+
+  const selectedType = String(_incident.type || 'COACHING').toUpperCase();
+  const selectedTone = String(_incident.tone || '').toUpperCase();
+%>
+
+<style>
+  .incident-shell { max-width: 1100px; margin: 0 auto; }
+  .incident-form { display: flex; flex-direction: column; gap: 1rem; }
+
+  .wizard-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    margin-bottom: .5rem;
+  }
+  .wizard-step {
+    padding: .45rem .75rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.1);
+    background: rgba(255,255,255,.03);
+    font-size: .85rem;
+  }
+
+  .section-card {
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 18px;
+    padding: 1rem;
+    background: rgba(255,255,255,.02);
+  }
+
+  .section-card h3 {
+    margin: 0 0 .75rem 0;
+    font-size: 1rem;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .85rem;
+  }
+
+  .three-col {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: .85rem;
+  }
+
+  @media (max-width: 920px) {
+    .two-col, .three-col {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .hint {
+    font-size: .84rem;
+    opacity: .8;
+    margin-top: .25rem;
+  }
+
+  .type-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: .75rem;
+  }
+
+  @media (max-width: 980px) {
+    .type-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 620px) {
+    .type-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .type-card {
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 18px;
+    padding: 1rem;
+    background: rgba(255,255,255,.025);
+    color: rgb(255, 255, 255);
+    cursor: pointer;
+    transition: .15s ease;
+  }
+
+  .type-card:hover {
+    outline: 2px solid rgba(59,130,246,.18);
+  }
+
+  .type-card.active {
+    border-color: rgba(59,130,246,.4);
+    background: rgba(59,130,246,.08);
+    color: rgb(62, 230, 230);
+    outline: 2px solid rgba(59,130,246,.22);
+  }
+
+  .type-card-title {
+    font-weight: 700;
+    margin-bottom: .35rem;
+  }
+
+  .type-card-desc {
+    font-size: .86rem;
+    opacity: .88;
+    line-height: 1.4;
+  }
+
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .55rem;
+  }
+
+  .tone-chip {
+    border: 1px solid rgba(255,255,255,.12);
+    background: rgba(255,255,255,.04);
+    color: inherit;
+    border-radius: 999px;
+    padding: .45rem .8rem;
+    font-size: .84rem;
+    cursor: pointer;
+  }
+
+  .tone-chip.active {
+    border-color: rgba(59,130,246,.4);
+    background: rgba(59,130,246,.12);
+    color: rgb(62, 230, 230);
+    outline: 2px solid rgba(59,130,246,.18);
+  }
+
+  .type-helper {
+    margin-top: .85rem;
+    padding: .85rem;
+    border-radius: 14px;
+    background: rgba(15,23,42,.48);
+    border: 1px solid rgba(255,255,255,.06);
+  }
+
+  .template-row {
+    display: flex;
+    gap: .75rem;
+    flex-wrap: wrap;
+    align-items: end;
+  }
+
+  .preview-box {
+    white-space: pre-wrap;
+    min-height: 140px;
+    padding: .85rem;
+    border-radius: 12px;
+    border: 1px dashed rgba(255,255,255,.16);
+    background: rgba(255,255,255,.02);
+    font-size: .94rem;
+  }
+
+  .checkbox-inline {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+
+  .collapsible-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: center;
+    cursor: pointer;
+  }
+
+  .collapsible-body {
+    margin-top: .9rem;
+    display: none;
+  }
+
+  .collapsible-body.open {
+    display: block;
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .form-actions-right {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+  }
+
+  .example-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(2,6,23,.66);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 60;
+    padding: 1rem;
+  }
+
+  .example-modal-backdrop.open {
+    display: flex;
+  }
+
+  .example-modal {
+    width: min(700px, 100%);
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,.08);
+    background: rgba(15,23,42,.98);
+    padding: 1rem;
+  }
+
+  .example-modal pre {
+    white-space: pre-wrap;
+    background: rgba(255,255,255,.03);
+    padding: .85rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.06);
+    margin: .5rem 0 0 0;
+  }
+</style>
+
+<div class="incident-shell">
+  <div class="wizard-steps">
+    <div class="wizard-step">1. Basics</div>
+    <div class="wizard-step">2. Classification</div>
+    <div class="wizard-step">3. Narrative</div>
+    <div class="wizard-step">4. Follow-up</div>
+  </div>
+
+  <div class="card">
+    <% if (error) { %>
+      <pre class="alert alert-error"><%= error %></pre>
+    <% } %>
+
+    <form
+      method="POST"
+      action="<%= _submitAction %>"
+      class="incident-form"
+      id="incidentForm"
+      data-tone-map='<%- JSON.stringify(_toneMap || {}) %>'
+      data-type-meta='<%- JSON.stringify(_typeMeta || {}) %>'
+      data-templates='<%- JSON.stringify(_templates || []) %>'
+    >
+      <input type="hidden" name="returnTo" value="<%= _returnTo || '' %>" />
+      <input type="hidden" name="type" id="typeInput" value="<%= selectedType %>" />
+      <input type="hidden" name="tone" id="toneInput" value="<%= selectedTone %>" />
+
+      <div class="section-card">
+        <h3>Basics</h3>
+
+        <div class="type-grid">
+          <% _types.forEach(function(type) { const meta = _typeMeta[type] || {}; %>
+            <button
+              type="button"
+              class="type-card <%= selectedType === type ? 'active' : '' %>"
+              data-type="<%= type %>"
+            >
+              <div class="type-card-title"><%= meta.label || type %></div>
+              <div class="type-card-desc"><%= meta.description || '' %></div>
+            </button>
+          <% }) %>
+        </div>
+
+        <div class="type-helper">
+          <div style="display:flex; justify-content:space-between; gap:1rem; align-items:center; flex-wrap:wrap;">
+            <div>
+              <strong id="typeHelperTitle"><%= (_typeMeta[selectedType] && _typeMeta[selectedType].label) || selectedType %></strong>
+              <div class="hint" id="typeHelperText"><%= (_typeMeta[selectedType] && _typeMeta[selectedType].helper) || '' %></div>
+            </div>
+            <button type="button" class="btn ghost btn-sm" id="showExampleBtn">See example</button>
+          </div>
+        </div>
+
+        <div style="margin-top:1rem;">
+          <label style="display:block; margin-bottom:.45rem;">Tone</label>
+          <div class="chip-row" id="toneChipRow"></div>
+          <div class="hint">Tone changes automatically based on the selected incident type.</div>
+        </div>
+
+        <div class="three-col" style="margin-top:1rem;">
+          <label>
+            <span>Staff Member</span>
+            <select name="staffId" required>
+              <option value="">Select staff…</option>
+              <% _staffOptions.forEach(function(s) { %>
+                <option value="<%= s.id %>" <%= String(_incident.staffId || '') === String(s.id) ? 'selected' : '' %>>
+                  <%= s.name %>
+                  <% if (s.StaffProfile && (s.StaffProfile.building || s.StaffProfile.shift)) { %>
+                    ( <%= s.StaffProfile.building || '' %> <%= s.StaffProfile.shift || '' %> )
+                  <% } %>
+                </option>
+              <% }) %>
+            </select>
+          </label>
+
+          <label>
+            <span>Event Date</span>
+            <input type="date" name="incidentDate" value="<%= _incident.incidentDate || '' %>" required />
+          </label>
+
+          <label>
+            <span>Severity</span>
+            <select name="severity" id="severitySelect">
+              <% _severityOptions.forEach(function(s) { %>
+                <option value="<%= s %>" <%= String(_incident.severity || '').toUpperCase() === s ? 'selected' : '' %>><%= s %></option>
+              <% }) %>
+            </select>
+          </label>
+        </div>
+
+        <label style="margin-top:1rem;">
+          <span>Title / Short Summary</span>
+          <input
+            type="text"
+            name="title"
+            id="titleInput"
+            maxlength="200"
+            required
+            value="<%= _incident.title || '' %>"
+            placeholder="Example: Left assigned area without approval during active shift"
+          />
+        </label>
+      </div>
+
+      <div class="section-card">
+        <h3>Classification</h3>
+        <div class="two-col">
+          <label>
+            <span>Impact Area</span>
+            <select name="impactArea">
+              <option value="">Select…</option>
+              <% _impactAreas.forEach(function(a) { %>
+                <option value="<%= a %>" <%= String(_incident.impactArea || '').toUpperCase() === a ? 'selected' : '' %>><%= a.replace(/_/g,' ') %></option>
+              <% }) %>
+            </select>
+          </label>
+
+          <label>
+            <span>Theme</span>
+            <select name="theme">
+              <option value="">Select…</option>
+              <% _themes.forEach(function(t) { %>
+                <option value="<%= t %>" <%= String(_incident.theme || '').toUpperCase() === t ? 'selected' : '' %>><%= t.replace(/_/g,' ') %></option>
+              <% }) %>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <h3>Incident Narrative</h3>
+
+        <div class="template-row">
+          <label style="min-width:240px;">
+            <span>Insert Template</span>
+            <select id="templateSelect">
+              <option value="">Choose…</option>
+              <% _templates.forEach(function(t) { %>
+                <option value="<%= t.key %>"><%= t.label %></option>
+              <% }) %>
+            </select>
+          </label>
+
+          <button type="button" class="btn ghost btn-sm" id="applyTemplate">Insert Template</button>
+          <button type="button" class="btn ghost btn-sm" id="buildDetailsBtn">Build Details from Fields</button>
+        </div>
+
+        <div class="two-col" style="margin-top:1rem;">
+          <label>
+            <span>What happened</span>
+            <textarea id="whatHappened" rows="4" placeholder="Describe the event factually."></textarea>
+          </label>
+
+          <label>
+            <span>Observed behavior</span>
+            <textarea id="behaviorBox" rows="4" placeholder="What was observed directly?"></textarea>
+          </label>
+        </div>
+
+        <div class="two-col">
+          <label>
+            <span>Impact</span>
+            <textarea id="impactBox" rows="3" placeholder="What was the impact to safety, quality, flow, team, etc.?"></textarea>
+          </label>
+
+          <label>
+            <span>Action taken / coaching provided</span>
+            <textarea id="actionTakenBox" rows="3" placeholder="What did you do or communicate in the moment?"></textarea>
+          </label>
+        </div>
+
+        <div class="two-col">
+          <label>
+            <span>Expectation / standard reviewed</span>
+            <textarea id="expectationBox" rows="3" placeholder="What expectation, policy, or standard was clarified?"></textarea>
+          </label>
+
+          <label>
+            <span>Staff response / commitment</span>
+            <textarea id="responseBox" rows="3" placeholder="How did the employee respond?"></textarea>
+          </label>
+        </div>
+
+        <label>
+          <span>Details / Full Record</span>
+          <textarea id="detailsBox" name="details" rows="8" placeholder="Full incident record will appear here."><%= _incident.details || '' %></textarea>
+          <div class="hint">Use the builder for consistency, then edit wording as needed.</div>
+        </label>
+
+        <div>
+          <div class="hint" style="margin-bottom:.35rem;">Preview</div>
+          <div class="preview-box" id="detailsPreview">Nothing entered yet.</div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="collapsible-head">
+          <h3 style="margin:0;">Follow-up</h3>
+          <button type="button" class="btn ghost btn-sm" id="followUpToggleBtn">Open</button>
+        </div>
+
+        <div class="collapsible-body" id="followUpBody">
+          <label class="checkbox-inline">
+            <input id="fuToggle" type="checkbox" name="requiresFollowUp" <%= _incident.requiresFollowUp ? 'checked' : '' %> />
+            <span>Requires follow-up</span>
+          </label>
+
+          <div class="two-col" style="margin-top:.75rem;">
+            <label>
+              <span>Status</span>
+              <select id="fuStatus" name="followUpStatus">
+                <% _followUpStatuses.forEach(function(s) { %>
+                  <option value="<%= s %>" <%= String(_incident.followUpStatus || '').toUpperCase() === s ? 'selected' : '' %>><%= s.replace(/_/g, ' ') %></option>
+                <% }) %>
+              </select>
+            </label>
+
+            <label>
+              <span>Follow-up Due Date</span>
+              <input id="fuDue" type="date" name="followUpDueDate" value="<%= _incident.followUpDueDate || '' %>" />
+              <div class="hint">Formal items default to follow-up enabled.</div>
+            </label>
+          </div>
+
+          <label style="margin-top:.75rem;">
+            <span>Outcome / Follow-up Notes</span>
+            <textarea id="fuOutcome" name="followUpOutcome" rows="3" placeholder="Capture final outcome, commitments, or closure notes."><%= _incident.followUpOutcome || '' %></textarea>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <div>
+          <% if (_mode === 'edit' && (_viewerRole === 'ADMIN' || _viewerRole === 'SENIOR_MANAGER' || _viewerRole === 'MANAGER' || _viewerRole === 'SUPERVISOR')) { %>
+            <button
+              type="button"
+              class="btn danger btn-sm"
+              onclick="if (confirm('Delete this incident? This cannot be undone.')) document.getElementById('deleteIncidentForm').submit();"
+            >
+              Delete
+            </button>
+          <% } %>
+        </div>
+
+        <div class="form-actions-right">
+          <a href="<%= _returnTo %>" class="btn ghost">Cancel</a>
+          <button type="submit" class="btn primary"><%= _submitLabel %></button>
+        </div>
+      </div>
+    </form>
+
+    <% if (_mode === 'edit' && (_viewerRole === 'ADMIN' || _viewerRole === 'SENIOR_MANAGER' || _viewerRole === 'MANAGER' || _viewerRole === 'SUPERVISOR')) { %>
+      <form id="deleteIncidentForm" method="POST" action="/incidents/<%= _incident.id %>/delete" style="display:none;">
+        <input type="hidden" name="returnTo" value="<%= _returnTo || '' %>" />
+      </form>
+    <% } %>
+  </div>
+</div>
+
+<div class="example-modal-backdrop" id="exampleModalBackdrop">
+  <div class="example-modal">
+    <div style="display:flex; justify-content:space-between; gap:1rem; align-items:center;">
+      <h3 id="exampleModalTitle" style="margin:0;">Example</h3>
+      <button type="button" class="btn ghost btn-sm" id="closeExampleBtn">Close</button>
+    </div>
+    <div class="hint" id="exampleModalText" style="margin-top:.5rem;"></div>
+    <pre id="exampleModalBody"></pre>
+  </div>
+</div>
+
+<script src="/js/incidents/form.js"></script>

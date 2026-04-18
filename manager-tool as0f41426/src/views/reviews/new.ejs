@@ -1,0 +1,1137 @@
+<%- include('../layout') %>
+
+<%
+  const monthText = String(month);
+  const yearText = String(year);
+%>
+
+<style>
+  /* ── Inline score validation ────────────────────────────────── */
+  /* Error border on the number input */
+  .score-input-invalid {
+    border-color: var(--danger) !important;
+    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.45);
+    background: rgba(127, 29, 29, 0.18) !important;
+  }
+
+  /* Error message span inserted beneath each invalid input */
+  .score-validation-error {
+    display: block;
+    margin-top: 3px;
+    font-size: 0.76rem;
+    font-weight: 500;
+    color: var(--danger);
+    min-height: 0;
+  }
+  .score-validation-error:empty {
+    display: none;
+  }
+
+  /* Bucket progress counter inside snapshot chips */
+  .bucket-progress {
+    font-size: 0.68rem;
+    font-weight: 700;
+    margin-left: 0.2rem;
+    vertical-align: middle;
+  }
+
+  /* Full-width comment rows so they don't squeeze inside grid columns */
+  .criteria-comment-row {
+    grid-column: 1 / -1;
+  }
+
+  /* Character counter beneath comment textareas */
+  .comment-char-counter {
+    font-size: 0.71rem;
+    text-align: right;
+    margin-top: 2px;
+    min-height: 1em;
+    transition: color 0.15s;
+  }
+
+  /* Draft restore banner */
+  #draft-restore-banner {
+    display: none;
+    padding: 0.55rem 0.9rem;
+    border-radius: 0.45rem;
+    border: 1px solid rgba(96, 165, 250, 0.45);
+    background: rgba(30, 58, 138, 0.35);
+    color: #bfdbfe;
+    font-size: 0.83rem;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+  #draft-restore-banner.hidden { display: none !important; }
+  #draft-restore-banner .draft-banner-actions { margin-left: auto; display: flex; gap: 0.4rem; }
+  #draft-restore-banner button {
+    font-size: 0.8rem; padding: 0.2rem 0.55rem; border-radius: 0.3rem; cursor: pointer; border: 1px solid currentColor;
+  }
+  #draft-restore-banner .btn-restore { background: rgba(96,165,250,0.2); color: #93c5fd; }
+  #draft-restore-banner .btn-discard { background: transparent; color: #94a3b8; }
+
+  /* Summary banner above the submit button */
+  #validation-summary {
+    display: none;
+    margin-top: 0.75rem;
+    padding: 0.6rem 0.9rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    background: rgba(127, 29, 29, 0.35);
+    color: #fecaca;
+    font-size: 0.85rem;
+  }
+</style>
+
+
+
+<section class="page-header">
+  <div>
+    <h2>New Monthly Review</h2>
+    <p class="muted small">
+      Period: <strong><%= month %>/<%= year %></strong>
+    </p>
+  </div>
+
+  <form method="GET" action="/reviews/new" class="inline-form date-filter">
+    <div class="field-inline">
+      <label>Month</label>
+      <input type="number" name="month" min="1" max="12" value="<%= month %>" />
+    </div>
+    <div class="field-inline">
+      <label>Year</label>
+      <input type="number" name="year" min="2020" max="2100" value="<%= year %>" />
+    </div>
+    <button type="submit" class="btn ghost">Update Period</button>
+  </form>
+</section>
+
+<section class="card">
+  <div id="duplicate-warning" class="alert error" style="display:none;"></div>
+
+  <form method="POST" action="/reviews">
+    <input type="hidden" name="submitterId" value="<%= currentUserId %>" />
+    <input type="hidden" name="periodMonth" value="<%= month %>" />
+    <input type="hidden" name="periodYear" value="<%= year %>" />
+
+    <div id="draft-restore-banner" class="hidden">
+      <span id="draft-banner-text">Unsaved draft found.</span>
+      <div class="draft-banner-actions">
+        <button type="button" class="btn-restore" id="draft-restore-btn">Restore draft</button>
+        <button type="button" class="btn-discard" id="draft-discard-btn">Discard</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="staffSelect">Staff being reviewed</label>
+      <select id="staffSelect" name="staffId" required>
+        <option value="">-- Select staff --</option>
+        <% staff.forEach(function (s) { %>
+          <option
+            value="<%= s.id %>"
+            data-position-type="<%= (s.StaffProfile && s.StaffProfile.positionType) ? String(s.StaffProfile.positionType).toUpperCase() : '' %>"
+            <%= selectedStaffId && selectedStaffId === s.id ? 'selected' : '' %>>
+            <%= s.name %>
+            <% if (s.StaffProfile && s.StaffProfile.positionType) { %>
+              ( <%= s.StaffProfile.positionType %> )
+            <% } %>
+          </option>
+        <% }); %>
+      </select>
+
+      <p class="muted small">
+        Need calibration? Click <strong>Review Criteria</strong> (bottom-right) or hover the small “i” icons.
+      </p>
+    </div>
+
+    <!-- OPEN INCIDENTS PANEL -->
+    <% const safeOpenIncidents = (typeof openIncidents !== 'undefined' && Array.isArray(openIncidents)) ? openIncidents : []; %>
+    <% if (safeOpenIncidents.length > 0) { %>
+      <div class="review-incidents-panel">
+        <div class="review-incidents-header">
+          <span class="chip chip-warn" style="font-size:0.75rem;">⚠ <%= safeOpenIncidents.length %> open incident<%= safeOpenIncidents.length > 1 ? 's' : '' %></span>
+          <span style="font-size:0.8rem; color:var(--text-muted); margin-left:0.5rem;">Consider these when rating accountability and behavior.</span>
+        </div>
+        <ul class="review-incidents-list">
+          <% safeOpenIncidents.forEach(function(inc) { %>
+            <li>
+              <span class="review-incident-date"><%= inc.incidentDate ? String(inc.incidentDate).slice(0,10) : '—' %></span>
+              <span class="review-incident-title"><%= inc.title || '(no title)' %></span>
+              <% if (inc.severity) { %><span class="review-incident-severity chip chip-<%= inc.severity === 'HIGH' || inc.severity === 'CRITICAL' ? 'warn' : 'neutral' %>" style="font-size:0.7rem;"><%= inc.severity %></span><% } %>
+            </li>
+          <% }); %>
+        </ul>
+      </div>
+    <% } %>
+
+    <!-- LIVE SNAPSHOT -->
+    <section class="snapshot-card" id="snapshot-card">
+      <div class="snapshot-header">
+        <div>
+          <div class="snapshot-title">Review Snapshot</div>
+          <div class="snapshot-sub">
+            Live bucket averages as you score. Values are 1–5, overall is the average across all answered questions.
+          </div>
+        </div>
+        <div class="snapshot-sub">
+          <span id="snapshot-answered-count">0</span> criteria scored so far
+        </div>
+      </div>
+
+      <div class="snapshot-grid">
+        <div class="snapshot-chip" id="chip-people">
+          <div class="snapshot-chip-label">People First <span class="bucket-progress" id="progress-people"></span></div>
+          <div class="snapshot-chip-value" data-default="N/A">N/A</div>
+        </div>
+        <div class="snapshot-chip" id="chip-ownership">
+          <div class="snapshot-chip-label">Ownership <span class="bucket-progress" id="progress-ownership"></span></div>
+          <div class="snapshot-chip-value" data-default="N/A">N/A</div>
+        </div>
+        <div class="snapshot-chip" id="chip-quality">
+          <div class="snapshot-chip-label">Quality <span class="bucket-progress" id="progress-quality"></span></div>
+          <div class="snapshot-chip-value" data-default="N/A">N/A</div>
+        </div>
+        <div class="snapshot-chip" id="chip-partnership">
+          <div class="snapshot-chip-label">Partnership <span class="bucket-progress" id="progress-partnership"></span></div>
+          <div class="snapshot-chip-value" data-default="N/A">N/A</div>
+        </div>
+        <div class="snapshot-chip" id="chip-leading">
+          <div class="snapshot-chip-label">Leading People <span class="bucket-progress" id="progress-leading"></span></div>
+          <div class="snapshot-chip-value" data-default="N/A">N/A</div>
+        </div>
+      </div>
+
+      <div class="snapshot-overall">
+        <div class="snapshot-overall-pill" id="overall-pill">
+          <span class="snapshot-overall-label">Overall</span>
+          <span class="snapshot-overall-value" id="overall-value">N/A</span>
+        </div>
+        <div id="overall-bucket-label" style="text-align:center;font-size:0.73rem;color:var(--muted);margin-top:0.25rem;">avg across 4 categories</div>
+      </div>
+    </section>
+
+    <div class="bucket-actions-row">
+      <button type="button" class="btn ghost" id="collapse-all-btn">Collapse All</button>
+      <button type="button" class="btn ghost" id="expand-all-btn">Expand All</button>
+    </div>
+
+    <!-- PEOPLE FIRST -->
+    <section class="bucket-card" data-bucket="people">
+      <header class="bucket-header">
+        <div>
+          <div class="bucket-title">People First</div>
+          <div class="bucket-tag">Attitude · Engagement · Integrity</div>
+        </div>
+        <button type="button" class="bucket-toggle" aria-expanded="true">−</button>
+      </header>
+      <div class="bucket-body">
+        <p class="bucket-note">
+          <span class="bucket-pill">Tip</span>
+          Focus on how the person shows up day-to-day: attitude, professionalism, and how they handle disagreements.
+        </p>
+        <div class="criteria-grid">
+          <label class="criteria-label">
+            Positive Attitude
+            <span class="help-icon" data-tooltip="Workday: You exhibit a ‘can do’ attitude, recognize good behavior, and address disruptive behavior. Key themes: engagement with work, attitude toward responsibilities, and ability to communicate disagreement professionally.">i</span>
+          </label>
+          <input type="number" name="positiveAttitude" min="1" max="5" step="1" class="criteria-input" data-comment="positiveAttitudeComment" />
+
+          <div class="criteria-comment-row" data-for="positiveAttitudeComment" style="display:none;">
+            <textarea class="criteria-comment" name="positiveAttitudeComment" placeholder="What specific behavior or reaction stood out this month?"></textarea>
+            <div class="criteria-comment-hint">
+              <span class="hint-pill" data-hint-pill>Optional</span>
+            </div>
+          </div>
+
+          <label class="criteria-label">
+            Proactive
+            <span class="help-icon" data-tooltip="Workday: You anticipate needs, look for improvement opportunities, and take quick action. Key themes: proactively helping the team hit goals, offering ideas or solutions, and being receptive to new processes.">i</span>
+          </label>
+          <input type="number" name="proactive" min="1" max="5" step="1" class="criteria-input" data-comment="proactiveComment" />
+
+          <div class="criteria-comment-row" data-for="proactiveComment" style="display:none;">
+            <textarea class="criteria-comment" name="proactiveComment" placeholder="What did they do without being asked? Any example of initiative?"></textarea>
+            <div class="criteria-comment-hint">
+              <span class="hint-pill" data-hint-pill>Optional</span>
+            </div>
+          </div>
+
+          <label class="criteria-label">
+            Integrity
+            <span class="help-icon" data-tooltip="Workday: You act with integrity and authenticity, do what you say you will do, and follow company policies. Key themes: professionalism in conflict, constructive feedback, and consistent adherence to policies, ESD/6S, SOPs and quality alerts.">i</span>
+          </label>
+          <input type="number" name="integrity" min="1" max="5" step="1" class="criteria-input" data-comment="integrityComment" />
+
+          <div class="criteria-comment-row" data-for="integrityComment" style="display:none;">
+            <textarea class="criteria-comment" name="integrityComment" placeholder="How did they handle a policy, SOP, or conflict situation?"></textarea>
+            <div class="criteria-comment-hint">
+              <span class="hint-pill" data-hint-pill>Optional</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- OWNERSHIP -->
+    <section class="bucket-card" data-bucket="ownership">
+      <header class="bucket-header">
+        <div>
+          <div class="bucket-title">Ownership Mentality</div>
+          <div class="bucket-tag">Accountability · Problem Solving · Efficiency</div>
+        </div>
+        <button type="button" class="bucket-toggle" aria-expanded="true">−</button>
+      </header>
+      <div class="bucket-body">
+        <p class="bucket-note">
+          <span class="bucket-pill">Tip</span>
+          Think about how reliably this person gets things done, reacts to problems, and manages downtime.
+        </p>
+        <div class="criteria-grid">
+          <label class="criteria-label">
+            Accountability
+            <span class="help-icon" data-tooltip="Workday: Holds self and teammates to a high standard, meets deadlines, and owns outcomes. Key themes: dependability, following through on tasks, managing time and attendance, and caring for company assets.">i</span>
+          </label>
+          <input type="number" name="accountability2" min="1" max="5" step="1" class="criteria-input" data-comment="accountability2Comment" />
+          <div class="criteria-comment-row" data-for="accountability2Comment" style="display:none;">
+            <textarea class="criteria-comment" name="accountability2Comment" placeholder="Did they follow through on commitments? Any attendance or task ownership notes?"></textarea>
+            <div class="criteria-comment-hint">
+              <span class="hint-pill" data-hint-pill>Optional</span>
+            </div>
+          </div>
+
+          <label class="criteria-label">
+            Problem Solving
+            <span class="help-icon" data-tooltip="Workday: Uses experience to solve issues while balancing quality and speed, and escalates quickly when needed. Key themes: addressing day-to-day test issues, using proper repair/escalation paths, and suggesting improvements.">i</span>
+          </label>
+          <input type="number" name="problemSolving" min="1" max="5" step="1" class="criteria-input" data-comment="problemSolvingComment" />
+          <div class="criteria-comment-row" data-for="problemSolvingComment" style="display:none;">
+            <textarea class="criteria-comment" name="problemSolvingComment" placeholder="Describe how they handled an issue or escalation this month."></textarea>
+            <div class="criteria-comment-hint">
+              <span class="hint-pill" data-hint-pill>Optional</span>
+            </div>
+          </div>
+
+          <label class="criteria-label">
+            Efficiency
+            <span class="help-icon" data-tooltip="Workday: Challenges waste and looks for better ways of working. Key themes: good work habits (trackers, tools, 6S), smart downtime use, and making effective decisions to move work forward.">i</span>
+          </label>
+          <input type="number" name="efficiency" min="1" max="5" step="1" class="criteria-input" data-comment="efficiencyComment" />
+          <div class="criteria-comment-row" data-for="efficiencyComment" style="display:none;">
+            <textarea class="criteria-comment" name="efficiencyComment" placeholder="How did they manage their time, downtime, or workload?"></textarea>
+            <div class="criteria-comment-hint">
+              <span class="hint-pill" data-hint-pill>Optional</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- QUALITY -->
+    <section class="bucket-card" data-bucket="quality">
+      <header class="bucket-header">
+        <div>
+          <div class="bucket-title">Quality</div>
+          <div class="bucket-tag">Results · Communication · Continuous Improvement</div>
+        </div>
+        <button type="button" class="bucket-toggle" aria-expanded="true">−</button>
+      </header>
+      <div class="bucket-body">
+        <p class="bucket-note">
+          <span class="bucket-pill">Tip</span>
+          Look at both output (how much/how often) and learning (how they grow and adapt).
+        </p>
+        <div class="criteria-grid">
+          <label class="criteria-label">
+            Results
+            <span class="help-icon" data-tooltip="Workday: Delivers high-quality results in their area and balances quality with business needs. Key themes: volume of work managed, test/repair throughput, and contribution to team outcomes.">i</span>
+          </label>
+          <input type="number" name="resultsOrientation" min="1" max="5" step="1" class="criteria-input" data-comment="resultsOrientationComment" />
+          <div class="criteria-comment-row" data-for="resultsOrientationComment" style="display:none;">
+            <textarea class="criteria-comment" name="resultsOrientationComment" placeholder="What output, throughput, or quality outcomes stood out?"></textarea>
+            <div class="criteria-comment-hint">
+              <span class="hint-pill" data-hint-pill>Optional</span>
+            </div>
+          </div>
+
+          <label class="criteria-label">
+            Communication
+            <span class="help-icon" data-tooltip="Workday: Proactively surfaces quality issues and is open to feedback. Key themes: communication of blockers, test delays, attendance, and comfort giving/receiving feedback.">i</span>
+          </label>
+          <input type="number" name="communication" min="1" max="5" step="1" class="criteria-input" data-comment="communicationComment" />
+          <div class="criteria-comment-row" data-for="communicationComment" style="display:none;">
+            <textarea class="criteria-comment" name="communicationComment" placeholder="How did they escalate, hand off, or receive feedback?"></textarea>
+            <div class="criteria-comment-hint">
+              <span class="hint-pill" data-hint-pill>Optional</span>
+            </div>
+          </div>
+
+          <label class="criteria-label">
+            Continuous Improvement
+            <span class="help-icon" data-tooltip="Workday: Knows critical details for their role and pursues self-development. Key themes: growing product/process knowledge, retaining training, using tools/trackers, and adapting to changes in test and business processes.">i</span>
+          </label>
+          <input type="number" name="continuousImprovement" min="1" max="5" step="1" class="criteria-input" data-comment="continuousImprovementComment" />
+          <div class="criteria-comment-row" data-for="continuousImprovementComment" style="display:none;">
+            <textarea class="criteria-comment" name="continuousImprovementComment" placeholder="Did they adopt a new process, suggest a fix, or grow in a skill area?"></textarea>
+            <div class="criteria-comment-hint">
+              <span class="hint-pill" data-hint-pill>Optional</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- PARTNERSHIP -->
+    <section class="bucket-card" data-bucket="partnership">
+      <header class="bucket-header">
+        <div>
+          <div class="bucket-title">Partnership</div>
+          <div class="bucket-tag">Teamwork · Collaboration · Build Trust</div>
+        </div>
+        <button type="button" class="bucket-toggle" aria-expanded="true">−</button>
+      </header>
+      <div class="bucket-body">
+        <p class="bucket-note">
+          <span class="bucket-pill">Tip</span>
+          Think about how this person behaves in the team, especially when things are stressful.
+        </p>
+        <div class="criteria-grid">
+          <label class="criteria-label">
+            Teamwork
+            <span class="help-icon" data-tooltip="Workday: Helps others succeed and shares knowledge. Key themes: willingness to assist teammates, share information, and live the ‘same boat’ mindset.">i</span>
+          </label>
+          <input type="number" name="teamwork2" min="1" max="5" step="1" class="criteria-input" data-comment="teamwork2Comment" />
+          <div class="criteria-comment-row" data-for="teamwork2Comment" style="display:none;">
+            <textarea class="criteria-comment" name="teamwork2Comment" placeholder="How did they support teammates or share knowledge?"></textarea>
+            <div class="criteria-comment-hint">
+              <span class="hint-pill" data-hint-pill>Optional</span>
+            </div>
+          </div>
+
+          <label class="criteria-label">
+            Collaboration
+            <span class="help-icon" data-tooltip="Workday: Communicates openly, respects different perspectives and backgrounds, and focuses on what is best for customers and the team. Key themes: respect, avoiding bias or gossip, working well across channels (in person, Teams, email).">i</span>
+          </label>
+          <input type="number" name="collaboration" min="1" max="5" step="1" class="criteria-input" data-comment="collaborationComment" />
+          <div class="criteria-comment-row" data-for="collaborationComment" style="display:none;">
+            <textarea class="criteria-comment" name="collaborationComment" placeholder="How did they work across roles, shifts, or departments?"></textarea>
+            <div class="criteria-comment-hint">
+              <span class="hint-pill" data-hint-pill>Optional</span>
+            </div>
+          </div>
+
+          <label class="criteria-label">
+            Build Trust
+            <span class="help-icon" data-tooltip="Workday: Builds trust by following through and striving for win-win outcomes. Key themes: reliability, independence, and sustained accountability and integrity over time.">i</span>
+          </label>
+          <input type="number" name="buildTrust" min="1" max="5" step="1" class="criteria-input" data-comment="buildTrustComment" />
+          <div class="criteria-comment-row" data-for="buildTrustComment" style="display:none;">
+            <textarea class="criteria-comment" name="buildTrustComment" placeholder="What made them dependable or trustworthy this month?"></textarea>
+            <div class="criteria-comment-hint">
+              <span class="hint-pill" data-hint-pill>Optional</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- LEADING PEOPLE -->
+    <section class="bucket-card" data-bucket="leading" id="leading-bucket">
+      <header class="bucket-header">
+        <div>
+          <div class="bucket-title">Leading People</div>
+          <div class="bucket-tag">Decision Making · Enabling the Team · Talent Development</div>
+        </div>
+        <button type="button" class="bucket-toggle" aria-expanded="true">−</button>
+      </header>
+      <div class="bucket-body">
+        <p class="bucket-note">
+          <span class="bucket-pill">Leadership Roles</span>
+          Visible only when reviewing a Lead, Champion, or Supervisor.
+        </p>
+
+        <div class="criteria-grid" style="margin-top:0.5rem;">
+          <label class="criteria-label">
+            Decision Making with Risk
+            <span class="help-icon" data-tooltip="Workday: Uses experience and available information to make timely decisions, even with incomplete data. Key themes: measured risk-taking, getting things done, and providing direction.">i</span>
+          </label>
+          <input type="number" name="decisionMakingWithRisk" min="1" max="5" step="1" class="criteria-input" data-comment="decisionMakingWithRiskComment" />
+          <div class="criteria-comment-row" data-for="decisionMakingWithRiskComment" style="display:none;">
+            <textarea class="criteria-comment" name="decisionMakingWithRiskComment" placeholder="How did they make a tough call or navigate an uncertain situation?"></textarea>
+            <div class="criteria-comment-hint">
+              <span class="hint-pill" data-hint-pill>Optional</span>
+            </div>
+          </div>
+
+          <label class="criteria-label">
+            Enable the Team
+            <span class="help-icon" data-tooltip="Workday: Builds trust, delegates effectively, and leads by example as a ‘player-coach’. Key themes: clear direction, empowerment, and removing obstacles for the team.">i</span>
+          </label>
+          <input type="number" name="enableTheTeam" min="1" max="5" step="1" class="criteria-input" data-comment="enableTheTeamComment" />
+          <div class="criteria-comment-row" data-for="enableTheTeamComment" style="display:none;">
+            <textarea class="criteria-comment" name="enableTheTeamComment" placeholder="How did they set direction, remove blockers, or develop others?"></textarea>
+            <div class="criteria-comment-hint">
+              <span class="hint-pill" data-hint-pill>Optional</span>
+            </div>
+          </div>
+
+          <label class="criteria-label">
+            Hire / Develop / Manage Effectively
+            <span class="help-icon" data-tooltip="Workday: Makes strong hiring decisions, develops talent, and addresses low performance. Key themes: raising the bar on talent, coaching, recognizing strong performance, and addressing gaps.">i</span>
+          </label>
+          <input type="number" name="hireDevelopManage" min="1" max="5" step="1" class="criteria-input" data-comment="hireDevelopManageComment" />
+          <div class="criteria-comment-row" data-for="hireDevelopManageComment" style="display:none;">
+            <textarea class="criteria-comment" name="hireDevelopManageComment" placeholder="What did they do to raise the bar on talent or address performance?"></textarea>
+            <div class="criteria-comment-hint">
+              <span class="hint-pill" data-hint-pill>Optional</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REVIEWER NOTES (summary) -->
+    <div class="field">
+      <label for="comment">Reviewer Notes</label>
+      <p class="muted small" style="margin-bottom:0.4rem;">
+        Consider covering: <strong>what they did well this month</strong> &middot; <strong>one or two areas to develop</strong> &middot; <strong>what you expect from them next month</strong>
+      </p>
+      <textarea
+        id="comment"
+        name="comment"
+        rows="4"
+        placeholder="Summarize key strengths, opportunities, and specific examples that informed your scores."></textarea>
+    </div>
+
+    <div id="validation-summary" role="alert" aria-hidden="true"></div>
+
+    <div style="margin-top:1rem; display:flex; justify-content:flex-end; gap:0.75rem;">
+      <a href="/reviews/my" class="btn ghost">Cancel</a>
+      <button type="submit" class="btn primary" id="submit-review-btn">Submit Review</button>
+    </div>
+  </form>
+</section>
+
+<script>
+  (function () {
+    const existingReviewMap = <%- JSON.stringify(existingReviewMap || {}) %>;
+    const staffSelect = document.getElementById('staffSelect');
+    const warningBox = document.getElementById('duplicate-warning');
+    const submitBtn = document.getElementById('submit-review-btn');
+    const monthText = '<%= monthText %>';
+    const yearText = '<%= yearText %>';
+
+    const leadingBucket = document.getElementById('leading-bucket');
+    const leadingChip = document.getElementById('chip-leading');
+
+    function selectedPositionType() {
+      if (!staffSelect) return '';
+      const opt = staffSelect.options[staffSelect.selectedIndex];
+      if (!opt) return '';
+      return String(opt.getAttribute('data-position-type') || '').toUpperCase();
+    }
+
+    function leadingShouldBeVisible(posType) {
+      return posType === 'LEAD' || posType === 'CHAMPION' || posType === 'SUPERVISOR';
+    }
+
+    function setLeadingVisibility() {
+      const posType = selectedPositionType();
+      const show = leadingShouldBeVisible(posType);
+
+      if (leadingBucket) leadingBucket.classList.toggle('is-hidden', !show);
+      if (leadingChip) leadingChip.classList.toggle('is-hidden', !show);
+
+      if (!show) {
+        ['decisionMakingWithRisk', 'enableTheTeam', 'hireDevelopManage'].forEach((name) => {
+          const el = document.querySelector('input[name="' + name + '"]');
+          if (el) el.value = '';
+        });
+
+        // hide leading comment rows too
+        ['decisionMakingWithRiskComment','enableTheTeamComment','hireDevelopManageComment'].forEach((c) => {
+          const row = document.querySelector('.criteria-comment-row[data-for="' + c + '"]');
+          if (row) row.style.display = 'none';
+          const ta = document.querySelector('textarea[name="' + c + '"]');
+          if (ta) ta.value = '';
+        });
+      }
+    }
+
+    function checkDuplicate() {
+      if (!staffSelect) return;
+      const staffId = staffSelect.value;
+
+      if (!staffId || !existingReviewMap[staffId]) {
+        warningBox.style.display = 'none';
+        warningBox.innerHTML = '';
+        if (submitBtn) submitBtn.disabled = false;
+        return;
+      }
+
+      const reviewId = existingReviewMap[staffId];
+
+      warningBox.style.display = 'block';
+      warningBox.innerHTML =
+        'You have already submitted a review for this staff member for ' +
+        '<strong>' + monthText + '/' + yearText + '</strong>.' +
+        '<br/>You cannot create a second review for the same period. ' +
+        'Instead, you can edit the existing review here: ' +
+        '<a class="link" href="/reviews/' + reviewId + '/edit" target="_blank">open existing review</a>.';
+
+      if (submitBtn) submitBtn.disabled = true;
+    }
+
+    // Bucket collapse / expand
+    const bucketCards = document.querySelectorAll('.bucket-card');
+    bucketCards.forEach((card) => {
+      const header = card.querySelector('.bucket-header');
+      const toggleBtn = card.querySelector('.bucket-toggle');
+      const body = card.querySelector('.bucket-body');
+
+      function toggle() {
+        if (!body) return;
+        const isHidden = body.style.display === 'none';
+        body.style.display = isHidden ? '' : 'none';
+        if (toggleBtn) {
+          toggleBtn.textContent = isHidden ? '−' : '+';
+          toggleBtn.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+        }
+      }
+
+      if (header && toggleBtn) {
+        header.addEventListener('click', () => toggle());
+      }
+    });
+
+    const collapseAllBtn = document.getElementById('collapse-all-btn');
+    const expandAllBtn = document.getElementById('expand-all-btn');
+
+    if (collapseAllBtn) {
+      collapseAllBtn.addEventListener('click', () => {
+        document.querySelectorAll('.bucket-card .bucket-body').forEach((body) => (body.style.display = 'none'));
+        document.querySelectorAll('.bucket-card .bucket-toggle').forEach((btn) => {
+          btn.textContent = '+';
+          btn.setAttribute('aria-expanded', 'false');
+        });
+      });
+    }
+
+    if (expandAllBtn) {
+      expandAllBtn.addEventListener('click', () => {
+        document.querySelectorAll('.bucket-card .bucket-body').forEach((body) => (body.style.display = ''));
+        document.querySelectorAll('.bucket-card .bucket-toggle').forEach((btn) => {
+          btn.textContent = '−';
+          btn.setAttribute('aria-expanded', 'true');
+        });
+      });
+    }
+
+    // Live snapshot
+    const bucketFieldMap = {
+      people: ['positiveAttitude', 'proactive', 'integrity'],
+      ownership: ['accountability2', 'problemSolving', 'efficiency'],
+      quality: ['resultsOrientation', 'communication', 'continuousImprovement'],
+      partnership: ['teamwork2', 'collaboration', 'buildTrust'],
+      leading: ['decisionMakingWithRisk', 'enableTheTeam', 'hireDevelopManage'],
+    };
+
+    const chipEls = {
+      people: document.querySelector('#chip-people .snapshot-chip-value'),
+      ownership: document.querySelector('#chip-ownership .snapshot-chip-value'),
+      quality: document.querySelector('#chip-quality .snapshot-chip-value'),
+      partnership: document.querySelector('#chip-partnership .snapshot-chip-value'),
+      leading: document.querySelector('#chip-leading .snapshot-chip-value'),
+    };
+
+    const chipContainers = {
+      people: document.getElementById('chip-people'),
+      ownership: document.getElementById('chip-ownership'),
+      quality: document.getElementById('chip-quality'),
+      partnership: document.getElementById('chip-partnership'),
+      leading: document.getElementById('chip-leading'),
+    };
+
+    const overallValueEl = document.getElementById('overall-value');
+    const overallPillEl = document.getElementById('overall-pill');
+    const answeredCountEl = document.getElementById('snapshot-answered-count');
+
+    function parseScore(val) {
+      const n = parseFloat(val);
+      if (!Number.isFinite(n)) return null;
+      if (n < 1 || n > 5) return null;
+      if (!Number.isInteger(n)) return null;
+      return n;
+    }
+
+    function updateDecimalWarning(input) {
+      const raw = input.value.trim();
+      if (raw === '') { clearDecimalWarning(input); return; }
+      const n = parseFloat(raw);
+      if (!Number.isFinite(n)) { clearDecimalWarning(input); return; }
+      let warn = input._decimalWarn;
+      if (!warn) {
+        warn = document.createElement('span');
+        warn.className = 'score-decimal-warn';
+        warn.setAttribute('role', 'alert');
+        warn.style.cssText = 'display:block;margin-top:3px;font-size:0.78rem;color:#f87171;font-weight:500';
+        input.after(warn);
+        input._decimalWarn = warn;
+      }
+      if (!Number.isInteger(n)) {
+        warn.textContent = 'Scores must be a whole number (1–5). Decimal values will be rejected.';
+      } else if (n < 1 || n > 5) {
+        warn.textContent = 'Score must be between 1 and 5.';
+      } else {
+        warn.textContent = '';
+      }
+    }
+
+    function clearDecimalWarning(input) {
+      if (input._decimalWarn) input._decimalWarn.textContent = '';
+    }
+
+    function classifyScore(avg) {
+      if (avg == null) return null;
+      if (avg < 3) return 'low';
+      if (avg < 4) return 'mid';
+      return 'high';
+    }
+
+    function applyScoreClasses(container, avg) {
+      if (!container) return;
+      container.classList.remove('score-chip-low', 'score-chip-mid', 'score-chip-high');
+      const cls = classifyScore(avg);
+      if (!cls) return;
+      container.classList.add(cls === 'low' ? 'score-chip-low' : cls === 'mid' ? 'score-chip-mid' : 'score-chip-high');
+    }
+
+    function applyInputClasses(input, score) {
+      if (!input) return;
+      input.classList.remove('score-input-low', 'score-input-mid', 'score-input-high');
+      const cls = classifyScore(score);
+      if (!cls) return;
+      input.classList.add(cls === 'low' ? 'score-input-low' : cls === 'mid' ? 'score-input-mid' : 'score-input-high');
+    }
+
+    function leadingCurrentlyVisible() {
+      const pos = selectedPositionType();
+      return leadingShouldBeVisible(pos);
+    }
+
+    // Create (once per input) a small toggle link shown when score is exactly 3.
+    function getOrCreateToggleLink(input) {
+      if (input._toggleLink) return input._toggleLink;
+      const commentField = input.getAttribute('data-comment');
+      const row = document.querySelector('.criteria-comment-row[data-for="' + commentField + '"]');
+
+      const link = document.createElement('button');
+      link.type = 'button';
+      link.className = 'comment-optional-toggle';
+      link.textContent = '+ Add a note (optional)';
+      link.style.cssText = 'background:none;border:none;color:var(--accent,#60a5fa);font-size:0.78rem;cursor:pointer;padding:2px 0;margin-top:2px;display:none;';
+
+      if (row) {
+        row.parentNode.insertBefore(link, row);
+      } else {
+        input.after(link);
+      }
+
+      link.addEventListener('click', function () {
+        link.style.display = 'none';
+        if (row) {
+          row.style.display = '';
+          const ta = row.querySelector('textarea');
+          if (ta) ta.focus();
+        }
+      });
+
+      input._toggleLink = link;
+      return link;
+    }
+
+    // Show comment row for extreme scores (1–2 or 4–5) — required at submit.
+    // For score 3: hide row, show optional toggle link instead.
+    function updateCommentVisibilityForInput(input) {
+      if (!input) return;
+      const commentField = input.getAttribute('data-comment');
+      if (!commentField) return;
+
+      // Don't show leading comment boxes if leading is hidden
+      if (!leadingCurrentlyVisible()) {
+        if (commentField === 'decisionMakingWithRiskComment' || commentField === 'enableTheTeamComment' || commentField === 'hireDevelopManageComment') {
+          const row = document.querySelector('.criteria-comment-row[data-for="' + commentField + '"]');
+          if (row) row.style.display = 'none';
+          if (input._toggleLink) input._toggleLink.style.display = 'none';
+          return;
+        }
+      }
+
+      const score = parseScore(input.value);
+      const row = document.querySelector('.criteria-comment-row[data-for="' + commentField + '"]');
+      const ta = document.querySelector('textarea[name="' + commentField + '"]');
+      if (!row || !ta) return;
+
+      const hasText = String(ta.value || '').trim().length > 0;
+      const isExtreme = score != null && (score <= 2 || score >= 4);
+      const isThree   = score === 3;
+
+      if (isThree && !hasText) {
+        // Score 3, no comment yet — hide row, show optional toggle
+        row.style.display = 'none';
+        const link = getOrCreateToggleLink(input);
+        link.style.display = '';
+      } else {
+        // Show row if score is extreme, or there's already text; otherwise hide
+        if (input._toggleLink) input._toggleLink.style.display = 'none';
+        row.style.display = (isExtreme || hasText) ? '' : 'none';
+      }
+
+      // hint badge
+      const pill = row.querySelector('[data-hint-pill]');
+      if (pill) {
+        pill.classList.remove('low', 'high');
+        pill.textContent = 'Optional';
+        if (score != null && score <= 2) { pill.classList.add('low');  pill.textContent = 'Required'; }
+        if (score != null && score >= 4) { pill.classList.add('high'); pill.textContent = 'Required'; }
+      }
+
+      // Clear any stale comment error once user has typed something
+      if (hasText && window.ReviewValidation) {
+        ReviewValidation.clearCommentError(ta);
+      }
+    }
+
+    function computeSnapshot() {
+      const allInputs = document.querySelectorAll('input.criteria-input');
+      const allScores = [];
+      let answeredCount = 0;
+
+      allInputs.forEach((input) => {
+        const v = parseScore(input.value);
+        applyInputClasses(input, v);
+
+        // show/hide comment rows per rule
+        updateCommentVisibilityForInput(input);
+
+        if (!leadingCurrentlyVisible()) {
+          const n = input.getAttribute('name');
+          if (n === 'decisionMakingWithRisk' || n === 'enableTheTeam' || n === 'hireDevelopManage') return;
+        }
+
+        if (v != null) {
+          allScores.push(v);
+          answeredCount++;
+        }
+      });
+
+      if (answeredCountEl) answeredCountEl.textContent = answeredCount;
+
+      Object.keys(bucketFieldMap).forEach((bucketKey) => {
+        const fields = bucketFieldMap[bucketKey];
+        const values = [];
+
+        fields.forEach((fieldName) => {
+          const input = document.querySelector('input[name="' + fieldName + '"]');
+          if (!input) return;
+          const v = parseScore(input.value);
+          if (v != null) values.push(v);
+        });
+
+        let avg = null;
+        if (values.length) avg = values.reduce((sum, v) => sum + v, 0) / values.length;
+
+        const chipValueEl = chipEls[bucketKey];
+        const chipContainer = chipContainers[bucketKey];
+
+        if (chipValueEl) chipValueEl.textContent = avg == null ? (chipValueEl.dataset.default || 'N/A') : avg.toFixed(2);
+        applyScoreClasses(chipContainer, avg);
+
+        // Update bucket progress counter (e.g. "2/3" → "✓")
+        const totalExpected = bucketFieldMap[bucketKey].length;
+        const progressEl = document.getElementById('progress-' + bucketKey);
+        if (progressEl) {
+          if (values.length === 0) {
+            progressEl.textContent = '';
+          } else if (values.length === totalExpected) {
+            progressEl.textContent = '✓';
+            progressEl.style.color = '#4ade80';
+          } else {
+            progressEl.textContent = values.length + '/' + totalExpected;
+            progressEl.style.color = '#94a3b8';
+          }
+        }
+      });
+
+      let overallAvg = null;
+      if (allScores.length) overallAvg = allScores.reduce((sum, v) => sum + v, 0) / allScores.length;
+
+      if (overallValueEl) overallValueEl.textContent = overallAvg == null ? 'N/A' : overallAvg.toFixed(2);
+      applyScoreClasses(overallPillEl, overallAvg);
+      const bucketCountEl = document.getElementById('overall-bucket-label');
+      if (bucketCountEl) {
+        const bucketCount = leadingCurrentlyVisible() ? 5 : 4;
+        bucketCountEl.textContent = 'avg across ' + bucketCount + ' categor' + (bucketCount === 1 ? 'y' : 'ies');
+      }
+    }
+
+    const numberInputs = document.querySelectorAll('input.criteria-input');
+    numberInputs.forEach((input) => {
+      input.addEventListener('input', function () {
+        if (window.ReviewValidation) ReviewValidation.handleInputChange(input);
+        updateDecimalWarning(input);
+        computeSnapshot();
+      });
+      input.addEventListener('change', function () {
+        if (window.ReviewValidation) ReviewValidation.handleInputChange(input);
+        updateDecimalWarning(input);
+        computeSnapshot();
+      });
+    });
+
+    // Keep comment visible if user types into it
+    const commentTextareas = document.querySelectorAll('textarea.criteria-comment');
+    commentTextareas.forEach((ta) => {
+      ta.addEventListener('input', function () {
+        // find related input by scanning inputs' data-comment attr
+        const name = ta.getAttribute('name');
+        const input = document.querySelector('input[data-comment="' + name + '"]');
+        if (input) updateCommentVisibilityForInput(input);
+      });
+    });
+
+    if (staffSelect) {
+      staffSelect.addEventListener('change', function () {
+        setLeadingVisibility();
+        checkDuplicate();
+        computeSnapshot();
+      });
+    }
+
+    // ── Submit guard (inline validation) ──────────────────────────────────
+    const reviewForm = document.querySelector('form[action="/reviews"]');
+    if (window.ReviewValidation && reviewForm) {
+      ReviewValidation.attachSubmitGuard(reviewForm, {
+        summaryContainerId: 'validation-summary',
+        submitBtnId: 'submit-review-btn',
+      });
+    }
+
+    setLeadingVisibility();
+    checkDuplicate();
+    computeSnapshot();
+
+    // ── Character counters ────────────────────────────────────────────────────
+    function updateCharCounter(ta) {
+      if (!ta._charCounter) return;
+      const len = ta.value.length;
+      if (len === 0) { ta._charCounter.textContent = ''; return; }
+      const relatedInput = document.querySelector('input[data-comment="' + ta.name + '"]');
+      const score = relatedInput ? parseScore(relatedInput.value) : null;
+      const isRequired = score != null && score !== 3;
+      const MIN = 20;
+      if (isRequired && len < MIN) {
+        ta._charCounter.textContent = len + ' / ' + MIN + ' chars min';
+        ta._charCounter.style.color = '#f87171';
+      } else {
+        ta._charCounter.textContent = len + ' chars';
+        ta._charCounter.style.color = 'var(--muted)';
+      }
+    }
+
+    document.querySelectorAll('textarea.criteria-comment').forEach((ta) => {
+      const counter = document.createElement('div');
+      counter.className = 'comment-char-counter';
+      ta.after(counter);
+      ta._charCounter = counter;
+      ta.addEventListener('input', () => updateCharCounter(ta));
+      updateCharCounter(ta);
+    });
+
+    // Re-run counter when score changes (affects required/optional label)
+    numberInputs.forEach((inp) => {
+      inp.addEventListener('input', () => {
+        const commentName = inp.getAttribute('data-comment');
+        if (!commentName) return;
+        const ta = document.querySelector('textarea[name="' + commentName + '"]');
+        if (ta) updateCharCounter(ta);
+      });
+    });
+
+    // ── Auto-save draft ───────────────────────────────────────────────────────
+    const DRAFT_VER = 'v1';
+    const periodMonthVal = '<%= month %>';
+    const periodYearVal  = '<%= year %>';
+
+    function draftKey(staffId) {
+      return 'review-draft-' + DRAFT_VER + '-' + staffId + '-' + periodMonthVal + '-' + periodYearVal;
+    }
+
+    let saveTimer = null;
+    function scheduleSave() {
+      if (!staffSelect || !staffSelect.value) return;
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        const staffId = staffSelect.value;
+        if (!staffId) return;
+        const data = { savedAt: Date.now(), fields: {} };
+        document.querySelectorAll('input.criteria-input, textarea.criteria-comment').forEach((el) => {
+          data.fields[el.name] = el.value;
+        });
+        try { localStorage.setItem(draftKey(staffId), JSON.stringify(data)); } catch (e) {}
+      }, 800);
+    }
+
+    function clearDraft(staffId) {
+      try { localStorage.removeItem(draftKey(staffId)); } catch (e) {}
+    }
+
+    function showDraftBanner(savedAt) {
+      const banner = document.getElementById('draft-restore-banner');
+      const text   = document.getElementById('draft-banner-text');
+      if (!banner || !text) return;
+      const ago = Math.round((Date.now() - savedAt) / 60000);
+      const timeStr = ago < 1 ? 'just now' : ago + ' min ago';
+      text.textContent = 'Unsaved draft found (saved ' + timeStr + ').';
+      banner.classList.remove('hidden');
+    }
+
+    function hideDraftBanner() {
+      const banner = document.getElementById('draft-restore-banner');
+      if (banner) banner.classList.add('hidden');
+    }
+
+    function checkForDraft(staffId) {
+      if (!staffId) { hideDraftBanner(); return; }
+      try {
+        const raw = localStorage.getItem(draftKey(staffId));
+        if (!raw) { hideDraftBanner(); return; }
+        const data = JSON.parse(raw);
+        if (!data || !data.fields) { hideDraftBanner(); return; }
+
+        showDraftBanner(data.savedAt);
+
+        const restoreBtn = document.getElementById('draft-restore-btn');
+        const discardBtn = document.getElementById('draft-discard-btn');
+
+        if (restoreBtn) {
+          restoreBtn.onclick = function () {
+            Object.entries(data.fields).forEach(([name, value]) => {
+              const el = document.querySelector('[name="' + name + '"]');
+              if (el && name !== 'staffId') {
+                el.value = value;
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+              }
+            });
+            hideDraftBanner();
+            computeSnapshot();
+          };
+        }
+        if (discardBtn) {
+          discardBtn.onclick = function () {
+            clearDraft(staffId);
+            hideDraftBanner();
+          };
+        }
+      } catch (e) { hideDraftBanner(); }
+    }
+
+    // Wire save to all field changes
+    document.querySelectorAll('input.criteria-input, textarea.criteria-comment').forEach((el) => {
+      el.addEventListener('input', scheduleSave);
+    });
+
+    // Check for draft when staff selection changes
+    if (staffSelect) {
+      staffSelect.addEventListener('change', function () {
+        checkForDraft(staffSelect.value);
+      });
+    }
+
+    // ── Confirm before leaving with unsaved scores ────────────────────────────
+    let formDirty = false;
+    document.querySelectorAll('input.criteria-input, textarea.criteria-comment').forEach((el) => {
+      el.addEventListener('input', () => { formDirty = true; });
+    });
+    const reviewFormEl = document.querySelector('form[action="/reviews"]');
+    if (reviewFormEl) {
+      reviewFormEl.addEventListener('submit', () => {
+        formDirty = false;
+        if (staffSelect && staffSelect.value) clearDraft(staffSelect.value);
+      });
+    }
+    window.addEventListener('beforeunload', (e) => {
+      if (formDirty) { e.preventDefault(); e.returnValue = ''; }
+    });
+
+  })();
+</script>
+
+<!-- Floating Criteria Guide button -->
+<button type="button" class="criteria-fab" id="criteriaFabNew">
+  <span class="criteria-fab-icon">?</span>
+  <span class="criteria-fab-text">Review Criteria</span>
+</button>
+
+<script>
+  (function () {
+    const fab = document.getElementById('criteriaFabNew');
+    if (fab) {
+      fab.addEventListener('click', function () {
+        window.open('/reviews/criteria', '_blank');
+      });
+    }
+  })();
+</script>
+
+<script src="/js/reviewValidation.js"></script>
+
+<script id="positionCriteriaData" type="application/json"><%- JSON.stringify(typeof positionCriteria !== 'undefined' ? positionCriteria : {}) %></script>
+<script>
+  (function () {
+    let criteriaData = {};
+    try {
+      const el = document.getElementById('positionCriteriaData');
+      if (el) criteriaData = JSON.parse(el.textContent || '{}');
+    } catch (e) {}
+
+    function updateCriteriaHints(positionType) {
+      const criteria = criteriaData[(positionType || '').toUpperCase()] || null;
+      if (!criteria) return;
+      document.querySelectorAll('.criteria-comment-row').forEach(function (row) {
+        const field = row.getAttribute('data-for') || '';
+        // data-for is like "positiveAttitudeComment" → criteria key is "positiveAttitude"
+        const key = field.replace('Comment', '');
+        const hint = criteria[key];
+        if (!hint) return;
+        let hintEl = row.querySelector('.criteria-position-hint');
+        if (!hintEl) {
+          hintEl = document.createElement('p');
+          hintEl.className = 'muted small criteria-position-hint';
+          hintEl.style.marginTop = '0.35rem';
+          row.appendChild(hintEl);
+        }
+        hintEl.textContent = positionType + ': ' + hint;
+      });
+    }
+
+    const staffSelect = document.getElementById('staffSelect');
+    if (staffSelect) {
+      function onStaffChange() {
+        const opt = staffSelect.options[staffSelect.selectedIndex];
+        const pt = opt ? opt.getAttribute('data-position-type') : '';
+        updateCriteriaHints(pt);
+      }
+      staffSelect.addEventListener('change', onStaffChange);
+      onStaffChange();
+    }
+  })();
+</script>
+</main>
+</body>
+</html>

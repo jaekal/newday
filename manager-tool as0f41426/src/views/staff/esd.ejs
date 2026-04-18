@@ -1,0 +1,103 @@
+<!-- src/views/staff/esd.ejs -->
+<%- include('../layout') %>
+
+<%
+  const esdTracked = esdStats ? esdStats.totalDays : 0;
+  const esdPassDays = esdStats ? (esdStats.daysWithPassBeforeShift + esdStats.daysWithPassAfterShift) : 0;
+  const esdPassRate = esdTracked > 0 ? Math.round((esdPassDays / esdTracked) * 100) : null;
+%>
+
+<section class="page-header">
+  <div>
+    <h2>ESD Compliance Details</h2>
+    <p class="muted">
+      Full daily ESD history for <strong><%= staff.name %></strong>.
+    </p>
+  </div>
+  <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+    <a class="btn ghost" href="/staff/<%= staff.id %>">Back to Profile</a>
+  </div>
+</section>
+
+<div class="card" style="margin-bottom:1rem;">
+  <div class="section-header">
+    <h3>Quick Summary</h3>
+    <p class="muted small">Use filters to narrow the visible date range.</p>
+  </div>
+
+  <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.75rem;">
+    <span class="chip muted small">Tracked days: <strong><%= esdTracked %></strong></span>
+    <span class="chip muted small">PASS days: <strong><%= esdPassDays %></strong></span>
+    <span class="chip muted small">PASS rate: <strong><%= esdPassRate != null ? (esdPassRate + '%') : 'N/A' %></strong></span>
+    <span class="chip muted small">PASS before shift: <strong><%= esdStats.daysWithPassBeforeShift %></strong></span>
+    <span class="chip muted small">PASS after shift: <strong><%= esdStats.daysWithPassAfterShift %></strong></span>
+    <span class="chip muted small">No PASS: <strong><%= esdStats.daysWithoutPass %></strong></span>
+  </div>
+
+  <form method="GET" action="/staff/<%= staff.id %>/esd" class="layout-three-column" style="row-gap:0.75rem;">
+    <div>
+      <label>From
+        <input type="date" name="from" value="<%= filters && filters.from ? filters.from : '' %>"/>
+      </label>
+    </div>
+    <div>
+      <label>To
+        <input type="date" name="to" value="<%= filters && filters.to ? filters.to : '' %>"/>
+      </label>
+    </div>
+    <div style="display:flex; gap:0.5rem; align-items:flex-end;">
+      <button class="btn primary btn-sm" type="submit">Apply</button>
+      <a class="btn ghost btn-sm" href="/staff/<%= staff.id %>/esd">Reset</a>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="section-header">
+    <h3>Daily ESD Records</h3>
+    <p class="muted small">
+      Showing <strong><%= esdDailySummary ? esdDailySummary.length : 0 %></strong> day rows in this view.
+    </p>
+  </div>
+
+  <% if (!esdDailySummary || esdDailySummary.length === 0) { %>
+    <p class="muted">No ESD days match your filters.</p>
+  <% } else { %>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Total Attempts</th>
+          <th>Attempts Until PASS</th>
+          <th>First Attempt</th>
+          <th>First PASS</th>
+          <th>Shift Window</th>
+          <th>Result</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% esdDailySummary.forEach(function(day) { %>
+          <tr>
+            <td><%= day.date %></td>
+            <td><%= day.totalAttempts %></td>
+            <td><%= day.attemptsUntilPass != null ? day.attemptsUntilPass : '—' %></td>
+            <td><%= day.firstAttemptTimeLabel || '—' %></td>
+            <td><%= day.firstPassTimeLabel || '—' %></td>
+            <td class="muted small"><%= day.shiftLabel %> • <%= day.windowLabel %></td>
+            <td>
+              <% if (day.finalResult === 'PASS') { %>
+                <span class="status-badge status-done">PASS</span>
+              <% } else { %>
+                <span class="status-badge status-open">FAIL</span>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+</main>
+</body>
+</html>

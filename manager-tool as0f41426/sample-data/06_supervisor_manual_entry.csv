@@ -1,0 +1,20 @@
+employeeId,date,knowledgeSharingEvents,ciParticipationEvents,leadershipSupportEvents,notes
+EMP-1001,2026-01-06,2,0,0,Led safety standup meeting
+EMP-1001,2026-01-07,1,1,0,Mentored junior technician on rack assembly
+EMP-1001,2026-01-08,2,0,0,Led safety standup meeting
+EMP-1001,2026-01-14,2,1,1,Assisted with cross-shift handoff documentation
+EMP-1001,2026-01-15,0,0,0,Helped new tech with burn-in procedure
+EMP-1001,2026-01-20,0,1,0,Mentored junior technician on rack assembly
+EMP-1001,2026-01-22,0,0,0,Helped new tech with burn-in procedure
+EMP-1001,2026-01-27,0,1,0,Participated in Kaizen event
+EMP-1001,2026-01-28,0,0,0,Presented process improvement idea
+EMP-1001,2026-01-29,0,0,0,Participated in Kaizen event
+EMP-1001,2026-01-30,0,0,0,Mentored junior technician on rack assembly
+EMP-1001,2026-02-12,0,0,0,Presented process improvement idea
+EMP-1001,2026-02-20,0,1,0,Participated in Kaizen event
+EMP-1001,2026-02-26,0,0,0,Participated in Kaizen event
+EMP-1001,2026-03-03,2,0,1,Presented process improvement idea
+EMP-1001,2026-03-05,0,0,1,Led safety standup meeting
+EMP-1001,2026-03-10,0,1,1,Led safety standup meeting
+EMP-1001,2026-03-17,1,1,1,Led safety standup meeting
+EMP-1001,2026-03-18,1,0,0,Covered for absent lead during standup

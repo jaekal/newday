@@ -1,0 +1,14 @@
+{
+  "development": {
+    "dialect": "sqlite",
+    "storage": "data/manager-tool.sqlite"
+  },
+  "test": {
+    "dialect": "sqlite",
+    "storage": "data/manager-tool.test.sqlite"
+  },
+  "production": {
+    "dialect": "sqlite",
+    "storage": "data/manager-tool.sqlite"
+  }
+}

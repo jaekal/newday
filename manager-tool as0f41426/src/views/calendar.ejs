@@ -1,0 +1,1101 @@
+<%- include('layout') %>
+
+<%
+  function monthLabel(year, month) {
+    try { return new Date(year, month - 1, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' }); }
+    catch (e) { return `${month}/${year}`; }
+  }
+  function safeDateTime(value) {
+    try {
+      if (!value) return '';
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return '';
+      return d.toLocaleString();
+    } catch (e) { return ''; }
+  }
+  function prettyType(t) { return String(t || '').replace(/_/g, ' '); }
+  function buildQS(obj) {
+    try {
+      return new URLSearchParams(
+        Object.fromEntries(Object.entries(obj || {}).filter(([_, v]) => v !== undefined && v !== null && String(v) !== ''))
+      ).toString();
+    } catch (e) { return ''; }
+  }
+
+  const prevMonth = month === 1 ? 12 : month - 1;
+  const prevYear  = month === 1 ? year - 1 : year;
+  const nextMonth = month === 12 ? 1 : month + 1;
+  const nextYear  = month === 12 ? year + 1 : year;
+
+  const activeFilters = {
+    month, year,
+    type:     filterType     || '',
+    shift:    filterShift    || '',
+    building: filterBuilding || '',
+    source:   filterSource   || '',
+    warnings: warningsOnly ? '1' : '',
+    day:      selectedDay   || '',
+  };
+
+  const weekdays = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  // Count active filters (excluding month/year/day)
+  const activeFilterCount = [filterType, filterShift, filterBuilding, filterSource, warningsOnly]
+    .filter(Boolean).length;
+
+  // "This Month at a Glance" — computed from listEvents
+  const safeListEvents = Array.isArray(listEvents) ? listEvents : [];
+  const today = new Date();
+  const todayKey = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+
+  // Next birthday this month
+  const upcomingBirthday = safeListEvents
+    .filter(e => e.type === 'BIRTHDAY')
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .find(e => e.date >= todayKey);
+
+  // Next 1:1
+  const upcomingOneOnOne = safeListEvents
+    .filter(e => e.type === 'ONE_ON_ONE')
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .find(e => e.date >= todayKey);
+
+  // Upcoming 7-day events
+  const sevenDaysOut = new Date(today);
+  sevenDaysOut.setDate(today.getDate() + 7);
+  const sevenDayKey = sevenDaysOut.getFullYear() + '-' + String(sevenDaysOut.getMonth()+1).padStart(2,'0') + '-' + String(sevenDaysOut.getDate()).padStart(2,'0');
+  const upcomingEvents = safeListEvents
+    .filter(e => e.date >= todayKey && e.date <= sevenDayKey)
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .slice(0, 6);
+
+  const staleWarningsSafe = Array.isArray(staleWarnings) ? staleWarnings : [];
+%>
+
+<style>
+  /* ── Page shell ──────────────────────────────────────────────────────── */
+  .calendar-page { display: flex; flex-direction: column; gap: 1rem; }
+
+  /* ── Toolbar card ────────────────────────────────────────────────────── */
+  .calendar-toolbar-card {
+    padding: 0.75rem 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .cal-toolbar-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .calendar-nav { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+  .cal-month-label {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-heading);
+    min-width: 160px;
+  }
+
+  /* Filter toggle + chips */
+  .cal-filter-chips { display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center; }
+  .cal-filter-chip {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 0.22rem 0.6rem;
+    border-radius: 99px;
+    background: rgba(99,102,241,0.14);
+    border: 1px solid rgba(99,102,241,0.35);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #a5b4fc;
+  }
+  .cal-filter-chip button {
+    background: none; border: none; cursor: pointer;
+    color: #a5b4fc; font-size: 0.72rem; padding: 0; line-height: 1;
+  }
+  .cal-filter-toggle {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.35rem 0.8rem;
+    border-radius: 99px;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-elevated);
+    color: var(--text-muted);
+    font-size: 0.78rem; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .cal-filter-toggle:hover { border-color: var(--accent); color: var(--text-main); }
+  .cal-filter-toggle.active {
+    background: rgba(99,102,241,0.14);
+    border-color: rgba(99,102,241,0.45);
+    color: #a5b4fc;
+  }
+  .cal-filter-badge {
+    background: rgba(99,102,241,0.7); color: #fff;
+    border-radius: 99px; font-size: 0.65rem; font-weight: 700;
+    padding: 0.05rem 0.38rem; min-width: 16px; text-align: center;
+  }
+
+  /* Slide-down filter drawer */
+  .cal-filter-drawer {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.25s ease;
+  }
+  .cal-filter-drawer.open { max-height: 360px; }
+  .calendar-filters {
+    display: flex; flex-wrap: wrap; gap: 0.65rem; align-items: flex-end;
+    padding: 0.85rem 0 0.25rem;
+    border-top: 1px solid var(--border-subtle);
+    margin-top: 0.75rem;
+  }
+  .calendar-filter-field {
+    display: flex; flex-direction: column; gap: 0.3rem;
+    min-width: 140px; flex: 1 1 160px;
+  }
+  .calendar-filter-field label { font-size: 0.72rem; font-weight: 600; color: var(--text-muted); }
+  .calendar-filter-field input,
+  .calendar-filter-field select {
+    background: var(--bg); border: 1px solid var(--border-subtle);
+    border-radius: 0.5rem; color: var(--text-main);
+    font-size: 0.85rem; padding: 0.4rem 0.6rem; font-family: inherit;
+  }
+
+  /* ── KPI strip ───────────────────────────────────────────────────────── */
+  .calendar-kpis {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(130px, 1fr));
+    gap: 0.75rem;
+  }
+  .calendar-kpis.kpis-lead { grid-template-columns: repeat(4, minmax(160px, 1fr)); }
+  @media (max-width: 1400px) { .calendar-kpis { grid-template-columns: repeat(4, minmax(130px, 1fr)); } }
+  @media (max-width: 900px)  { .calendar-kpis.kpis-lead { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 760px)  { .calendar-kpis { grid-template-columns: 1fr 1fr; } }
+
+  .kpi-card {
+    position: relative; overflow: hidden;
+    text-decoration: none; color: inherit; display: block;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+  a.kpi-card:hover { transform: translateY(-1px); background: rgba(30,41,59,0.6); }
+  .kpi-card .kpi-sub { font-size: 0.72rem; color: rgba(148,163,184,0.7); margin-top: 0.15rem; }
+  .kpi-card .kpi-accent {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 3px; border-radius: 0 0 12px 12px; opacity: 0.55;
+  }
+  .kpi-card.kpi-birthday .kpi-accent { background: rgba(236,72,153,1); }
+  .kpi-card.kpi-meeting  .kpi-accent { background: rgba(59,130,246,1); }
+  .kpi-card.kpi-goal     .kpi-accent { background: rgba(16,185,129,1); }
+  .kpi-card.kpi-incident .kpi-accent { background: rgba(245,158,11,1); }
+  .kpi-card.kpi-review   .kpi-accent { background: rgba(139,92,246,1); }
+  .kpi-card.kpi-training .kpi-accent { background: rgba(14,165,233,1); }
+  .kpi-card.kpi-warning  .kpi-accent { background: rgba(239,68,68,1); }
+  .kpi-card.kpi-total    .kpi-accent { background: rgba(148,163,184,1); }
+  .kpi-card.kpi-warning[data-nonzero="true"] .kpi-value  { color: rgba(252,165,165,0.95); }
+  .kpi-card.kpi-incident[data-nonzero="true"] .kpi-value { color: rgba(253,230,138,0.95); }
+
+  /* ── Calendar grid ───────────────────────────────────────────────────── */
+  .calendar-grid-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.65fr);
+    gap: 1rem; align-items: start;
+  }
+  @media (max-width: 1150px) { .calendar-grid-layout { grid-template-columns: 1fr; } }
+
+  .calendar-shell {
+    overflow: hidden; border-radius: 18px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(15,23,42,0.35);
+  }
+  .calendar-weekdays, .calendar-week {
+    display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+  .calendar-weekdays {
+    background: rgba(30,41,59,0.72);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .calendar-weekdays > div {
+    padding: 0.75rem; font-size: 0.82rem; font-weight: 600;
+    color: rgba(203,213,225,0.95);
+    border-right: 1px solid rgba(255,255,255,0.05);
+  }
+  .calendar-weekdays > div:last-child { border-right: none; }
+  .calendar-week { border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .calendar-week:last-child { border-bottom: none; }
+  .calendar-day {
+    min-height: 130px; padding: 0.55rem;
+    border-right: 1px solid rgba(255,255,255,0.05);
+    background: rgba(2,6,23,0.22); position: relative;
+  }
+  .calendar-day:last-child { border-right: none; }
+  .calendar-day.empty { background: rgba(15,23,42,0.14); }
+  .calendar-day.active {
+    outline: 2px solid rgba(59,130,246,0.40); outline-offset: -2px;
+    background: rgba(30,41,59,0.45);
+  }
+  .day-select {
+    display: block; width: 100%; text-align: left;
+    border: none; background: none; color: inherit;
+    padding: 0; cursor: pointer; text-decoration: none;
+  }
+  .day-header { display: flex; justify-content: space-between; gap: 0.4rem; align-items: center; }
+  .day-warning-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: rgba(239,68,68,0.85); flex-shrink: 0;
+    box-shadow: 0 0 4px rgba(239,68,68,0.5);
+  }
+  .day-number { font-size: 0.95rem; font-weight: 700; }
+  .day-count {
+    font-size: 0.7rem; padding: 0.14rem 0.38rem; border-radius: 999px;
+    background: rgba(59,130,246,0.18); border: 1px solid rgba(59,130,246,0.28);
+    color: rgba(219,234,254,0.95);
+  }
+  .day-mini-list { display: flex; flex-direction: column; gap: 0.25rem; margin-top: 0.45rem; }
+  .day-mini-item {
+    font-size: 0.72rem; border-radius: 8px;
+    padding: 0.22rem 0.38rem; border: 1px solid rgba(255,255,255,0.06);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .day-more-btn {
+    font-size: 0.68rem; color: rgba(148,163,184,0.7);
+    background: none; border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px; padding: 0.18rem 0.38rem;
+    cursor: pointer; text-align: left; width: 100%;
+    transition: all 0.15s;
+  }
+  .day-more-btn:hover { color: #93c5fd; border-color: rgba(59,130,246,0.4); }
+
+  .mini-birthday { background: rgba(236,72,153,0.14); border-color: rgba(236,72,153,0.22); }
+  .mini-meeting  { background: rgba(59,130,246,0.14); border-color: rgba(59,130,246,0.22); }
+  .mini-goal     { background: rgba(16,185,129,0.14); border-color: rgba(16,185,129,0.24); }
+  .mini-incident { background: rgba(245,158,11,0.14); border-color: rgba(245,158,11,0.24); }
+  .mini-review   { background: rgba(139,92,246,0.14); border-color: rgba(139,92,246,0.24); }
+  .mini-training { background: rgba(14,165,233,0.14); border-color: rgba(14,165,233,0.24); }
+
+  /* ── Sidebar ─────────────────────────────────────────────────────────── */
+  .calendar-side-stack { display: flex; flex-direction: column; gap: 1rem; }
+
+  /* Stale warnings — promoted */
+  .stale-card {
+    border-left: 3px solid rgba(239,68,68,0.7) !important;
+    border-color: rgba(239,68,68,0.18) !important;
+  }
+  .stale-card h3 { display: flex; align-items: center; gap: 0.5rem; }
+  .stale-badge {
+    background: rgba(239,68,68,0.8); color: #fff;
+    border-radius: 99px; font-size: 0.65rem; font-weight: 700;
+    padding: 0.08rem 0.45rem;
+  }
+  .warning-card-item {
+    padding: 0.6rem 0.7rem;
+    border: 1px solid rgba(239,68,68,0.14);
+    background: rgba(127,29,29,0.18);
+    border-radius: 10px; margin-top: 0.5rem;
+  }
+  .stale-expand-btn {
+    display: block; width: 100%; text-align: center;
+    font-size: 0.72rem; color: var(--text-muted);
+    background: none; border: 1px solid var(--border-subtle);
+    border-radius: 8px; padding: 0.35rem; cursor: pointer;
+    margin-top: 0.5rem; transition: all 0.15s;
+  }
+  .stale-expand-btn:hover { color: var(--text-main); border-color: var(--accent); }
+
+  /* This month at a glance */
+  .glance-strip { display: flex; flex-direction: column; gap: 0.5rem; }
+  .glance-item {
+    display: flex; align-items: flex-start; gap: 0.6rem;
+    padding: 0.5rem 0.6rem;
+    border-radius: 10px;
+    background: rgba(15,23,42,0.4);
+    border: 1px solid rgba(255,255,255,0.05);
+    font-size: 0.78rem;
+  }
+  .glance-icon { font-size: 1rem; flex-shrink: 0; margin-top: 0.05rem; }
+  .glance-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); }
+  .glance-val   { color: var(--text-main); font-weight: 500; }
+  .glance-sub   { font-size: 0.68rem; color: var(--text-muted); }
+
+  .upcoming-list { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.5rem; }
+  .upcoming-row {
+    display: flex; gap: 0.6rem; align-items: flex-start;
+    padding: 0.45rem 0.6rem; border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.05);
+    background: rgba(15,23,42,0.35); font-size: 0.75rem;
+  }
+  .upcoming-date {
+    flex-shrink: 0; text-align: right; width: 36px;
+    font-size: 0.68rem; color: var(--text-muted); padding-top: 0.1rem;
+  }
+  .upcoming-label { color: var(--text-main); }
+  .upcoming-sub   { font-size: 0.68rem; color: var(--text-muted); }
+
+  /* Coverage breakdown */
+  .coverage-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1rem;
+    margin-top: 0.5rem;
+  }
+  .coverage-col-title {
+    font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 0.35rem;
+  }
+  .rollup-row {
+    display: flex; justify-content: space-between; gap: 0.5rem;
+    align-items: center; padding: 0.38rem 0.5rem; border-radius: 8px;
+    background: rgba(15,23,42,0.45); border: 1px solid rgba(255,255,255,0.06);
+    font-size: 0.78rem; margin-bottom: 0.3rem;
+  }
+  .coverage-expand-btn {
+    display: block; width: 100%; text-align: center;
+    font-size: 0.7rem; color: var(--text-muted);
+    background: none; border: 1px solid var(--border-subtle);
+    border-radius: 8px; padding: 0.3rem; cursor: pointer;
+    margin-top: 0.35rem; transition: all 0.15s;
+  }
+  .coverage-expand-btn:hover { color: var(--text-main); border-color: var(--accent); }
+
+  /* ── Pills ───────────────────────────────────────────────────────────── */
+  .pill {
+    display: inline-flex; align-items: center; gap: .35rem;
+    padding: .18rem .55rem; border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.10);
+    font-size: .78rem; line-height: 1.15;
+  }
+  .pill-birthday { background: rgba(236,72,153,0.14); border-color: rgba(236,72,153,0.24); }
+  .pill-meeting  { background: rgba(59,130,246,0.14);  border-color: rgba(59,130,246,0.24); }
+  .pill-goal     { background: rgba(16,185,129,0.14);  border-color: rgba(16,185,129,0.24); }
+  .pill-incident { background: rgba(245,158,11,0.14);  border-color: rgba(245,158,11,0.24); }
+  .pill-review   { background: rgba(139,92,246,0.14);  border-color: rgba(139,92,246,0.24); }
+  .pill-training { background: rgba(14,165,233,0.14);  border-color: rgba(14,165,233,0.24); }
+  .pill-warn     { background: rgba(239,68,68,0.14);   border-color: rgba(239,68,68,0.24); }
+  .muted-chip    { background: rgba(148,163,184,0.10); border-color: rgba(148,163,184,0.20); }
+
+  /* ── Quick actions ───────────────────────────────────────────────────── */
+  .quick-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+
+  /* ── Day drawer ──────────────────────────────────────────────────────── */
+  .day-drawer-backdrop {
+    position: fixed; inset: 0; background: rgba(2,6,23,0.58);
+    z-index: 70; display: none;
+  }
+  .day-drawer-backdrop.open { display: block; }
+  .day-drawer {
+    position: fixed; top: 0; right: 0; height: 100vh;
+    width: min(520px, 92vw);
+    background: rgba(15,23,42,0.98);
+    border-left: 1px solid rgba(255,255,255,0.08);
+    box-shadow: -8px 0 30px rgba(0,0,0,0.35);
+    z-index: 80; transform: translateX(100%);
+    transition: transform 0.22s ease;
+    display: flex; flex-direction: column;
+  }
+  .day-drawer.open { transform: translateX(0); }
+  .day-drawer-head {
+    display: flex; justify-content: space-between; gap: 1rem;
+    align-items: flex-start; padding: 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .day-drawer-body {
+    padding: 1rem; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 1rem; flex: 1;
+  }
+  .drawer-close {
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(30,41,59,0.6); color: rgba(229,231,235,0.96);
+    border-radius: 10px; padding: 0.45rem 0.7rem; cursor: pointer;
+  }
+  .drawer-metrics {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem;
+  }
+  .day-metric {
+    padding: 0.65rem; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(15,23,42,0.42);
+  }
+  .drawer-event-card {
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(30,41,59,0.45);
+    border-radius: 12px; padding: 0.85rem;
+  }
+  .drawer-event-top {
+    display: flex; justify-content: space-between; gap: 0.75rem;
+    align-items: flex-start; flex-wrap: wrap;
+  }
+  .drawer-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .drawer-empty {
+    padding: 1rem; border-radius: 12px;
+    background: rgba(15,23,42,0.45); border: 1px solid rgba(255,255,255,0.06);
+    font-size: 0.82rem; color: var(--text-muted); text-align: center;
+  }
+  .drawer-view-all {
+    display: flex; justify-content: center;
+    padding: 0.5rem 0 0;
+  }
+  .drawer-view-all button {
+    font-size: 0.75rem; color: var(--text-muted);
+    background: none; border: 1px solid var(--border-subtle);
+    border-radius: 8px; padding: 0.35rem 0.85rem; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .drawer-view-all button:hover { color: var(--text-main); border-color: var(--accent); }
+</style>
+
+<div class="calendar-page">
+
+<!-- ── Page header ─────────────────────────────────────────────────────── -->
+<section class="page-header">
+  <div style="display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap; align-items:flex-start;">
+    <div>
+      <h2>Calendar</h2>
+      <p class="muted">
+        Visual planning for birthdays, 1:1s, goals, follow-ups, reviews, and training.
+        Visibility respects your role: <strong><%= viewerRole %></strong>.
+      </p>
+    </div>
+    <div class="quick-actions">
+      <a href="/calendar/export.ics?<%= buildQS(activeFilters) %>" class="btn ghost">Export ICS</a>
+      <a href="/calendar/certifications" class="btn ghost">Cert Expiry</a>
+      <% if (['LEAD','SUPERVISOR','MANAGER','SENIOR_MANAGER','ADMIN'].includes(viewerRole)) { %>
+        <a href="/meetings/new" class="btn ghost">+ Schedule 1:1</a>
+      <% } %>
+      <% if (['MANAGER','SENIOR_MANAGER','LEAD','ADMIN'].includes(viewerRole)) { %>
+        <a href="/goals/new" class="btn ghost">+ New Goal</a>
+      <% } %>
+      <a href="/incidents/new?returnTo=/calendar" class="btn ghost">+ Log Event</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Sticky toolbar ─────────────────────────────────────────────────── -->
+<section class="card calendar-toolbar-card">
+  <div class="cal-toolbar-row">
+    <!-- Month nav -->
+    <div class="calendar-nav">
+      <a class="btn ghost btn-sm" href="/calendar?<%= buildQS({ ...activeFilters, month: prevMonth, year: prevYear, day: '' }) %>">←</a>
+      <span class="cal-month-label"><%= monthLabel(year, month) %></span>
+      <a class="btn ghost btn-sm" href="/calendar?<%= buildQS({ ...activeFilters, month: nextMonth, year: nextYear, day: '' }) %>">→</a>
+      <a class="btn ghost btn-sm" href="/calendar">Today</a>
+    </div>
+
+    <!-- Active filter chips -->
+    <div class="cal-filter-chips">
+      <% if (filterType) { %>
+        <span class="cal-filter-chip">
+          <%= prettyType(filterType) %>
+          <button onclick="window.location='/calendar?<%= buildQS({ ...activeFilters, type: '', day: '' }) %>'">✕</button>
+        </span>
+      <% } %>
+      <% if (filterSource) { %>
+        <span class="cal-filter-chip">
+          Source: <%= prettyType(filterSource) %>
+          <button onclick="window.location='/calendar?<%= buildQS({ ...activeFilters, source: '', day: '' }) %>'">✕</button>
+        </span>
+      <% } %>
+      <% if (filterBuilding) { %>
+        <span class="cal-filter-chip">
+          Building: <%= filterBuilding %>
+          <button onclick="window.location='/calendar?<%= buildQS({ ...activeFilters, building: '', day: '' }) %>'">✕</button>
+        </span>
+      <% } %>
+      <% if (filterShift) { %>
+        <span class="cal-filter-chip">
+          Shift: <%= filterShift %>
+          <button onclick="window.location='/calendar?<%= buildQS({ ...activeFilters, shift: '', day: '' }) %>'">✕</button>
+        </span>
+      <% } %>
+      <% if (warningsOnly) { %>
+        <span class="cal-filter-chip">
+          Warnings only
+          <button onclick="window.location='/calendar?<%= buildQS({ ...activeFilters, warnings: '', day: '' }) %>'">✕</button>
+        </span>
+      <% } %>
+    </div>
+
+    <!-- Filter toggle button -->
+    <button type="button" class="cal-filter-toggle <%= activeFilterCount > 0 ? 'active' : '' %>" id="calFilterToggle">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Filters
+      <% if (activeFilterCount > 0) { %><span class="cal-filter-badge"><%= activeFilterCount %></span><% } %>
+    </button>
+
+    <% if (selectedDay) { %>
+      <a class="btn ghost btn-sm" href="/calendar?<%= buildQS({ ...activeFilters, day: '' }) %>">Clear day focus</a>
+    <% } %>
+  </div>
+
+  <!-- Collapsible full filter form -->
+  <div class="cal-filter-drawer" id="calFilterDrawer">
+    <form method="GET" action="/calendar" class="calendar-filters" id="calFilterForm">
+      <div class="calendar-filter-field">
+        <label>Month</label>
+        <input type="number" name="month" min="1" max="12" value="<%= month %>" />
+      </div>
+      <div class="calendar-filter-field">
+        <label>Year</label>
+        <input type="number" name="year" min="2020" max="2100" value="<%= year %>" />
+      </div>
+      <div class="calendar-filter-field">
+        <label>Type</label>
+        <select name="type">
+          <option value="">All types</option>
+          <% (filterOptions.types || []).forEach(function(t) { %>
+            <option value="<%= t %>" <%= filterType === t ? 'selected' : '' %>><%= prettyType(t) %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="calendar-filter-field">
+        <label>Source</label>
+        <select name="source">
+          <option value="">All sources</option>
+          <% (filterOptions.sources || []).forEach(function(s) { %>
+            <option value="<%= s %>" <%= filterSource === s ? 'selected' : '' %>><%= prettyType(s) %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="calendar-filter-field">
+        <label>Building</label>
+        <select name="building">
+          <option value="">All buildings</option>
+          <% (filterOptions.buildings || []).forEach(function(b) { %>
+            <option value="<%= b %>" <%= filterBuilding === b ? 'selected' : '' %>><%= b %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="calendar-filter-field">
+        <label>Shift</label>
+        <select name="shift">
+          <option value="">All shifts</option>
+          <% (filterOptions.shifts || []).forEach(function(s) { %>
+            <option value="<%= s %>" <%= filterShift === s ? 'selected' : '' %>><%= s %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="calendar-filter-field">
+        <label>Warnings</label>
+        <select name="warnings">
+          <option value="">All</option>
+          <option value="1" <%= warningsOnly ? 'selected' : '' %>>Warnings only</option>
+        </select>
+      </div>
+      <input type="hidden" name="day" value="<%= selectedDay || '' %>" />
+      <div class="calendar-filter-field" style="justify-content:flex-end; flex-direction:row; gap:0.5rem; align-items:flex-end;">
+        <button type="submit" class="btn primary btn-sm">Apply</button>
+        <a href="/calendar?month=<%= month %>&year=<%= year %>" class="btn ghost btn-sm">Reset</a>
+      </div>
+    </form>
+  </div>
+</section>
+
+<!-- ── KPI strip ──────────────────────────────────────────────────────── -->
+<% if (viewerRole === 'LEAD') { %>
+<section class="calendar-kpis kpis-lead">
+  <a href="/calendar?<%= buildQS({ ...activeFilters, type: 'ONE_ON_ONE', day: '' }) %>" class="card kpi-card kpi-meeting">
+    <h3>My 1:1s</h3><p class="kpi-value"><%= stats.oneOnOnes %></p><p class="kpi-sub">scheduled this month</p><div class="kpi-accent"></div>
+  </a>
+  <a href="/calendar?<%= buildQS({ ...activeFilters, type: 'BIRTHDAY', day: '' }) %>" class="card kpi-card kpi-birthday">
+    <h3>Birthdays</h3><p class="kpi-value"><%= stats.birthdays %></p><p class="kpi-sub">on your team</p><div class="kpi-accent"></div>
+  </a>
+  <a href="/calendar?<%= buildQS({ ...activeFilters, source: 'INCIDENT', day: '' }) %>" class="card kpi-card kpi-incident" data-nonzero="<%= stats.incidentFollowUps > 0 ? 'true' : 'false' %>">
+    <h3>Incident Follow-ups</h3><p class="kpi-value"><%= stats.incidentFollowUps %></p><p class="kpi-sub">logged on your team</p><div class="kpi-accent"></div>
+  </a>
+  <a href="/calendar?<%= buildQS({ ...activeFilters, warnings: '1', day: '' }) %>" class="card kpi-card kpi-warning" data-nonzero="<%= stats.warnings > 0 ? 'true' : 'false' %>">
+    <h3>Action Items</h3><p class="kpi-value"><%= stats.warnings %></p><p class="kpi-sub">needing attention</p><div class="kpi-accent"></div>
+  </a>
+</section>
+<% } else { %>
+<section class="calendar-kpis">
+  <a href="/calendar?<%= buildQS({ ...activeFilters, type: '', source: '', day: '' }) %>" class="card kpi-card kpi-total">
+    <h3>Total Events</h3><p class="kpi-value"><%= stats.total %></p><p class="kpi-sub">visible this month</p><div class="kpi-accent"></div>
+  </a>
+  <a href="/calendar?<%= buildQS({ ...activeFilters, type: 'BIRTHDAY', day: '' }) %>" class="card kpi-card kpi-birthday">
+    <h3>Birthdays</h3><p class="kpi-value"><%= stats.birthdays %></p><p class="kpi-sub">this month</p><div class="kpi-accent"></div>
+  </a>
+  <a href="/calendar?<%= buildQS({ ...activeFilters, type: 'ONE_ON_ONE', day: '' }) %>" class="card kpi-card kpi-meeting">
+    <h3>1:1 Meetings</h3><p class="kpi-value"><%= stats.oneOnOnes %></p><p class="kpi-sub">scheduled</p><div class="kpi-accent"></div>
+  </a>
+  <a href="/calendar?<%= buildQS({ ...activeFilters, source: 'GOAL', day: '' }) %>" class="card kpi-card kpi-goal">
+    <h3>Goals Due</h3><p class="kpi-value"><%= stats.goalDue %></p><p class="kpi-sub">deadline this month</p><div class="kpi-accent"></div>
+  </a>
+  <a href="/calendar?<%= buildQS({ ...activeFilters, source: 'INCIDENT', day: '' }) %>" class="card kpi-card kpi-incident" data-nonzero="<%= stats.incidentFollowUps > 0 ? 'true' : 'false' %>">
+    <h3>Follow-ups</h3><p class="kpi-value"><%= stats.incidentFollowUps %></p><p class="kpi-sub">in scope</p><div class="kpi-accent"></div>
+  </a>
+  <a href="/calendar?<%= buildQS({ ...activeFilters, source: 'REVIEW', day: '' }) %>" class="card kpi-card kpi-review">
+    <h3>Reviews Due</h3><p class="kpi-value"><%= stats.reviewDue %></p><p class="kpi-sub">pending this month</p><div class="kpi-accent"></div>
+  </a>
+  <a href="/calendar?<%= buildQS({ ...activeFilters, source: 'TRAINING', day: '' }) %>" class="card kpi-card kpi-training">
+    <h3>Training Due</h3><p class="kpi-value"><%= stats.trainingDue %></p><p class="kpi-sub">expiring this month</p><div class="kpi-accent"></div>
+  </a>
+  <a href="/calendar?<%= buildQS({ ...activeFilters, warnings: '1', day: '' }) %>" class="card kpi-card kpi-warning" data-nonzero="<%= stats.warnings > 0 ? 'true' : 'false' %>">
+    <h3>Warnings</h3><p class="kpi-value"><%= stats.warnings %></p><p class="kpi-sub">need attention</p><div class="kpi-accent"></div>
+  </a>
+</section>
+<% } %>
+
+<!-- ── Main grid ──────────────────────────────────────────────────────── -->
+<section class="calendar-grid-layout">
+
+  <!-- Calendar -->
+  <div class="card" style="padding:0;">
+    <div class="section-header" style="padding:1rem 1rem 0.5rem;">
+      <div>
+        <h3><%= monthLabel(year, month) %></h3>
+        <p class="muted small">Click any day to open the detail panel.</p>
+      </div>
+      <button type="button" class="btn ghost btn-sm" id="viewAllEventsBtn">View all events</button>
+    </div>
+
+    <div class="calendar-shell">
+      <div class="calendar-weekdays">
+        <% weekdays.forEach(function(w) { %><div><%= w %></div><% }) %>
+      </div>
+
+      <% calendarWeeks.forEach(function(week) { %>
+        <div class="calendar-week">
+          <% week.forEach(function(cell) { %>
+            <% if (!cell.inMonth) { %>
+              <div class="calendar-day empty"></div>
+            <% } else { %>
+              <div
+                class="calendar-day <%= selectedDay === cell.key ? 'active' : '' %>"
+                data-day-key="<%= cell.key %>"
+                data-day-number="<%= cell.day %>"
+                data-day-events='<%- JSON.stringify(cell.events || []) %>'
+              >
+                <button type="button" class="day-select js-open-day-drawer">
+                  <div class="day-header">
+                    <span class="day-number"><%= cell.day %></span>
+                    <div style="display:flex;gap:0.3rem;align-items:center;">
+                      <% if (cell.events && cell.events.some(function(ev){ return ev.warning; })) { %>
+                        <span class="day-warning-dot" title="Has action items"></span>
+                      <% } %>
+                      <% if (cell.count > 0) { %>
+                        <span class="day-count"><%= cell.count %></span>
+                      <% } %>
+                    </div>
+                  </div>
+                  <div class="day-mini-list">
+                    <% cell.events.slice(0, 3).forEach(function(ev) { %>
+                      <div class="day-mini-item <%=
+                        ev.type === 'BIRTHDAY' ? 'mini-birthday' :
+                        ev.source === 'GOAL' ? 'mini-goal' :
+                        ev.source === 'INCIDENT' ? 'mini-incident' :
+                        ev.source === 'REVIEW' ? 'mini-review' :
+                        ev.source === 'TRAINING' ? 'mini-training' : 'mini-meeting'
+                      %>"><%=
+                        ev.type === 'BIRTHDAY' ? '🎂' :
+                        ev.source === 'GOAL' ? '🎯' :
+                        ev.source === 'INCIDENT' ? '⚠️' :
+                        ev.source === 'REVIEW' ? '📝' :
+                        ev.source === 'TRAINING' ? '🎓' : '📅'
+                      %> <%= ev.staffName || ev.label %></div>
+                    <% }) %>
+                    <% if (cell.count > 3) { %>
+                      <button type="button" class="day-more-btn js-open-day-drawer">+ <%= cell.count - 3 %> more</button>
+                    <% } %>
+                  </div>
+                </button>
+              </div>
+            <% } %>
+          <% }) %>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="calendar-side-stack">
+
+    <%/* 1 — Stale warnings (promoted, at top) */%>
+    <section class="card stale-card">
+      <div class="section-header">
+        <div>
+          <h3>
+            <% if (viewerRole === 'LEAD') { %>Overdue Check-ins<% } else { %>Stale 1:1 Warnings<% } %>
+            <% if (staleWarningsSafe.length > 0) { %>
+              <span class="stale-badge"><%= staleWarningsSafe.length %></span>
+            <% } %>
+          </h3>
+          <p class="muted small">Staff with no 1:1 logged in 30+ days.</p>
+        </div>
+      </div>
+
+      <% if (staleWarningsSafe.length === 0) { %>
+        <p class="muted" style="font-size:0.8rem;">No overdue check-ins in your scope.</p>
+      <% } else { %>
+        <div id="staleList">
+          <% staleWarningsSafe.slice(0, 4).forEach(function(w) { %>
+            <div class="warning-card-item">
+              <div><strong><%= w.name %></strong></div>
+              <div class="muted small" style="margin-top:0.2rem;"><%= w.building || '—' %> · <%= w.shift || '—' %></div>
+              <div class="muted small" style="margin-top:0.3rem;">
+                <% if (w.daysSince == null) { %>No 1:1 on record.<% } else { %>
+                  Last 1:1 <strong><%= w.daysSince %>d ago</strong><% if (w.latestOrganizerName) { %> with <%= w.latestOrganizerName %><% } %>
+                <% } %>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+        <% if (staleWarningsSafe.length > 4) { %>
+          <div id="staleListMore" style="display:none;">
+            <% staleWarningsSafe.slice(4).forEach(function(w) { %>
+              <div class="warning-card-item">
+                <div><strong><%= w.name %></strong></div>
+                <div class="muted small" style="margin-top:0.2rem;"><%= w.building || '—' %> · <%= w.shift || '—' %></div>
+                <div class="muted small" style="margin-top:0.3rem;">
+                  <% if (w.daysSince == null) { %>No 1:1 on record.<% } else { %>
+                    Last 1:1 <strong><%= w.daysSince %>d ago</strong><% if (w.latestOrganizerName) { %> with <%= w.latestOrganizerName %><% } %>
+                  <% } %>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+          <button class="stale-expand-btn" id="staleExpandBtn">Show <%= staleWarningsSafe.length - 4 %> more</button>
+        <% } %>
+      <% } %>
+    </section>
+
+    <%/* 2 — This Month at a Glance */%>
+    <section class="card">
+      <div class="section-header" style="margin-bottom:0.75rem;">
+        <div>
+          <h3>This Month at a Glance</h3>
+          <p class="muted small">Upcoming events in your scope.</p>
+        </div>
+      </div>
+
+      <div class="glance-strip">
+        <% if (upcomingBirthday) { %>
+          <div class="glance-item">
+            <span class="glance-icon">🎂</span>
+            <div>
+              <div class="glance-label">Next Birthday</div>
+              <div class="glance-val"><%= upcomingBirthday.staffName || upcomingBirthday.label %></div>
+              <div class="glance-sub"><%= upcomingBirthday.date %></div>
+            </div>
+          </div>
+        <% } %>
+        <% if (upcomingOneOnOne) { %>
+          <div class="glance-item">
+            <span class="glance-icon">📅</span>
+            <div>
+              <div class="glance-label">Next 1:1</div>
+              <div class="glance-val"><%= upcomingOneOnOne.staffName || upcomingOneOnOne.label %></div>
+              <div class="glance-sub"><%= upcomingOneOnOne.date %><% if (upcomingOneOnOne.organizerName) { %> · <%= upcomingOneOnOne.organizerName %><% } %></div>
+            </div>
+          </div>
+        <% } %>
+        <% if (stats.warnings > 0) { %>
+          <div class="glance-item" style="border-color:rgba(239,68,68,0.2); background:rgba(127,29,29,0.15);">
+            <span class="glance-icon">⚠️</span>
+            <div>
+              <div class="glance-label">Overdue Items</div>
+              <div class="glance-val" style="color:rgba(252,165,165,0.95);"><%= stats.warnings %> event<%= stats.warnings === 1 ? '' : 's' %> need attention</div>
+              <div class="glance-sub"><a href="/calendar?<%= buildQS({ ...activeFilters, warnings: '1', day: '' }) %>" style="color:inherit;">View flagged →</a></div>
+            </div>
+          </div>
+        <% } %>
+      </div>
+
+      <% if (upcomingEvents.length > 0) { %>
+        <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted); margin:0.85rem 0 0.4rem;">Next 7 Days</div>
+        <div class="upcoming-list">
+          <% upcomingEvents.forEach(function(ev) { %>
+            <div class="upcoming-row">
+              <div class="upcoming-date"><%= ev.date ? ev.date.slice(5) : '' %></div>
+              <div>
+                <div class="upcoming-label"><%= ev.staffName || ev.label %></div>
+                <div class="upcoming-sub"><%= prettyType(ev.type) %><% if (ev.building) { %> · <%= ev.building %><% } %></div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <p class="muted" style="font-size:0.78rem; margin-top:0.75rem;">No events in the next 7 days.</p>
+      <% } %>
+    </section>
+
+    <%/* 3 — Coverage Breakdown (merged building + shift) */%>
+    <% const buildingEntries = Object.entries(buildingCounts || {}).sort((a,b) => b[1]-a[1]); %>
+    <% const shiftEntries    = Object.entries(shiftCounts    || {}).sort((a,b) => b[1]-a[1]); %>
+    <% if (buildingEntries.length || shiftEntries.length) { %>
+    <section class="card">
+      <div class="section-header" style="margin-bottom:0.5rem;">
+        <div>
+          <h3>Coverage Breakdown</h3>
+          <p class="muted small">Visible events by building and shift.</p>
+        </div>
+      </div>
+
+      <div class="coverage-grid">
+        <div>
+          <div class="coverage-col-title">Building</div>
+          <div id="buildingRollup">
+            <% buildingEntries.slice(0, 5).forEach(function(e) { %>
+              <div class="rollup-row"><span><%= e[0] %></span><strong><%= e[1] %></strong></div>
+            <% }) %>
+          </div>
+          <% if (buildingEntries.length > 5) { %>
+            <div id="buildingRollupMore" style="display:none;">
+              <% buildingEntries.slice(5).forEach(function(e) { %>
+                <div class="rollup-row"><span><%= e[0] %></span><strong><%= e[1] %></strong></div>
+              <% }) %>
+            </div>
+          <% } %>
+        </div>
+        <div>
+          <div class="coverage-col-title">Shift</div>
+          <div id="shiftRollup">
+            <% shiftEntries.slice(0, 5).forEach(function(e) { %>
+              <div class="rollup-row"><span><%= e[0] %></span><strong><%= e[1] %></strong></div>
+            <% }) %>
+          </div>
+          <% if (shiftEntries.length > 5) { %>
+            <div id="shiftRollupMore" style="display:none;">
+              <% shiftEntries.slice(5).forEach(function(e) { %>
+                <div class="rollup-row"><span><%= e[0] %></span><strong><%= e[1] %></strong></div>
+              <% }) %>
+            </div>
+          <% } %>
+        </div>
+      </div>
+      <% if (buildingEntries.length > 5 || shiftEntries.length > 5) { %>
+        <button class="coverage-expand-btn" id="coverageExpandBtn">Show more</button>
+      <% } %>
+    </section>
+    <% } %>
+
+  </div><!-- /sidebar -->
+</section>
+
+<!-- ── Day drawer ─────────────────────────────────────────────────────── -->
+<div class="day-drawer-backdrop" id="dayDrawerBackdrop"></div>
+
+<aside class="day-drawer" id="dayDrawer" aria-hidden="true">
+  <div class="day-drawer-head">
+    <div>
+      <h3 id="drawerTitle" style="margin:0;">Day Details</h3>
+      <p class="muted small" id="drawerSubtitle" style="margin:0.35rem 0 0 0;">Click a day to inspect it.</p>
+    </div>
+    <button type="button" class="drawer-close" id="dayDrawerClose">Close</button>
+  </div>
+
+  <div class="day-drawer-body">
+    <!-- Quick actions -->
+    <section class="card" style="padding:0.9rem;">
+      <h3 style="margin:0 0 0.6rem; font-size:0.78rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted);">Quick Actions</h3>
+      <div class="drawer-actions" id="drawerActions">
+        <% if (['LEAD','SUPERVISOR','MANAGER','SENIOR_MANAGER','ADMIN'].includes(viewerRole)) { %>
+          <a href="/meetings/new" class="btn ghost btn-sm js-drawer-action" data-base="/meetings/new" data-param="date">Schedule 1:1</a>
+        <% } %>
+        <% if (['MANAGER','SENIOR_MANAGER','LEAD','ADMIN'].includes(viewerRole)) { %>
+          <a href="/goals/new" class="btn ghost btn-sm js-drawer-action" data-base="/goals/new" data-param="date">New Goal</a>
+        <% } %>
+        <a href="/incidents/new?returnTo=/calendar" class="btn ghost btn-sm js-drawer-action" data-base="/incidents/new" data-param="date" data-extra="returnTo=/calendar">Log Event</a>
+        <a href="/calendar/export.ics?<%= buildQS(activeFilters) %>" class="btn ghost btn-sm">Export</a>
+      </div>
+    </section>
+
+    <!-- Metrics -->
+    <section class="card" style="padding:0.9rem;">
+      <h3 style="margin:0 0 0.6rem; font-size:0.78rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted);">Day Metrics</h3>
+      <div class="drawer-metrics">
+        <div class="day-metric"><div class="muted small">Total</div><strong id="drawerMetricTotal">—</strong></div>
+        <div class="day-metric"><div class="muted small">Birthdays</div><strong id="drawerMetricBirthdays">—</strong></div>
+        <div class="day-metric"><div class="muted small">1:1s</div><strong id="drawerMetricOneOnOnes">—</strong></div>
+        <div class="day-metric"><div class="muted small">Due Items</div><strong id="drawerMetricDue">—</strong></div>
+      </div>
+    </section>
+
+    <!-- Events list -->
+    <section class="card" style="padding:0.9rem;">
+      <h3 style="margin:0 0 0.25rem; font-size:0.78rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted);">Events</h3>
+      <p class="muted small" id="drawerEventsSummary" style="margin:0 0 0.65rem;">No day selected.</p>
+      <div id="drawerEventsList">
+        <div class="drawer-empty">Click a calendar day to load its events.</div>
+      </div>
+    </section>
+  </div>
+</aside>
+
+<script>
+(function () {
+  /* ─── Filter drawer toggle ───────────────────────────────────────────── */
+  const filterToggle = document.getElementById('calFilterToggle');
+  const filterDrawer = document.getElementById('calFilterDrawer');
+  if (filterToggle && filterDrawer) {
+    <% if (activeFilterCount > 0) { %>
+    filterDrawer.classList.add('open');
+    filterToggle.classList.add('active');
+    <% } %>
+    filterToggle.addEventListener('click', function () {
+      const isOpen = filterDrawer.classList.toggle('open');
+      filterToggle.classList.toggle('active', isOpen);
+    });
+  }
+
+  /* ─── Stale warnings expand ──────────────────────────────────────────── */
+  const staleExpandBtn  = document.getElementById('staleExpandBtn');
+  const staleListMore   = document.getElementById('staleListMore');
+  if (staleExpandBtn && staleListMore) {
+    staleExpandBtn.addEventListener('click', function () {
+      const open = staleListMore.style.display !== 'none';
+      staleListMore.style.display = open ? 'none' : 'block';
+      staleExpandBtn.textContent  = open ? 'Show <%= staleWarningsSafe.length - 4 %> more' : 'Show less';
+    });
+  }
+
+  /* ─── Coverage expand ────────────────────────────────────────────────── */
+  const coverageExpandBtn  = document.getElementById('coverageExpandBtn');
+  const buildingMore       = document.getElementById('buildingRollupMore');
+  const shiftMore          = document.getElementById('shiftRollupMore');
+  if (coverageExpandBtn) {
+    coverageExpandBtn.addEventListener('click', function () {
+      const open = coverageExpandBtn.dataset.expanded === 'true';
+      if (buildingMore) buildingMore.style.display = open ? 'none' : 'block';
+      if (shiftMore)    shiftMore.style.display    = open ? 'none' : 'block';
+      coverageExpandBtn.dataset.expanded = open ? 'false' : 'true';
+      coverageExpandBtn.textContent = open ? 'Show more' : 'Show less';
+    });
+  }
+
+  /* ─── Drawer core ────────────────────────────────────────────────────── */
+  const drawer   = document.getElementById('dayDrawer');
+  const backdrop = document.getElementById('dayDrawerBackdrop');
+  const closeBtn = document.getElementById('dayDrawerClose');
+
+  const drawerTitle         = document.getElementById('drawerTitle');
+  const drawerSubtitle      = document.getElementById('drawerSubtitle');
+  const drawerEventsSummary = document.getElementById('drawerEventsSummary');
+  const drawerEventsList    = document.getElementById('drawerEventsList');
+  const metricTotal         = document.getElementById('drawerMetricTotal');
+  const metricBirthdays     = document.getElementById('drawerMetricBirthdays');
+  const metricOneOnOnes     = document.getElementById('drawerMetricOneOnOnes');
+  const metricDue           = document.getElementById('drawerMetricDue');
+
+  // All events for "View all" mode — injected server-side
+  const ALL_EVENTS = <%- JSON.stringify(safeListEvents) %>;
+
+  function openDrawer() {
+    if (!drawer || !backdrop) return;
+    drawer.classList.add('open');
+    backdrop.classList.add('open');
+    drawer.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeDrawer() {
+    if (!drawer || !backdrop) return;
+    drawer.classList.remove('open');
+    backdrop.classList.remove('open');
+    drawer.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+  function updateDrawerActions(dayKey) {
+    document.querySelectorAll('.js-drawer-action').forEach(function (el) {
+      const base  = el.getAttribute('data-base') || el.href;
+      const param = el.getAttribute('data-param') || 'date';
+      const extra = el.getAttribute('data-extra') || '';
+      const params = new URLSearchParams();
+      if (dayKey) params.set(param, dayKey);
+      if (extra) {
+        extra.split('&').forEach(function (pair) {
+          const [k, v] = pair.split('=');
+          if (k) params.set(k, v || '');
+        });
+      }
+      el.href = base + (params.toString() ? '?' + params.toString() : '');
+    });
+  }
+  function eventPillClass(ev) {
+    if (ev.type === 'BIRTHDAY')        return 'pill-birthday';
+    if (ev.source === 'GOAL')          return 'pill-goal';
+    if (ev.source === 'INCIDENT')      return 'pill-incident';
+    if (ev.source === 'REVIEW')        return 'pill-review';
+    if (ev.source === 'TRAINING')      return 'pill-training';
+    return 'pill-meeting';
+  }
+  function prettyType(v) { return String(v || '').replace(/_/g, ' '); }
+  function safeDateTime(v) {
+    try { if (!v) return ''; const d = new Date(v); if (Number.isNaN(d.getTime())) return ''; return d.toLocaleString(); } catch(e) { return ''; }
+  }
+
+  function renderDrawerEvents(title, subtitle, events, dayKey) {
+    const safeEvents = Array.isArray(events) ? events : [];
+    if (drawerTitle)         drawerTitle.textContent    = title;
+    if (drawerSubtitle)      drawerSubtitle.textContent = subtitle;
+    if (drawerEventsSummary) drawerEventsSummary.textContent = safeEvents.length + ' event' + (safeEvents.length === 1 ? '' : 's');
+    if (metricTotal)         metricTotal.textContent    = String(safeEvents.length);
+    if (metricBirthdays)     metricBirthdays.textContent = String(safeEvents.filter(e => e.type === 'BIRTHDAY').length);
+    if (metricOneOnOnes)     metricOneOnOnes.textContent = String(safeEvents.filter(e => e.type === 'ONE_ON_ONE').length);
+    if (metricDue)           metricDue.textContent = String(safeEvents.filter(e => ['GOAL','INCIDENT','REVIEW','TRAINING'].includes(String(e.source||'').toUpperCase())).length);
+    if (dayKey) updateDrawerActions(dayKey);
+
+    if (!drawerEventsList) return;
+    if (!safeEvents.length) {
+      drawerEventsList.innerHTML = '<div class="drawer-empty">No events for this period.</div>';
+      return;
+    }
+    drawerEventsList.innerHTML = safeEvents.map(function (ev) {
+      return (
+        '<div class="drawer-event-card">' +
+          '<div class="drawer-event-top">' +
+            '<div>' +
+              '<div><strong>' + String(ev.label || '') + '</strong></div>' +
+              '<div class="muted small" style="margin-top:0.2rem;">' + safeDateTime(ev.date) + '</div>' +
+            '</div>' +
+            '<div style="display:flex;gap:0.3rem;flex-wrap:wrap;justify-content:flex-end;">' +
+              '<span class="pill ' + eventPillClass(ev) + '">' + prettyType(ev.type) + '</span>' +
+              '<span class="pill muted-chip">' + prettyType(ev.source) + '</span>' +
+              (ev.warning ? '<span class="pill pill-warn">Action</span>' : '') +
+            '</div>' +
+          '</div>' +
+          '<div style="margin-top:0.55rem;font-size:0.8rem;">' +
+            '<div><strong>Staff:</strong> ' + String(ev.staffName || '—') + '</div>' +
+            (ev.organizerName ? '<div class="muted small" style="margin-top:0.2rem;"><strong>Organizer:</strong> ' + String(ev.organizerName) + '</div>' : '') +
+            '<div class="muted small" style="margin-top:0.2rem;"><strong>Building:</strong> ' + String(ev.building || '—') + ' · <strong>Shift:</strong> ' + String(ev.shift || '—') + '</div>' +
+            (ev.severity ? '<div class="muted small" style="margin-top:0.2rem;"><strong>Severity:</strong> ' + String(ev.severity) + '</div>' : '') +
+            (ev.notes ? '<div class="muted small" style="margin-top:0.35rem;">' + String(ev.notes) + '</div>' : '') +
+          '</div>' +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  /* Day cell clicks */
+  document.querySelectorAll('.js-open-day-drawer').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      const parent = btn.closest('.calendar-day');
+      if (!parent) return;
+      const dayKey = parent.getAttribute('data-day-key') || '';
+      let events = [];
+      try { events = JSON.parse(parent.getAttribute('data-day-events') || '[]'); } catch(e) {}
+      renderDrawerEvents('Day Details', dayKey, events, dayKey);
+      openDrawer();
+    });
+  });
+
+  /* "View all events" button */
+  const viewAllBtn = document.getElementById('viewAllEventsBtn');
+  if (viewAllBtn) {
+    viewAllBtn.addEventListener('click', function () {
+      renderDrawerEvents(
+        'All Events — <%= monthLabel(year, month) %>',
+        ALL_EVENTS.length + ' events this month',
+        ALL_EVENTS,
+        null
+      );
+      openDrawer();
+    });
+  }
+
+  if (closeBtn)  closeBtn.addEventListener('click', closeDrawer);
+  if (backdrop)  backdrop.addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeDrawer(); });
+})();
+</script>
+
+</div><!-- /calendar-page -->
+
+</main>
+</body>
+</html>

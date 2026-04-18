@@ -1,0 +1,117 @@
+<%- include('../partials/header', { title: 'Training Assignments — ' + staff.name }) %>
+
+<main class="main-content">
+  <div class="page-header">
+    <div>
+      <h1>Training Assignments</h1>
+      <p class="muted">
+        <a href="/staff/<%= staff.id %>"><%= staff.name %></a>
+        <% if (staff.StaffProfile && staff.StaffProfile.positionType) { %>
+          &middot; <%= staff.StaffProfile.positionType %>
+        <% } %>
+      </p>
+    </div>
+    <a href="/staff/<%= staff.id %>" class="btn ghost btn-sm">← Back to Profile</a>
+  </div>
+
+  <!-- Assign new training -->
+  <section class="card" style="margin-bottom:1.5rem;">
+    <h3>Assign Training</h3>
+    <form method="POST" action="/staff/<%= staff.id %>/training-assignments" class="form-inline-grid" style="margin-top:0.75rem;">
+      <div class="field-row" style="flex-wrap:wrap; gap:0.75rem; align-items:flex-end;">
+        <div class="field" style="flex:2; min-width:200px;">
+          <label for="courseName">Course Name <span class="required">*</span></label>
+          <input type="text" id="courseName" name="courseName" required maxlength="200" placeholder="e.g. ESD Safety Refresher" />
+        </div>
+        <div class="field" style="flex:1; min-width:140px;">
+          <label for="courseType">Type</label>
+          <select id="courseType" name="courseType">
+            <option value="">— optional —</option>
+            <option value="SAFETY">Safety</option>
+            <option value="COMPLIANCE">Compliance</option>
+            <option value="TECHNICAL">Technical</option>
+            <option value="PROCESS">Process</option>
+            <option value="LEADERSHIP">Leadership</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
+        <div class="field" style="flex:1; min-width:140px;">
+          <label for="dueDate">Due Date</label>
+          <input type="date" id="dueDate" name="dueDate" />
+        </div>
+        <div class="field" style="flex:2; min-width:200px;">
+          <label for="notes">Notes</label>
+          <input type="text" id="notes" name="notes" maxlength="400" placeholder="Optional context or instructions" />
+        </div>
+        <div class="field" style="flex:0 0 auto; margin-bottom:0;">
+          <button type="submit" class="btn primary">Assign</button>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <!-- Assignment list -->
+  <section class="card">
+    <h3>Current Assignments <span class="muted small">(<%= assignments.length %>)</span></h3>
+
+    <% if (!assignments.length) { %>
+      <p class="muted" style="margin-top:1rem;">No training assignments yet.</p>
+    <% } else { %>
+      <div class="table-scroll" style="margin-top:0.75rem;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Course</th>
+              <th>Type</th>
+              <th>Due</th>
+              <th>Status</th>
+              <th>Completed</th>
+              <th>Assigned By</th>
+              <th>Update</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% assignments.forEach(function(a) { %>
+              <tr>
+                <td><strong><%= a.courseName %></strong>
+                  <% if (a.notes) { %><br/><span class="muted small"><%= a.notes %></span><% } %>
+                </td>
+                <td><%= a.courseType || '—' %></td>
+                <td>
+                  <% if (a.dueDate) { %>
+                    <% const due = new Date(a.dueDate); const today = new Date(); %>
+                    <span class="<%= a.status !== 'COMPLETED' && due < today ? 'chip chip-warn' : 'chip chip-neutral' %>" style="font-size:0.72rem;">
+                      <%= a.dueDate %>
+                    </span>
+                  <% } else { %>
+                    <span class="muted small">—</span>
+                  <% } %>
+                </td>
+                <td>
+                  <% const statusColors = { NOT_STARTED: 'chip-neutral', IN_PROGRESS: 'chip-neutral', COMPLETED: 'chip-ok', OVERDUE: 'chip-warn' }; %>
+                  <span class="chip <%= statusColors[a.status] || 'chip-neutral' %>" style="font-size:0.72rem;">
+                    <%= a.status.replace('_', ' ') %>
+                  </span>
+                </td>
+                <td><%= a.completedDate || '—' %></td>
+                <td><%= a.AssignedBy ? a.AssignedBy.name : '—' %></td>
+                <td>
+                  <form method="POST" action="/staff/<%= staff.id %>/training-assignments/<%= a.id %>/update" style="display:flex; gap:0.4rem; align-items:center;">
+                    <select name="status" style="font-size:0.78rem; padding:0.2rem 0.4rem;">
+                      <% ['NOT_STARTED','IN_PROGRESS','COMPLETED','OVERDUE'].forEach(function(s) { %>
+                        <option value="<%= s %>" <%= a.status === s ? 'selected' : '' %>><%= s.replace('_', ' ') %></option>
+                      <% }); %>
+                    </select>
+                    <button type="submit" class="btn ghost btn-sm">Save</button>
+                  </form>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </section>
+</main>
+
+<%- include('../partials/footer') %>

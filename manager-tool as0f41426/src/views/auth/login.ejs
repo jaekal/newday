@@ -1,0 +1,23 @@
+<%- include('../layout') %>
+
+<h2>Login</h2>
+
+<% if (error) { %>
+  <p style="color:red;"><%= error %></p>
+<% } %>
+
+<form method="POST" action="/login" class="card" style="max-width: 360px;">
+  <label>Username or Email:
+    <input type="text" name="username" required />
+  </label><br />
+
+  <label>Password:
+    <input type="password" name="password" required />
+  </label><br />
+
+  <button type="submit" class="btn primary">Login</button>
+</form>
+
+</main>
+</body>
+</html>

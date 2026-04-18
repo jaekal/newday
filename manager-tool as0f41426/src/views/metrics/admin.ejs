@@ -1,0 +1,135 @@
+<%- include('../layout') %>
+
+<section class="page-header">
+  <div>
+    <h2>Metric Administration</h2>
+    <p class="muted">Rebuild KPI artifacts, process daily metric payloads, and backfill date ranges.</p>
+  </div>
+</section>
+
+<% if (error) { %>
+  <div class="card" style="border-left:4px solid #ef4444; margin-bottom:1rem;">
+    <h3 style="margin-top:0; color:#ef4444;">Error</h3>
+    <pre style="white-space:pre-wrap;"><%= error %></pre>
+  </div>
+<% } %>
+
+<% if (summary) { %>
+  <div class="card" style="border-left:4px solid #22c55e; margin-bottom:1rem;">
+    <h3 style="margin-top:0; color:#22c55e;">Summary</h3>
+    <pre style="white-space:pre-wrap;"><%= summary %></pre>
+  </div>
+<% } %>
+
+<section class="layout-two-column">
+  <div class="card">
+    <h3>Rebuild Full Day</h3>
+    <form method="POST" action="/metrics/admin/rebuild-day">
+      <label>Date
+        <input type="date" name="date" value="<%= today %>" required />
+      </label>
+
+      <label>Calculation Version
+        <input type="text" name="calculationVersion" value="v1" />
+      </label>
+
+      <div style="margin-top:1rem;">
+        <button type="submit" class="btn primary">Rebuild Day</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>Rebuild Date Range</h3>
+    <form method="POST" action="/metrics/admin/rebuild-range">
+      <label>Start Date
+        <input type="date" name="startDate" value="<%= today %>" required />
+      </label>
+
+      <label>End Date
+        <input type="date" name="endDate" value="<%= today %>" required />
+      </label>
+
+      <label>Calculation Version
+        <input type="text" name="calculationVersion" value="v1" />
+      </label>
+
+      <div style="margin-top:1rem;">
+        <button type="submit" class="btn primary">Rebuild Range</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<section class="layout-two-column">
+  <div class="card">
+    <h3>Rebuild Shift Metrics Only</h3>
+    <form method="POST" action="/metrics/admin/rebuild-shift-only">
+      <label>Date
+        <input type="date" name="date" value="<%= today %>" required />
+      </label>
+
+      <div style="margin-top:1rem;">
+        <button type="submit" class="btn ghost">Rebuild Shift Only</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>Rebuild Score Snapshots Only</h3>
+    <form method="POST" action="/metrics/admin/rebuild-score-only">
+      <label>Date
+        <input type="date" name="date" value="<%= today %>" required />
+      </label>
+
+      <label>Calculation Version
+        <input type="text" name="calculationVersion" value="v1" />
+      </label>
+
+      <div style="margin-top:1rem;">
+        <button type="submit" class="btn ghost">Rebuild Scores Only</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<section class="card">
+  <h3>Process Daily Pipeline from JSON</h3>
+  <p class="muted">
+    Paste JSON arrays for technician metric rows and presence rows. This is useful before a dedicated import UI exists.
+  </p>
+
+  <form method="POST" action="/metrics/admin/process-day">
+    <label>Date
+      <input type="date" name="date" value="<%= today %>" required />
+    </label>
+
+    <label>Calculation Version
+      <input type="text" name="calculationVersion" value="v1" />
+    </label>
+
+    <label>Technician Metric Rows JSON
+      <textarea
+        name="technicianMetricRowsJson"
+        rows="12"
+        placeholder='[{"date":"2026-03-17","employeeId":"E123","serversAssigned":10,"serversCompleted":9}]'
+      ></textarea>
+    </label>
+
+    <label>Presence Rows JSON
+      <textarea
+        name="presenceRowsJson"
+        rows="8"
+        placeholder='[{"date":"2026-03-17","employeeId":"E123","wasScheduled":true,"wasPresent":true,"wasActiveTechnician":true}]'
+      ></textarea>
+    </label>
+
+    <div style="margin-top:1rem;">
+      <button type="submit" class="btn primary">Process Daily Pipeline</button>
+    </div>
+  </form>
+</section>
+
+</main>
+</body>
+</html>

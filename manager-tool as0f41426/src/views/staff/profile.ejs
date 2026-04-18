@@ -1,0 +1,4188 @@
+<!-- src/views/staff/profile.ejs -->
+<%- include('../layout') %>
+
+<%
+  const incomingProfile = (typeof locals !== 'undefined' && locals && locals.profile) ? locals.profile : null;
+  const profile = incomingProfile || (staff && staff.StaffProfile ? staff.StaffProfile : {});
+
+  const viewerRoleLocal =
+    (typeof locals !== 'undefined' && locals && locals.viewerRole) ? String(locals.viewerRole).toUpperCase()
+    : (typeof locals !== 'undefined' && locals && locals.currentUserRole) ? String(locals.currentUserRole).toUpperCase()
+    : (typeof currentUser !== 'undefined' && currentUser && currentUser.role) ? String(currentUser.role).toUpperCase()
+    : '';
+
+  let latestReview = null;
+  if (ratingHistory && ratingHistory.length) {
+    latestReview = ratingHistory[ratingHistory.length - 1];
+  }
+
+  const canManageReviews = viewerRoleLocal === 'ADMIN' || viewerRoleLocal === 'SENIOR_MANAGER' || viewerRoleLocal === 'MANAGER';
+  const canEditProfile = viewerRoleLocal === 'ADMIN' || viewerRoleLocal === 'SENIOR_MANAGER' || viewerRoleLocal === 'MANAGER' || viewerRoleLocal === 'SUPERVISOR';
+  const canCreateReview = viewerRoleLocal === 'ADMIN' || viewerRoleLocal === 'SENIOR_MANAGER' || viewerRoleLocal === 'MANAGER' || viewerRoleLocal === 'SUPERVISOR' || viewerRoleLocal === 'LEAD';
+  const canCreateGoal = viewerRoleLocal === 'ADMIN' || viewerRoleLocal === 'SENIOR_MANAGER' || viewerRoleLocal === 'MANAGER' || viewerRoleLocal === 'SUPERVISOR' || viewerRoleLocal === 'LEAD';
+  const canCreateIncident = viewerRoleLocal === 'ADMIN' || viewerRoleLocal === 'SENIOR_MANAGER' || viewerRoleLocal === 'MANAGER' || viewerRoleLocal === 'SUPERVISOR' || viewerRoleLocal === 'LEAD';
+
+  // Snapshot visibility by role
+  const canSeeStrengthFocus = viewerRoleLocal === 'ADMIN' || viewerRoleLocal === 'SENIOR_MANAGER' || viewerRoleLocal === 'MANAGER';
+  const canSeeRisk          = viewerRoleLocal === 'ADMIN' || viewerRoleLocal === 'SENIOR_MANAGER' || viewerRoleLocal === 'MANAGER' || viewerRoleLocal === 'SUPERVISOR';
+  const canSeeRanks         = viewerRoleLocal === 'ADMIN' || viewerRoleLocal === 'SENIOR_MANAGER' || viewerRoleLocal === 'MANAGER';
+  const canSeeYearAvg       = viewerRoleLocal === 'ADMIN' || viewerRoleLocal === 'SENIOR_MANAGER' || viewerRoleLocal === 'MANAGER' || viewerRoleLocal === 'SUPERVISOR';
+  const canSeePerfDetail    = viewerRoleLocal === 'ADMIN' || viewerRoleLocal === 'SENIOR_MANAGER' || viewerRoleLocal === 'MANAGER' || viewerRoleLocal === 'SUPERVISOR';
+
+  // Grid column counts for adaptive layout
+  const insightStripCols = canSeeStrengthFocus ? 4 : (canSeeRisk ? 2 : 1);
+  const kpiGridCols      = canSeeRanks ? 4 : (canSeeYearAvg ? 2 : 1);
+
+  const safeAssignmentStats =
+    (typeof assignmentStats !== 'undefined' && assignmentStats) ? assignmentStats : {
+      totalDays: 0, totalRacks: 0, avgRacksPerDay: null, maxRacksInSingleDay: 0
+    };
+
+  const safeAttendanceStats =
+    (typeof attendanceStats !== 'undefined' && attendanceStats) ? attendanceStats : {
+      totalDays: 0, presentDays: 0, absentDays: 0, lateDays: 0,
+      avgMinutesLateOnLateDays: null, onTimeDays: 0, unpunctualDays: 0, lateDaysByBucket: 0
+    };
+
+  const safeTrainingStats =
+    (typeof trainingStats !== 'undefined' && trainingStats) ? trainingStats : {
+      total: 0, completed: 0, inProgress: 0, notStarted: 0, current: 0, expiring: 0, expired: 0
+    };
+
+  const safeEsdStats =
+    (typeof esdStats !== 'undefined' && esdStats) ? esdStats : {
+      totalDays: 0, daysWithPassBeforeShift: 0, daysWithPassAfterShift: 0, daysWithoutPass: 0
+    };
+
+  const safeTrainingGrouped =
+    (typeof trainingGrouped !== 'undefined' && Array.isArray(trainingGrouped)) ? trainingGrouped : [];
+
+  const safeEsdDailySummary =
+    (typeof esdDailySummary !== 'undefined' && Array.isArray(esdDailySummary)) ? esdDailySummary : [];
+
+  const safeAttendanceDailySummary =
+    (typeof attendanceDailySummary !== 'undefined' && Array.isArray(attendanceDailySummary)) ? attendanceDailySummary : [];
+
+  const safeAssignmentDailySummary =
+    (typeof assignmentDailySummary !== 'undefined' && Array.isArray(assignmentDailySummary)) ? assignmentDailySummary : [];
+
+  const safeGoalStats =
+    (typeof goalStats !== 'undefined' && goalStats) ? goalStats : {
+      total: 0, open: 0, inProgress: 0, done: 0, onHold: 0,
+      lastCheckInAt: null, daysSinceLastCheckIn: null,
+    };
+
+  const safeEsdStreak = (typeof esdStreak !== 'undefined' && esdStreak != null) ? esdStreak : null;
+  const safeLateTrendDelta = (typeof lateTrendDelta !== 'undefined' && lateTrendDelta) ? lateTrendDelta : null;
+  const safeAbsencePattern = (typeof absencePattern !== 'undefined' && absencePattern) ? absencePattern : null;
+
+  const safeDashboard = (typeof dashboard !== 'undefined' && dashboard) ? dashboard : {};
+  const perfBucketsArray = Array.isArray(safeDashboard.buckets) ? safeDashboard.buckets : [];
+  const perfSummary = safeDashboard.summary || { strengths: [], focusAreas: [], riskFlags: [] };
+  const overallPerfTrend = safeDashboard.overallTrend || { label: 'No trend data', direction: 'flat' };
+  const newPerf = safeDashboard.performanceBuckets || {};
+
+  function buildCompatBucket(label, oldBucket) {
+    return {
+      label,
+      score: oldBucket && oldBucket.score != null ? oldBucket.score : null,
+      status: oldBucket && oldBucket.status ? oldBucket.status : '',
+      statusLabel:
+        oldBucket && oldBucket.status === 'good' ? 'Strong'
+        : oldBucket && oldBucket.status === 'watch' ? 'Watch'
+        : oldBucket && oldBucket.status === 'risk' ? 'Risk'
+        : 'N/A',
+      trend:
+        oldBucket && oldBucket.trend && oldBucket.trend.direction === 'up' ? 1
+        : oldBucket && oldBucket.trend && oldBucket.trend.direction === 'down' ? -1
+        : 0,
+      highlight: oldBucket && oldBucket.highlight ? oldBucket.highlight : 'No detail',
+      insight: oldBucket && oldBucket.summary ? oldBucket.summary : 'No interpretation available.',
+      managerAction: 'Review this area using the underlying metrics and coaching notes.',
+      metrics: oldBucket && oldBucket.metrics ? oldBucket.metrics : {},
+      detailRows: oldBucket && Array.isArray(oldBucket.detailRows) ? oldBucket.detailRows : []
+    };
+  }
+
+  const perfCompatFromOld = {
+    throughput: buildCompatBucket('Throughput / Execution', perfBucketsArray[0]),
+    troubleshooting: buildCompatBucket('Troubleshooting Effectiveness', perfBucketsArray[1]),
+    quality: buildCompatBucket('Quality Protection', perfBucketsArray[2]),
+    timeOwnership: buildCompatBucket('Time Ownership / Downtime', perfBucketsArray[3]),
+    reliability: buildCompatBucket('Reliability / Readiness', perfBucketsArray[4])
+  };
+
+  const perf = Object.keys(newPerf).length ? newPerf : perfCompatFromOld;
+
+  const summaryStrength = perfSummary && perfSummary.strengths && perfSummary.strengths.length
+    ? (perfSummary.strengths[0].title || perfSummary.strengths[0].label || perfSummary.strengths[0].text || '—')
+    : '—';
+
+  const summaryFocus = perfSummary && perfSummary.focusAreas && perfSummary.focusAreas.length
+    ? (perfSummary.focusAreas[0].title || perfSummary.focusAreas[0].label || perfSummary.focusAreas[0].text || '—')
+    : '—';
+
+  const summaryRisk = perfSummary && perfSummary.riskFlags && perfSummary.riskFlags.length
+    ? (perfSummary.riskFlags[0].label || perfSummary.riskFlags[0].title || perfSummary.riskFlags[0].text || 'None')
+    : 'None';
+
+  const yearAvgDisplay =
+    safeDashboard.yearAvg != null ? safeDashboard.yearAvg
+    : overallAverage != null ? overallAverage.toFixed(2)
+    : '—';
+
+  const monthAvgDisplay =
+    safeDashboard.monthAvg != null ? safeDashboard.monthAvg
+    : currentMonthAverage != null ? currentMonthAverage.toFixed(2)
+    : '—';
+
+  const trendDirection = safeDashboard.trendDirection || overallPerfTrend.direction || 'flat';
+  const trendLabel = safeDashboard.trendLabel || overallPerfTrend.label || 'No trend data';
+
+  const trainingHealthScore =
+    safeTrainingStats.total
+      ? Math.round(((safeTrainingStats.current || 0) / safeTrainingStats.total) * 100)
+      : null;
+
+  const attendanceReliabilityApprox =
+    safeAttendanceStats.totalDays
+      ? Math.round((((safeAttendanceStats.totalDays || 0) - ((safeAttendanceStats.absentDays || 0) + (safeAttendanceStats.lateDays || 0))) / safeAttendanceStats.totalDays) * 100)
+      : null;
+
+  const esdReliabilityApprox =
+    safeEsdStats.totalDays
+      ? Math.round((((safeEsdStats.daysWithPassBeforeShift || 0) + (safeEsdStats.daysWithPassAfterShift || 0)) / safeEsdStats.totalDays) * 100)
+      : null;
+
+  const opsSummary = safeDashboard.opsSummary || {
+    attendanceReliability: attendanceReliabilityApprox != null ? attendanceReliabilityApprox + '%' : '—',
+    attendanceReliabilityNote: 'Attendance consistency snapshot.',
+    esdCompliance: esdReliabilityApprox != null ? esdReliabilityApprox + '%' : '—',
+    esdComplianceNote: 'Daily ESD pass readiness.',
+    trainingHealth: trainingHealthScore != null ? trainingHealthScore + '%' : '—',
+    trainingHealthNote: 'Current vs expired / expiring training.',
+    assignmentRhythm: safeAssignmentStats.avgRacksPerDay != null ? safeAssignmentStats.avgRacksPerDay : '—',
+    assignmentRhythmNote: 'Recent assignment and closure cadence.'
+  };
+
+  const esdByDate = {};
+  (safeEsdDailySummary || []).forEach(d => { if (d && d.date) esdByDate[d.date] = d; });
+
+  const attByDate = {};
+  (safeAttendanceDailySummary || []).forEach(d => { if (d && d.date) attByDate[d.date] = d; });
+
+  const viewerId =
+    (typeof currentUser !== 'undefined' && currentUser && currentUser.id) ? String(currentUser.id) : null;
+
+  function getSubmitterId(i) {
+    if (!i) return null;
+    if (i.submitterId != null) return String(i.submitterId);
+    if (i.Submitter && i.Submitter.id != null) return String(i.Submitter.id);
+    return null;
+  }
+
+  function getSubmitterRole(i) {
+    if (!i) return '';
+    if (i.Submitter && i.Submitter.role) return String(i.Submitter.role).toUpperCase();
+    return '';
+  }
+
+  const incidentsAll = (typeof incidents !== 'undefined' && Array.isArray(incidents)) ? incidents : [];
+  let visibleIncidents = incidentsAll;
+
+  if (viewerRoleLocal === 'LEAD') {
+    visibleIncidents = incidentsAll.filter(i => viewerId && getSubmitterId(i) === viewerId);
+  } else if (viewerRoleLocal === 'SUPERVISOR') {
+    visibleIncidents = incidentsAll.filter(i => {
+      const sid = getSubmitterId(i);
+      if (viewerId && sid === viewerId) return true;
+      const sr = getSubmitterRole(i);
+      return sr === 'LEAD';
+    });
+  }
+
+  const incStats = { positive: 0, coaching: 0, formal: 0, openFollowUps: 0 };
+  if (visibleIncidents && visibleIncidents.length) {
+    visibleIncidents.forEach(function(i) {
+      const t = (i.type || 'COACHING').toUpperCase();
+      if (t === 'POSITIVE') incStats.positive++;
+      else if (t === 'FORMAL') incStats.formal++;
+      else incStats.coaching++;
+
+      if (i.requiresFollowUp && (i.followUpStatus || '').toUpperCase() !== 'CLOSED') {
+        incStats.openFollowUps++;
+      }
+    });
+  }
+
+  function safeText(v) {
+    return (v == null) ? '' : String(v).trim();
+  }
+
+  function getOverallComment(r) {
+    return safeText(r && r.comment);
+  }
+
+  function getScoreComment(r, key) {
+    const field = key + 'Comment';
+
+    const candidates = [
+      r && r[field],
+      r && r.questions && r.questions[field],
+      r && r.questions && r.questions[key] && r.questions[key].comment,
+      r && r.questionComments && (r.questionComments[field] || r.questionComments[key] || r.questionComments[key + 'Comment']),
+      r && r.comments && (r.comments[field] || r.comments[key] || r.comments[key + 'Comment']),
+      r && r.meta && r.meta[field]
+    ];
+
+    for (const c of candidates) {
+      const t = safeText(c);
+      if (t) return t;
+    }
+    return '';
+  }
+
+  const perfBucketCards = [
+    { key: 'throughput', data: perf.throughput, title: 'Throughput / Execution' },
+    { key: 'troubleshooting', data: perf.troubleshooting, title: 'Troubleshooting Effectiveness' },
+    { key: 'quality', data: perf.quality, title: 'Quality Protection' },
+    { key: 'timeOwnership', data: perf.timeOwnership, title: 'Time Ownership / Downtime' },
+    { key: 'reliability', data: perf.reliability, title: 'Reliability / Readiness' }
+  ].filter(item => item && item.data);
+%>
+
+<style>
+  .page-wrap {
+    max-width: 1500px;
+    margin: 0 auto;
+  }
+
+  .page-band {
+    margin-top: 1.75rem;
+    padding: 1rem;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .page-band.band-dashboard {
+    background: linear-gradient(180deg, rgba(30,41,59,0.34), rgba(15,23,42,0.14));
+  }
+
+  .page-band.band-performance {
+    background: linear-gradient(180deg, rgba(20,27,45,0.36), rgba(2,6,23,0.12));
+  }
+
+  .page-band.band-ops {
+    background: linear-gradient(180deg, rgba(15,23,42,0.30), rgba(2,6,23,0.10));
+  }
+
+  .page-band.band-dev {
+    background: linear-gradient(180deg, rgba(28,35,54,0.28), rgba(2,6,23,0.10));
+  }
+
+  .band-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    padding: 0 0.2rem;
+  }
+
+  .band-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(148,163,184,0.9);
+  }
+
+  .band-subtitle {
+    margin-top: 0.2rem;
+    font-size: 0.92rem;
+    color: rgba(148,163,184,0.86);
+  }
+
+  .sticky-nav {
+    position: sticky;
+    top: 0.5rem;
+    z-index: 40;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    margin-top: 1rem;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(15,23,42,0.92);
+    backdrop-filter: blur(10px);
+  }
+
+  .sticky-nav a {
+    padding: 0.42rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(30,41,59,0.72);
+    color: rgba(226,232,240,0.92);
+    font-size: 0.82rem;
+    text-decoration: none;
+    transition: all 0.18s ease;
+  }
+
+  .sticky-nav a:hover,
+  .sticky-nav a.active {
+    border-color: rgba(59,130,246,0.45);
+    background: rgba(30,41,59,0.98);
+    box-shadow: 0 0 0 1px rgba(59,130,246,0.18) inset;
+  }
+
+  .avatar {
+    width: 88px;
+    height: 88px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: rgba(15,23,42,0.9);
+    color: #dbeafe;
+    font-size: 2rem;
+    font-weight: 800;
+    border: 2px solid rgba(59,130,246,0.45);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+  }
+
+  .avatar-image {
+    display: block;
+    object-fit: cover;
+    background: transparent;
+  }
+
+  .avatar-xl {
+    width: 128px;
+    height: 128px;
+    font-size: 3rem;
+    border-width: 3px;
+    flex: 0 0 128px;
+  }
+
+  .profile-meta {
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    margin-top: 0.35rem;
+  }
+
+  .profile-meta-wide {
+    width: 100%;
+    margin-top: 0.55rem;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.28rem 0.6rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(15,23,42,0.72);
+    color: rgba(226,232,240,0.95);
+    font-size: 0.8rem;
+  }
+
+  .badge.subtle {
+    color: rgba(148,163,184,0.95);
+  }
+
+  .trend-pill {
+    display: inline-flex;
+    align-items: center;
+    align-self: center;
+    gap: 0.35rem;
+    margin-top: 0.6rem;
+    padding: 0.28rem 0.65rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(15,23,42,0.72);
+    font-size: 0.8rem;
+  }
+
+  .trend-pill.up { color: #86efac; }
+  .trend-pill.down { color: #fca5a5; }
+  .trend-pill.flat { color: #cbd5e1; }
+
+  .profile-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    padding: 1.1rem 1.2rem;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: linear-gradient(145deg, rgba(15,23,42,0.75), rgba(15,23,42,0.55));
+    box-shadow: 0 10px 28px rgba(0,0,0,0.25), inset 0 0 0 1px rgba(255,255,255,0.02);
+  }
+
+  .profile-hero-main {
+    position: relative;
+    flex: 1 1 760px;
+    min-width: 320px;
+    display: flex;
+    align-items: center;
+    gap: 1.15rem;
+  }
+
+  .profile-hero-main::before {
+    content: '';
+    position: absolute;
+    inset: -10px;
+    z-index: 0;
+    pointer-events: none;
+    background: radial-gradient(circle at left center, rgba(59,130,246,0.08), transparent 60%);
+  }
+
+  .profile-hero-main > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .profile-hero-content {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .profile-hero-topline {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.9rem;
+    flex-wrap: wrap;
+  }
+
+  .profile-hero-topline h1 {
+    margin: 0;
+    font-size: 2.1rem;
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+  }
+
+  .profile-hero-note {
+    margin: 0.75rem 0 0 0;
+    font-size: 0.92rem;
+  }
+
+  .profile-actions-hero {
+    flex: 0 1 420px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .profile-actions-hero .btn {
+    padding: 0.45rem 0.7rem;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+
+  .snapshot-insight-strip,
+  .snapshot-kpi-grid {
+    margin-top: 1rem;
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .snapshot-insight-strip { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .snapshot-insight-strip.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .snapshot-insight-strip.cols-1 { grid-template-columns: minmax(0, 1fr); }
+  .snapshot-kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .snapshot-kpi-grid.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .snapshot-kpi-grid.cols-1 { grid-template-columns: minmax(0, 1fr); }
+
+  .snapshot-insight-card,
+  .snapshot-kpi-card {
+    min-width: 0;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(15,23,42,0.52);
+  }
+
+  .snapshot-insight-clickcard,
+  .snapshot-kpi-clickcard {
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    padding: 0.9rem 1rem;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(15,23,42,0.52);
+    color: inherit;
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+  }
+
+  .snapshot-insight-clickcard:hover,
+  .snapshot-kpi-clickcard:hover {
+    transform: translateY(-1px);
+    border-color: rgba(59,130,246,0.24);
+    box-shadow: 0 10px 28px rgba(0,0,0,0.18);
+  }
+
+  .snapshot-insight-label,
+  .snapshot-kpi-card .label,
+  .snapshot-kpi-clickcard .label {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(148,163,184,0.88);
+  }
+
+  .snapshot-insight-card strong,
+  .snapshot-insight-clickcard strong {
+    display: block;
+    font-size: 0.95rem;
+    line-height: 1.25;
+    color: rgba(226,232,240,0.96);
+  }
+
+  .snapshot-kpi-card strong,
+  .snapshot-kpi-clickcard strong {
+    font-size: 1.1rem;
+    line-height: 1.1;
+  }
+
+  .perf-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .perf-summary-clickcard {
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    padding: 1rem;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(15,23,42,0.52);
+    color: inherit;
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+  }
+
+  .perf-summary-clickcard:hover {
+    transform: translateY(-1px);
+    border-color: rgba(59,130,246,0.24);
+    box-shadow: 0 10px 28px rgba(0,0,0,0.18);
+  }
+
+  .perf-summary-clickcard.good { box-shadow: inset 0 0 0 999px rgba(34,197,94,0.04); }
+  .perf-summary-clickcard.watch { box-shadow: inset 0 0 0 999px rgba(245,158,11,0.05); }
+  .perf-summary-clickcard.risk { box-shadow: inset 0 0 0 999px rgba(239,68,68,0.06); }
+
+  .perf-summary-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .perf-summary-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: rgba(226,232,240,0.96);
+  }
+
+  .perf-summary-score {
+    margin-top: 0.55rem;
+    font-size: 1.75rem;
+    font-weight: 800;
+    line-height: 1;
+    color: rgba(248,250,252,0.98);
+  }
+
+  .perf-summary-meta {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-top: 0.55rem;
+  }
+
+  .perf-summary-hint {
+    margin-top: 0.55rem;
+    font-size: 0.82rem;
+    color: rgba(148,163,184,0.9);
+  }
+
+  .perf-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.18rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(15,23,42,0.72);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+
+  .perf-status.good { color: #86efac; }
+  .perf-status.watch { color: #fcd34d; }
+  .perf-status.risk { color: #fca5a5; }
+
+  .section-shell {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(2,6,23,0.18);
+  }
+
+  .section-shell-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  .section-shell-header h2 {
+    margin: 0 0 0.2rem 0;
+  }
+
+  .section-shell-header p {
+    margin: 0;
+    color: rgba(148,163,184,0.88);
+  }
+
+  .header-actions,
+  .section-footer-actions,
+  .summary-action-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .support-strip,
+  .filter-strip {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+  }
+
+  .mini-chip,
+  .chip {
+    padding: 0.18rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(15,23,42,0.7);
+    color: rgba(229,231,235,0.95);
+    font-size: 0.72rem;
+  }
+
+  .mini-chip.warn {
+    background: rgba(245,158,11,0.12);
+    border-color: rgba(245,158,11,0.25);
+  }
+
+  .chip.small {
+    font-size: 0.72rem;
+  }
+
+  .chip.muted.small {
+    opacity: 0.9;
+  }
+
+  .table-wrap {
+    overflow: auto;
+    border-radius: 14px;
+  }
+
+  .empty-state,
+  .drawer-empty {
+    padding: 1rem;
+    border-radius: 14px;
+    border: 1px dashed rgba(255,255,255,0.12);
+    background: rgba(15,23,42,0.35);
+    color: rgba(148,163,184,0.88);
+  }
+
+  .progress-cell {
+    min-width: 160px;
+  }
+
+  .progress-bar {
+    height: 8px;
+    margin-top: 0.25rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.08);
+  }
+
+  .progress-bar > div {
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(59,130,246,0.85);
+  }
+
+  .ops-shell,
+  .dev-shell {
+    background: rgba(2,6,23,0.2);
+  }
+
+  .ops-panel,
+  .dev-panel {
+    padding: 1rem;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(15,23,42,0.42);
+  }
+
+  .ops-summary-grid,
+  .dev-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .ops-summary-grid {
+    margin-top: 1rem;
+  }
+
+  .dev-summary-grid.compact {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    margin-bottom: 0;
+  }
+
+  .ops-summary-card,
+  .dev-summary-card,
+  .bucket-summary-card {
+    padding: 0.95rem 1rem;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(15,23,42,0.52);
+  }
+
+  .bucket-summary-card h3,
+  .bucket-summary-card h4 {
+    margin-top: 0;
+    margin-bottom: 0.35rem;
+  }
+
+  .bucket-summary-note {
+    margin: 0;
+    color: rgba(148,163,184,0.88);
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
+  .dev-summary-card.compact {
+    padding: 0.8rem 0.9rem;
+  }
+
+  .ops-summary-label,
+  .ops-mini-label,
+  .dev-summary-label {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(148,163,184,0.88);
+  }
+
+  .ops-summary-card strong,
+  .dev-summary-card strong {
+    font-size: 1.12rem;
+    line-height: 1.1;
+  }
+
+  .ops-summary-card p,
+  .dev-summary-card p {
+    margin: 0.45rem 0 0 0;
+    font-size: 0.84rem;
+    line-height: 1.35;
+    color: rgba(148,163,184,0.88);
+  }
+
+  .ops-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .ops-mini-card {
+    padding: 0.85rem 0.95rem;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(15,23,42,0.5);
+  }
+
+  .ops-mini-card strong {
+    font-size: 1.08rem;
+    line-height: 1.1;
+  }
+
+  .calendar-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .calendar-actions,
+  .calendar-tools {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .calendar-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.8rem;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(15,23,42,0.55);
+  }
+
+  .calendar-grid {
+    margin-top: 0.25rem;
+  }
+
+  .calendar-details-panel {
+    margin-top: 0.85rem;
+    padding: 1rem;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(15,23,42,0.48);
+  }
+
+  .calendar-details-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .calendar-details-grid {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+  }
+
+  .ops-soft-panel {
+    flex: 1 1 260px;
+    min-width: 260px;
+    padding: 1rem;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(15,23,42,0.55);
+  }
+
+  .ops-soft-panel h4 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+  }
+
+  .timeline-chips {
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    margin-top: 0.65rem;
+  }
+
+  .review-comment-panel {
+    margin-top: 0.85rem;
+    padding: 0.95rem 1rem;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(15,23,42,0.52);
+  }
+
+  .review-comment-panel p {
+    margin: 0.35rem 0 0 0;
+    line-height: 1.45;
+    color: rgba(226,232,240,0.94);
+  }
+
+  .review-question-table,
+  .goals-table {
+    font-size: 0.9rem;
+  }
+
+  .cal-head {
+    padding: 0.5rem 0.25rem;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: rgba(156,163,175,0.95);
+  }
+
+  .cal-day {
+    position: relative;
+    overflow: hidden;
+    min-height: 92px;
+    padding: 0.6rem 0.6rem 0.55rem 0.6rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.07);
+    background: rgba(17,24,39,0.55);
+    cursor: pointer;
+  }
+
+  .cal-day:hover { outline: 2px solid rgba(59,130,246,0.35); }
+  .cal-day.is-out { opacity: 0.45; }
+  .cal-day.is-hidden { display: none !important; }
+
+  .cal-day .date-num {
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+
+  .cal-badges {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    margin-top: 0.35rem;
+  }
+
+  .mini-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    line-height: 1.2;
+    padding: 0.14rem 0.42rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(15,23,42,0.7);
+    color: rgba(229,231,235,0.95);
+    font-size: 0.72rem;
+  }
+
+  .mini-ok { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.25); }
+  .mini-warn { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.25); }
+  .mini-bad { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.25); }
+  .mini-muted { opacity: 0.75; }
+
+  .tint-ok { box-shadow: inset 0 0 0 999px rgba(34,197,94,0.04); }
+  .tint-warn { box-shadow: inset 0 0 0 999px rgba(245,158,11,0.05); }
+  .tint-bad { box-shadow: inset 0 0 0 999px rgba(239,68,68,0.06); }
+
+  .status.good,
+  .status-badge.status-done {
+    color: #86efac;
+  }
+
+  .status.watch,
+  .status-badge.status-open {
+    color: #fcd34d;
+  }
+
+  .status.risk,
+  .status-badge.status-danger {
+    color: #fca5a5;
+  }
+
+  .drawer-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .drawer-subcard {
+    padding: 0.95rem;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(30,41,59,0.45);
+  }
+
+  .drawer-subcard h4 {
+    margin: 0 0 0.5rem 0;
+  }
+
+  .drawer-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .drawer-list-item {
+    padding: 0.85rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(15,23,42,0.55);
+  }
+
+  .drawer-list-meta {
+    margin-top: 0.3rem;
+    font-size: 0.84rem;
+    color: rgba(148,163,184,0.9);
+  }
+
+  .drawer-list-body {
+    margin-top: 0.45rem;
+    color: rgba(226,232,240,0.94);
+    white-space: pre-wrap;
+  }
+
+  .profile-section-hidden-source {
+    display: none !important;
+  }
+
+  .detail-rows-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+  }
+
+  .detail-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.45rem 0.6rem;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.03);
+    position: relative;
+    cursor: default;
+  }
+
+  .detail-row:hover {
+    background: rgba(255,255,255,0.06);
+  }
+
+  .detail-row-pills {
+    display: flex;
+    gap: 0.3rem;
+    align-items: center;
+  }
+
+  .std-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.12rem 0.38rem;
+    border-radius: 5px;
+    background: rgba(99,102,241,0.15);
+    color: #a5b4fc;
+    border: 1px solid rgba(99,102,241,0.3);
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+    transition: background 0.15s;
+  }
+
+  .std-badge:hover {
+    background: rgba(99,102,241,0.28);
+  }
+
+  #metricStdPopover {
+    position: fixed;
+    z-index: 501;
+    background: rgba(10,17,34,0.98);
+    border: 1px solid rgba(99,102,241,0.35);
+    border-radius: 10px;
+    padding: 0.75rem 0.9rem;
+    width: 280px;
+    max-width: 90vw;
+    pointer-events: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    display: none;
+    font-size: 0.75rem;
+    color: rgba(226,232,240,0.88);
+    line-height: 1.6;
+  }
+
+  #metricStdPopover::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: rgba(99,102,241,0.35);
+  }
+
+  .std-popover-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.2rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .std-popover-row:last-child { border-bottom: none; }
+
+  .std-popover-key {
+    color: rgba(226,232,240,0.45);
+    white-space: nowrap;
+  }
+
+  .std-popover-val {
+    font-weight: 600;
+    text-align: right;
+  }
+
+  .std-popover-note {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    color: rgba(226,232,240,0.5);
+    font-size: 0.72rem;
+    line-height: 1.5;
+  }
+
+  #metricFormulaTooltip {
+    position: fixed;
+    z-index: 500;
+    background: rgba(10,17,34,0.98);
+    border: 1px solid rgba(255,255,255,0.13);
+    border-radius: 10px;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.75rem;
+    color: rgba(226,232,240,0.88);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    width: 270px;
+    max-width: 88vw;
+    pointer-events: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    display: none;
+  }
+
+  #metricFormulaTooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: rgba(255,255,255,0.13);
+  }
+
+  .detail-row-label {
+    font-size: 0.82rem;
+    color: rgba(226,232,240,0.7);
+  }
+
+  .metric-formula-trigger {
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .metric-formula-trigger:hover {
+    color: rgba(226,232,240,0.95);
+  }
+
+  .metric-info-icon {
+    font-size: 0.68rem;
+    opacity: 0.45;
+    vertical-align: middle;
+    transition: opacity 0.15s;
+  }
+
+  .metric-formula-trigger:hover .metric-info-icon {
+    opacity: 0.9;
+    color: #93c5fd;
+  }
+
+  .detail-row-value {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: rgba(226,232,240,0.95);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .detail-row-score {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.15rem 0.45rem;
+    border-radius: 6px;
+    min-width: 2.4rem;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .detail-row-score.good {
+    background: rgba(34,197,94,0.15);
+    color: #86efac;
+    border: 1px solid rgba(34,197,94,0.25);
+  }
+
+  .detail-row-score.watch {
+    background: rgba(234,179,8,0.15);
+    color: #fde047;
+    border: 1px solid rgba(234,179,8,0.25);
+  }
+
+  .detail-row-score.risk {
+    background: rgba(239,68,68,0.15);
+    color: #fca5a5;
+    border: 1px solid rgba(239,68,68,0.25);
+  }
+
+  .detail-row-score.neutral {
+    background: rgba(255,255,255,0.05);
+    color: rgba(226,232,240,0.4);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .profile-drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(2,6,23,0.62);
+    z-index: 80;
+    display: none;
+  }
+
+  .profile-drawer-backdrop.open {
+    display: block;
+  }
+
+  .profile-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    width: min(760px, 96vw);
+    background: rgba(15,23,42,0.98);
+    border-left: 1px solid rgba(255,255,255,0.08);
+    box-shadow: -10px 0 36px rgba(0,0,0,0.38);
+    z-index: 90;
+    transform: translateX(100%);
+    transition: transform 0.22s ease;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .profile-drawer.open {
+    transform: translateX(0);
+  }
+
+  .profile-drawer-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .profile-drawer-body {
+    padding: 1rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .profile-drawer-close {
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(30,41,59,0.6);
+    color: rgba(229,231,235,0.96);
+    border-radius: 10px;
+    padding: 0.45rem 0.7rem;
+    cursor: pointer;
+  }
+
+  .pdms-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(2,6,23,0.75);
+  }
+
+  .pdms-modal {
+    width: min(980px, 100%);
+    max-height: 85vh;
+    overflow: auto;
+    padding: 1rem;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.10);
+    background: rgba(15,23,42,0.95);
+    box-shadow: 0 20px 70px rgba(0,0,0,0.45);
+  }
+
+  .pdms-modal textarea {
+    width: 100%;
+    min-height: 170px;
+    padding: 0.75rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(2,6,23,0.5);
+    color: rgba(229,231,235,0.95);
+    outline: none;
+  }
+
+  .pdms-modal textarea:focus {
+    border-color: rgba(59,130,246,0.55);
+  }
+
+  @media (max-width: 1400px) {
+    .perf-summary-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 1000px) {
+    .ops-summary-grid,
+    .dev-summary-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 980px) {
+    .profile-hero {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .profile-hero-main {
+      width: 100%;
+    }
+
+    .profile-actions-hero {
+      flex: 1 1 auto;
+      justify-content: flex-start;
+    }
+
+    #complianceCalendar {
+      grid-template-columns: repeat(7, minmax(90px, 1fr)) !important;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .snapshot-insight-strip,
+    .snapshot-kpi-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 720px) {
+    #complianceCalendar {
+      grid-template-columns: repeat(2, minmax(140px, 1fr)) !important;
+    }
+
+    .cal-head {
+      display: none;
+    }
+
+    .section-shell-header,
+    .calendar-toolbar,
+    .calendar-details-head,
+    .profile-drawer-head {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  }
+
+  .review-drawer-toolbar {
+    padding: 0.75rem 0.85rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.07);
+    background: rgba(15,23,42,0.52);
+    margin-bottom: 0.85rem;
+  }
+
+  .review-drawer-toolbar-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    align-items: center;
+  }
+
+  .review-drawer-toolbar-actions {
+    display: flex;
+    gap: 0.4rem;
+    margin-top: 0.55rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .review-drawer-toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+  }
+
+  .review-drawer-toolbar-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(148,163,184,0.85);
+    margin-right: 0.1rem;
+  }
+
+  .review-drawer-select {
+    padding: 0.3rem 0.55rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(30,41,59,0.75);
+    color: rgba(226,232,240,0.95);
+    font-size: 0.82rem;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .review-drawer-select:focus {
+    border-color: rgba(59,130,246,0.45);
+  }
+
+  .review-drawer-count {
+    margin-left: auto;
+    font-size: 0.78rem;
+    color: rgba(148,163,184,0.8);
+    white-space: nowrap;
+  }
+
+  .js-review-sort.active-sort {
+    border-color: rgba(59,130,246,0.55);
+    background: rgba(30,41,59,0.98);
+    box-shadow: 0 0 0 1px rgba(59,130,246,0.18) inset;
+    color: rgba(226,232,240,1);
+  }
+
+  /* Collapsible review cards */
+  .review-card {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .review-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0.95rem;
+    cursor: pointer;
+    user-select: none;
+    border-radius: 14px;
+    transition: background 0.15s ease;
+  }
+
+  .review-card-header:hover {
+    background: rgba(59,130,246,0.06);
+  }
+
+  .review-card-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  .review-card-period {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: rgba(226,232,240,0.96);
+    white-space: nowrap;
+  }
+
+  .review-card-submitter {
+    font-size: 0.82rem;
+    color: rgba(148,163,184,0.9);
+    white-space: nowrap;
+  }
+
+  .review-card-bucket-pills {
+    display: flex;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+  }
+
+  .review-bucket-pill {
+    padding: 0.12rem 0.42rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(30,41,59,0.65);
+    font-size: 0.72rem;
+    color: rgba(203,213,225,0.9);
+    white-space: nowrap;
+  }
+
+  .review-card-header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .review-card-overall {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: rgba(226,232,240,0.96);
+    white-space: nowrap;
+  }
+
+  .review-card-chevron {
+    font-size: 1.1rem;
+    color: rgba(148,163,184,0.7);
+    transition: transform 0.18s ease;
+    display: inline-block;
+    line-height: 1;
+  }
+
+  .review-card.open .review-card-chevron {
+    transform: rotate(90deg);
+  }
+
+  .review-card-body {
+    display: none;
+    padding: 0 0.95rem 0.95rem 0.95rem;
+  }
+
+  .review-card.open .review-card-body {
+    display: block;
+  }
+
+  .review-card-actions {
+    display: flex;
+    gap: 0.35rem;
+    justify-content: flex-end;
+    margin-bottom: 0.5rem;
+  }
+
+  @media (max-width: 640px) {
+    .snapshot-insight-strip,
+    .snapshot-kpi-grid,
+    .ops-summary-grid,
+    .ops-mini-grid,
+    .dev-summary-grid,
+    .perf-summary-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .profile-hero-main {
+      align-items: flex-start;
+    }
+
+    .avatar-xl {
+      width: 104px;
+      height: 104px;
+      flex-basis: 104px;
+      font-size: 2.5rem;
+    }
+
+    .profile-hero-topline h1 {
+      font-size: 1.6rem;
+    }
+
+    .ops-panel,
+    .dev-panel {
+      padding: 0.85rem;
+    }
+  }
+</style>
+
+<div class="page-wrap">
+
+  <div class="sticky-nav">
+    <a href="#snapshot">Snapshot</a>
+    <% if (canSeePerfDetail) { %><a href="#performance">Performance</a><% } %>
+    <a href="#compliance">Compliance</a>
+    <a href="#ops">Operations</a>
+    <a href="#training">Training</a>
+    <a href="#coaching">Coaching</a>
+    <a href="#reviews">Reviews</a>
+    <a href="#goals">Goals</a>
+  </div>
+
+  <section id="snapshot" class="page-band band-dashboard">
+    <div class="profile-hero">
+      <div class="profile-hero-main">
+        <% if (staff.avatarPath) { %>
+          <img
+            src="<%= staff.avatarPath %>"
+            alt="Profile photo of <%= staff.name || 'staff member' %>"
+            class="avatar avatar-image avatar-xl"
+          />
+        <% } else { %>
+          <div class="avatar avatar-xl">
+            <%= (staff.name || 'U').charAt(0).toUpperCase() %>
+          </div>
+        <% } %>
+
+        <div class="profile-hero-content">
+          <div class="profile-hero-topline">
+            <h1><%= staff.name || 'Unknown Staff' %></h1>
+            <div class="trend-pill <%= trendDirection %>">
+              <%= trendLabel %>
+            </div>
+          </div>
+
+          <div class="profile-meta profile-meta-wide">
+            <span class="badge"><%= profile.positionType || 'Position not set' %></span>
+            <span class="badge"><%= staff.rosterShift || 'Shift N/A' %></span>
+            <span class="badge"><%= staff.rosterBuilding || 'Bldg N/A' %></span>
+            <span class="badge subtle">ID: <%= profile.employeeId || '—' %></span>
+            <% if (typeof tenureLabel !== 'undefined' && tenureLabel) { %>
+              <span class="badge subtle">Tenure: <%= tenureLabel %></span>
+            <% } %>
+          </div>
+
+          <% if (latestReview) { %>
+            <p class="muted profile-hero-note">
+              Last reviewed in <strong><%= latestReview.periodLabel %></strong>
+              by <strong><%= latestReview.submitterName %></strong>.
+            </p>
+          <% } else { %>
+            <p class="muted profile-hero-note">
+              No reviews have been submitted yet for this staff member.
+            </p>
+          <% } %>
+        </div>
+      </div>
+
+      <div class="profile-actions profile-actions-hero">
+        <a href="/staff" class="btn ghost">Back to Staff Roster</a>
+
+        <% if (canEditProfile) { %>
+          <a href="/staff/<%= staff.id %>/edit" class="btn ghost">Edit Full Profile</a>
+          <a href="/staff/<%= staff.id %>/export/pdf" target="_blank" class="btn ghost">Export PDF</a>
+        <% } %>
+
+        <% if (canCreateReview) { %>
+          <a href="/reviews/new?staffId=<%= staff.id %>" class="btn">+ Review</a>
+        <% } %>
+
+        <% if (canCreateGoal) { %>
+          <a href="/goals/new?ownerId=<%= staff.id %>" class="btn ghost">+ Goal</a>
+        <% } %>
+
+        <% if (canCreateReview) { %>
+          <a href="/meetings/new?staffId=<%= staff.id %>&type=ONE_ON_ONE" class="btn ghost">Schedule 1:1</a>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="snapshot-insight-strip <%= insightStripCols === 2 ? 'cols-2' : insightStripCols === 1 ? 'cols-1' : '' %>">
+      <% if (canSeeStrengthFocus) { %>
+      <button
+        type="button"
+        class="snapshot-insight-clickcard js-open-profile-drawer"
+        data-drawer-title="Strength Snapshot"
+        data-drawer-subtitle="Top current strength surfaced by the profile dashboard."
+        data-drawer-source="drawer-snapshot-strength"
+      >
+        <span class="snapshot-insight-label">Strength</span>
+        <strong><%= summaryStrength %></strong>
+      </button>
+
+      <button
+        type="button"
+        class="snapshot-insight-clickcard js-open-profile-drawer"
+        data-drawer-title="Area of Focus Snapshot"
+        data-drawer-subtitle="Primary area of focus currently surfaced by the dashboard."
+        data-drawer-source="drawer-snapshot-focus"
+      >
+        <span class="snapshot-insight-label">Area of Focus</span>
+        <strong><%= summaryFocus %></strong>
+      </button>
+      <% } %>
+
+      <% if (canSeeRisk) { %>
+      <button
+        type="button"
+        class="snapshot-insight-clickcard js-open-profile-drawer"
+        data-drawer-title="Risk Snapshot"
+        data-drawer-subtitle="Current flagged risk pulled from the staff dashboard."
+        data-drawer-source="drawer-snapshot-risk"
+      >
+        <span class="snapshot-insight-label">Risk</span>
+        <strong><%= summaryRisk %></strong>
+      </button>
+      <% } %>
+
+      <button
+        type="button"
+        class="snapshot-insight-clickcard js-open-profile-drawer"
+        data-drawer-title="Latest Review Snapshot"
+        data-drawer-subtitle="Most recent visible review and reviewer context."
+        data-drawer-source="drawer-snapshot-latest-review"
+      >
+        <span class="snapshot-insight-label">Last Review</span>
+        <strong><%= latestReview ? latestReview.periodLabel : '—' %></strong>
+      </button>
+    </div>
+
+    <div class="snapshot-kpi-grid <%= kpiGridCols === 2 ? 'cols-2' : kpiGridCols === 1 ? 'cols-1' : '' %>">
+      <% if (canSeeRanks) { %>
+      <button
+        type="button"
+        class="snapshot-kpi-clickcard js-open-profile-drawer"
+        data-drawer-title="Shift Rank"
+        data-drawer-subtitle="Role-scoped shift ranking snapshot."
+        data-drawer-source="drawer-snapshot-shift-rank"
+      >
+        <span class="label">Shift Rank</span>
+        <strong><%= safeDashboard.shiftRank ?? '—' %></strong>
+      </button>
+
+      <button
+        type="button"
+        class="snapshot-kpi-clickcard js-open-profile-drawer"
+        data-drawer-title="Department Rank"
+        data-drawer-subtitle="Department-level ranking snapshot."
+        data-drawer-source="drawer-snapshot-department-rank"
+      >
+        <span class="label">Department Rank</span>
+        <strong><%= safeDashboard.departmentRank ?? '—' %></strong>
+      </button>
+      <% } %>
+
+      <% if (canSeeYearAvg) { %>
+      <button
+        type="button"
+        class="snapshot-kpi-clickcard js-open-profile-drawer"
+        data-drawer-title="Year Average"
+        data-drawer-subtitle="Average across visible review history for the year view."
+        data-drawer-source="drawer-snapshot-year-avg"
+      >
+        <span class="label">Year Avg</span>
+        <strong><%= yearAvgDisplay %></strong>
+      </button>
+      <% } %>
+
+      <button
+        type="button"
+        class="snapshot-kpi-clickcard js-open-profile-drawer"
+        data-drawer-title="Current Month Average"
+        data-drawer-subtitle="Current month average based on visible review records."
+        data-drawer-source="drawer-snapshot-month-avg"
+      >
+        <span class="label">Current Month Avg</span>
+        <strong><%= monthAvgDisplay %></strong>
+      </button>
+    </div>
+
+    <div id="drawer-snapshot-strength" class="profile-section-hidden-source">
+      <div class="drawer-subcard">
+        <h4>Strength Snapshot</h4>
+        <p class="bucket-summary-note"><%= summaryStrength %></p>
+      </div>
+    </div>
+
+    <div id="drawer-snapshot-focus" class="profile-section-hidden-source">
+      <div class="drawer-subcard">
+        <h4>Area of Focus Snapshot</h4>
+        <p class="bucket-summary-note"><%= summaryFocus %></p>
+      </div>
+    </div>
+
+    <div id="drawer-snapshot-risk" class="profile-section-hidden-source">
+      <div class="drawer-subcard">
+        <h4>Risk Snapshot</h4>
+        <p class="bucket-summary-note"><%= summaryRisk %></p>
+      </div>
+    </div>
+
+    <div id="drawer-snapshot-latest-review" class="profile-section-hidden-source">
+      <div class="drawer-subcard">
+        <h4>Latest Review</h4>
+        <% if (latestReview) { %>
+          <p class="bucket-summary-note">
+            Period: <strong><%= latestReview.periodLabel %></strong><br />
+            Reviewer: <strong><%= latestReview.submitterName %></strong><br />
+            Overall: <strong><%= latestReview.overallScore != null ? latestReview.overallScore.toFixed(2) : 'N/A' %></strong>
+          </p>
+        <% } else { %>
+          <div class="drawer-empty">No review history yet.</div>
+        <% } %>
+      </div>
+    </div>
+
+    <div id="drawer-snapshot-shift-rank" class="profile-section-hidden-source">
+      <div class="drawer-subcard">
+        <h4>Shift Rank</h4>
+        <p class="bucket-summary-note">
+          Current shift rank: <strong><%= safeDashboard.shiftRank ?? '—' %></strong>
+        </p>
+      </div>
+    </div>
+
+    <div id="drawer-snapshot-department-rank" class="profile-section-hidden-source">
+      <div class="drawer-subcard">
+        <h4>Department Rank</h4>
+        <p class="bucket-summary-note">
+          Current department rank: <strong><%= safeDashboard.departmentRank ?? '—' %></strong>
+        </p>
+      </div>
+    </div>
+
+    <div id="drawer-snapshot-year-avg" class="profile-section-hidden-source">
+      <div class="drawer-subcard">
+        <h4>Year Average</h4>
+        <p class="bucket-summary-note">
+          Year average: <strong><%= yearAvgDisplay %></strong>
+        </p>
+      </div>
+    </div>
+
+    <div id="drawer-snapshot-month-avg" class="profile-section-hidden-source">
+      <div class="drawer-subcard">
+        <h4>Current Month Average</h4>
+        <p class="bucket-summary-note">
+          Current month average: <strong><%= monthAvgDisplay %></strong>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <% if (canSeePerfDetail) { %>
+  <section id="performance" class="page-band band-performance">
+    <div class="band-header">
+      <div>
+        <div class="band-title">Performance Detail</div>
+        <div class="band-subtitle">
+          Click a bucket to open the side pane with metrics, interpretation, and manager action.
+        </div>
+      </div>
+    </div>
+
+    <div class="perf-summary-grid">
+      <% perfBucketCards.forEach(function(item) { const b = item.data || {}; %>
+        <button
+          type="button"
+          class="perf-summary-clickcard <%= b.status || '' %> js-open-profile-drawer"
+          data-drawer-title="<%= item.title %>"
+          data-drawer-subtitle="Detailed performance metrics, interpretation, and manager guidance."
+          data-drawer-source="drawer-perf-<%= item.key %>"
+        >
+          <div class="perf-summary-top">
+            <div class="perf-summary-title"><%= item.title %></div>
+            <span class="perf-status <%= b.status || '' %>"><%= b.statusLabel || 'N/A' %></span>
+          </div>
+
+          <div class="perf-summary-score"><%= b.score != null ? b.score : '—' %></div>
+
+          <div class="perf-summary-meta">
+            <span class="chip small">
+              Trend:
+              <strong>
+                <%= b.trend > 0 ? '▲ ' : b.trend < 0 ? '▼ ' : '• ' %><%= Math.abs(b.trend || 0) %>
+              </strong>
+            </span>
+          </div>
+
+          <div class="perf-summary-hint">
+            <%= b.highlight || b.insight || 'Open for full detail.' %>
+          </div>
+        </button>
+      <% }) %>
+    </div>
+
+    <% perfBucketCards.forEach(function(item) { const b = item.data || {}; const m = b.metrics || {}; %>
+      <div id="drawer-perf-<%= item.key %>" class="profile-section-hidden-source">
+        <div class="drawer-stack">
+          <div class="drawer-subcard">
+            <div style="display:flex; justify-content:space-between; gap:0.75rem; flex-wrap:wrap; align-items:flex-start;">
+              <div>
+                <h4><%= item.title %></h4>
+                <div class="drawer-list-meta"><%= b.highlight || b.insight || '—' %></div>
+              </div>
+              <div style="display:flex; gap:0.4rem; flex-wrap:wrap; align-items:center;">
+                <span class="perf-status <%= b.status || '' %>"><%= b.statusLabel || 'N/A' %></span>
+                <span class="chip small">
+                  Trend: <strong><%= b.trend > 0 ? '▲ ' : b.trend < 0 ? '▼ ' : '• ' %><%= Math.abs(b.trend || 0) %></strong>
+                </span>
+              </div>
+            </div>
+            <% if (b.score != null) { %>
+              <div class="bucket-score-bar-wrap" style="margin-top:0.85rem;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:0.3rem;">
+                  <span style="font-size:0.78rem; color:rgba(226,232,240,0.5);">Overall bucket score</span>
+                  <span style="font-size:0.85rem; font-weight:700; color:rgba(226,232,240,0.9);"><%= b.score %> / 100</span>
+                </div>
+                <div style="height:6px; border-radius:4px; background:rgba(255,255,255,0.08); overflow:hidden;">
+                  <div style="height:100%; width:<%= b.score %>%; border-radius:4px; background:<%= b.status === 'good' ? '#22c55e' : b.status === 'watch' ? '#eab308' : '#ef4444' %>;"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-top:0.3rem; font-size:0.72rem; color:rgba(226,232,240,0.3);">
+                  <span>0 — Risk</span><span>75 — Watch</span><span>90 — Strong</span>
+                </div>
+              </div>
+            <% } %>
+          </div>
+
+          <div class="drawer-subcard">
+            <h4>What this measures</h4>
+            <p class="bucket-summary-note"><%= b.insight || 'No interpretation available.' %></p>
+          </div>
+
+          <div class="drawer-subcard">
+            <h4>Manager action</h4>
+            <p class="bucket-summary-note"><%= b.managerAction || 'Review this area with the employee using the supporting metrics below.' %></p>
+          </div>
+
+          <div class="drawer-subcard">
+            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:0.5rem;">
+              <h4 style="margin:0;">Metric Breakdown</h4>
+              <span style="font-size:0.72rem; color:rgba(226,232,240,0.35);">Value &nbsp;|&nbsp; Sub-score (0–100)</span>
+            </div>
+            <% const dr = b.detailRows || []; %>
+            <% if (dr.length) { %>
+              <div class="detail-rows-list">
+                <% dr.forEach(function(row, ri) {
+                  const subScore = row.score;
+                  const tone = subScore == null ? 'neutral' : subScore >= 90 ? 'good' : subScore >= 75 ? 'watch' : 'risk';
+                  const formulaJson = row.formula ? JSON.stringify(row.formula) : null;
+                  const standardJson = row.standard ? JSON.stringify(row.standard) : null;
+                  const rowId = item.key + '-' + ri;
+                %>
+                  <div class="detail-row">
+                    <span class="detail-row-label">
+                      <% if (formulaJson) { %>
+                        <span class="metric-formula-trigger" data-row-id="<%= rowId %>"><%= row.label %> <span class="metric-info-icon">ⓘ</span></span>
+                        <script>window.__mf = window.__mf||{}; window.__mf['<%= rowId %>'] = <%- formulaJson %>;</script>
+                      <% } else { %><%= row.label %><% } %>
+                    </span>
+                    <span class="detail-row-value"><%= row.value != null && row.value !== '' ? row.value : '—' %></span>
+                    <div class="detail-row-pills">
+                      <% if (subScore != null) { %>
+                        <span class="detail-row-score <%= tone %>"><%= subScore %></span>
+                      <% } else { %>
+                        <span class="detail-row-score neutral">—</span>
+                      <% } %>
+                      <% if (standardJson) { %>
+                        <button type="button" class="std-badge metric-std-trigger" data-row-id="<%= rowId %>">STD</button>
+                        <script>window.__ms = window.__ms||{}; window.__ms['<%= rowId %>'] = <%- standardJson %>;</script>
+                      <% } %>
+                    </div>
+                  </div>
+                <% }) %>
+              </div>
+            <% } else { %>
+              <div class="drawer-empty">No supporting metrics available for this bucket.</div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    <% }) %>
+  </section>
+  <% } %>
+
+  <section id="compliance" class="page-band band-ops">
+    <div class="band-header">
+      <div>
+        <div class="band-title">Operations / Readiness</div>
+        <div class="band-subtitle">
+          Daily compliance, assignment rhythm, and training readiness grouped into one operational view.
+        </div>
+      </div>
+    </div>
+
+    <div id="drawer-compliance-day" class="profile-section-hidden-source">
+  <div class="drawer-stack">
+    <div class="drawer-subcard">
+      <div style="display:flex; justify-content:space-between; gap:0.75rem; flex-wrap:wrap; align-items:flex-start;">
+        <div>
+          <h4 id="drawerComplianceDayTitle">Day Detail</h4>
+          <div class="drawer-list-meta" id="drawerComplianceDaySubtitle">—</div>
+        </div>
+
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <button type="button" class="btn ghost btn-sm" id="drawerCalOpenTalkingPoints">Open 1:1 Talking Points</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="calendar-details-grid">
+      <div class="ops-soft-panel">
+        <h4>ESD</h4>
+        <div id="drawerCalEsdBlock" class="muted">—</div>
+      </div>
+
+      <div class="ops-soft-panel">
+        <h4>Attendance</h4>
+        <div id="drawerCalAttBlock" class="muted">—</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    <div class="ops-summary-grid">
+      <div class="ops-summary-card">
+        <span class="ops-summary-label">Attendance Reliability</span>
+        <strong><%= opsSummary.attendanceReliability ?? '—' %></strong>
+        <p><%= opsSummary.attendanceReliabilityNote || 'Attendance consistency snapshot.' %></p>
+        <% if (safeLateTrendDelta && safeLateTrendDelta.recentAvg != null) { %>
+          <div style="margin-top:0.4rem; display:flex; flex-wrap:wrap; gap:0.35rem;">
+            <span class="chip chip-neutral">Avg late: <%= safeLateTrendDelta.recentAvg %>min
+              <% if (safeLateTrendDelta.delta != null) { %>
+                (<%= safeLateTrendDelta.delta > 0 ? '↑' : '↓' %><%= Math.abs(safeLateTrendDelta.delta) %>min vs prior 30d)
+              <% } %>
+            </span>
+          </div>
+        <% } %>
+        <% if (safeAbsencePattern && safeAbsencePattern.flagged) { %>
+          <div style="margin-top:0.4rem;">
+            <span class="chip chip-warn">⚠ Mon/Fri absence pattern detected</span>
+          </div>
+        <% } %>
+        <a class="btn ghost btn-sm" style="margin-top:0.5rem;" href="/staff/<%= staff.id %>/attendance">Full history</a>
+      </div>
+
+      <div class="ops-summary-card">
+        <span class="ops-summary-label">ESD Compliance</span>
+        <strong><%= opsSummary.esdCompliance ?? '—' %></strong>
+        <p><%= opsSummary.esdComplianceNote || 'Daily ESD pass readiness.' %></p>
+        <% if (safeEsdStreak != null && safeEsdStreak > 0) { %>
+          <div style="margin-top:0.4rem;">
+            <span class="chip chip-ok"><%= safeEsdStreak %> day PASS streak</span>
+          </div>
+        <% } %>
+        <a class="btn ghost btn-sm" style="margin-top:0.5rem;" href="/staff/<%= staff.id %>/esd">Full history</a>
+      </div>
+
+      <div class="ops-summary-card">
+        <span class="ops-summary-label">Training Health</span>
+        <strong><%= opsSummary.trainingHealth ?? '—' %></strong>
+        <p><%= opsSummary.trainingHealthNote || 'Current vs expired / expiring training.' %></p>
+        <% if (viewerRoleLocal === 'ADMIN' || viewerRoleLocal === 'SENIOR_MANAGER' || viewerRoleLocal === 'MANAGER' || viewerRoleLocal === 'SUPERVISOR' || viewerRoleLocal === 'LEAD') { %>
+          <a class="btn ghost btn-sm" style="margin-top:0.5rem;" href="/staff/<%= staff.id %>/training-assignments">Manage Assignments</a>
+        <% } %>
+      </div>
+
+      <div class="ops-summary-card">
+        <span class="ops-summary-label">Assignment Rhythm</span>
+        <strong><%= opsSummary.assignmentRhythm ?? '—' %></strong>
+        <p><%= opsSummary.assignmentRhythmNote || 'Recent assignment and closure cadence.' %></p>
+      </div>
+    </div>
+
+    <%
+      const safeBenchmark = (typeof benchmark !== 'undefined' && benchmark) ? benchmark : null;
+    %>
+    <% if (safeBenchmark) { %>
+      <div class="benchmark-panel" style="margin-top:1rem; margin-bottom:0.5rem;">
+        <div class="benchmark-header">
+          <span class="muted small">Peer comparison · <%= safeBenchmark.peerCount %> colleague<%= safeBenchmark.peerCount !== 1 ? 's' : '' %> in same <%= safeBenchmark.building %><%= safeBenchmark.shift ? ' / ' + safeBenchmark.shift : '' %> shift</span>
+        </div>
+        <div class="benchmark-grid">
+          <% if (safeBenchmark.reviewScore.mine != null || safeBenchmark.reviewScore.peerAvg != null) { %>
+            <div class="benchmark-item">
+              <span class="benchmark-label">Review Score</span>
+              <span class="benchmark-mine"><%= safeBenchmark.reviewScore.mine != null ? safeBenchmark.reviewScore.mine.toFixed(2) : '—' %></span>
+              <span class="benchmark-vs">vs</span>
+              <span class="benchmark-peer muted"><%= safeBenchmark.reviewScore.peerAvg != null ? safeBenchmark.reviewScore.peerAvg.toFixed(2) : '—' %> avg</span>
+              <% if (safeBenchmark.reviewScore.delta != null) { %>
+                <span class="chip <%= safeBenchmark.reviewScore.delta >= 0 ? 'chip-ok' : 'chip-warn' %>" style="font-size:0.7rem;">
+                  <%= safeBenchmark.reviewScore.delta >= 0 ? '+' : '' %><%= safeBenchmark.reviewScore.delta %>
+                </span>
+              <% } %>
+            </div>
+          <% } %>
+          <% if (safeBenchmark.absentRate.mine != null || safeBenchmark.absentRate.peerAvg != null) { %>
+            <div class="benchmark-item">
+              <span class="benchmark-label">Absent Rate</span>
+              <span class="benchmark-mine"><%= safeBenchmark.absentRate.mine != null ? safeBenchmark.absentRate.mine + '%' : '—' %></span>
+              <span class="benchmark-vs">vs</span>
+              <span class="benchmark-peer muted"><%= safeBenchmark.absentRate.peerAvg != null ? safeBenchmark.absentRate.peerAvg + '%' : '—' %> avg</span>
+              <% if (safeBenchmark.absentRate.delta != null) { %>
+                <span class="chip <%= safeBenchmark.absentRate.delta <= 0 ? 'chip-ok' : 'chip-warn' %>" style="font-size:0.7rem;">
+                  <%= safeBenchmark.absentRate.delta > 0 ? '+' : '' %><%= safeBenchmark.absentRate.delta %>%
+                </span>
+              <% } %>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+
+    <section class="section-shell ops-shell">
+      <div class="section-shell-header">
+        <div>
+          <h2>Compliance Calendar</h2>
+          <p>Quickly spot attendance and ESD issue days without reading every row.</p>
+        </div>
+      </div>
+
+      <div class="support-strip">
+        <span class="mini-chip">ESD: PASS / FAIL / NONE</span>
+        <span class="mini-chip">Attendance: Present / Late / Absent</span>
+        <span class="mini-chip warn">Use Risk Filter for issue-only view</span>
+      </div>
+
+      <div class="ops-panel">
+        <div class="calendar-toolbar">
+          <div class="calendar-actions">
+            <button type="button" class="btn ghost btn-sm" id="calPrevMonth">◀ Prev</button>
+            <button type="button" class="btn ghost btn-sm" id="calToday">Today</button>
+            <button type="button" class="btn ghost btn-sm" id="calNextMonth">Next ▶</button>
+          </div>
+
+          <div class="calendar-tools">
+            <div class="chip muted small" id="calTitle">—</div>
+            <button
+              type="button"
+              class="btn ghost btn-sm"
+              id="calRiskToggle"
+              data-mode="all"
+              title="Show only issue days (missing/failed ESD, late/absent attendance)"
+            >
+              Risk filter: OFF
+            </button>
+            <button type="button" class="btn ghost btn-sm" id="calClearSelection" title="Close day details panel">
+              Clear selection
+            </button>
+          </div>
+        </div>
+
+        <div id="calSummary" class="calendar-summary">
+          <span class="chip muted small" id="sumEsdPass">ESD Pass rate: —</span>
+          <span class="chip muted small" id="sumEsdMissing">ESD Missing days: —</span>
+          <span class="chip muted small" id="sumAttPresent">Present: —</span>
+          <span class="chip muted small" id="sumAttLate">Late: —</span>
+          <span class="chip muted small" id="sumAttAbsent">Absent: —</span>
+          <span class="chip muted small" id="sumLateRate">Lateness rate: —</span>
+        </div>
+
+        <div
+          id="complianceCalendar"
+          class="calendar-grid"
+          style="display:grid;grid-template-columns: repeat(7, minmax(120px, 1fr));gap:0.5rem;"
+        ></div>
+
+        <div id="calDrawerTemplates" class="profile-section-hidden-source">
+  <div id="calDrawerFallback" class="drawer-subcard">
+    <h4>Day Detail</h4>
+    <div class="drawer-empty">No records for this day.</div>
+  </div>
+</div>
+
+      <script>
+        window.__PDMS_COMPLIANCE__ = {
+          esdByDate: <%- JSON.stringify(esdByDate || {}) %>,
+          attByDate: <%- JSON.stringify(attByDate || {}) %>,
+          staff: {
+            id: "<%= staff.id %>",
+            name: <%- JSON.stringify(staff.name || 'Staff') %>,
+            employeeId: <%- JSON.stringify((profile && profile.employeeId) ? profile.employeeId : '') %>,
+            position: <%- JSON.stringify((profile && profile.positionType) ? profile.positionType : '') %>
+          }
+        };
+      </script>
+    </section>
+
+    <section id="ops" class="section-shell ops-shell">
+      <div class="section-shell-header">
+        <div>
+          <h2>Operations Snapshot</h2>
+          <p>Keep daily activity visible at a glance. Open the drawer for assignment detail and day-level history.</p>
+        </div>
+      </div>
+
+      <div class="ops-mini-grid">
+        <div class="ops-mini-card">
+          <span class="ops-mini-label">Assignment Days</span>
+          <strong><%= safeAssignmentStats.totalDays ?? '—' %></strong>
+        </div>
+
+        <div class="ops-mini-card">
+          <span class="ops-mini-label">Racks Assigned</span>
+          <strong><%= safeAssignmentStats.totalRacks ?? '—' %></strong>
+        </div>
+
+        <div class="ops-mini-card">
+          <span class="ops-mini-label">Average / Day</span>
+          <strong><%= safeAssignmentStats.avgRacksPerDay ?? '—' %></strong>
+        </div>
+
+        <div class="ops-mini-card">
+          <span class="ops-mini-label">Max / Day</span>
+          <strong><%= safeAssignmentStats.maxRacksInSingleDay ?? '—' %></strong>
+        </div>
+      </div>
+
+      <div class="bucket-summary-card">
+        <h3>Assignment Detail</h3>
+        <p class="bucket-summary-note">
+          Open the side pane to review daily rack history, area, and shift without crowding the main profile.
+        </p>
+
+        <div class="summary-action-row">
+          <button
+            type="button"
+            class="btn ghost btn-sm js-open-profile-drawer"
+            data-drawer-title="Operations Snapshot"
+            data-drawer-subtitle="Assignment history and day-level execution detail."
+            data-drawer-source="drawer-ops-content"
+          >
+            View Assignment Detail
+          </button>
+        </div>
+      </div>
+
+      <div id="drawer-ops-content" class="profile-section-hidden-source">
+        <% if (!safeAssignmentDailySummary || !safeAssignmentDailySummary.length) { %>
+          <div class="drawer-empty">No rack assignment history imported for this staff member.</div>
+        <% } else { %>
+          <div class="drawer-stack">
+            <div class="drawer-subcard">
+              <h4>Assignment Summary</h4>
+              <div class="ops-mini-grid" style="margin-bottom:0;">
+                <div class="ops-mini-card">
+                  <span class="ops-mini-label">Days</span>
+                  <strong><%= safeAssignmentStats.totalDays ?? '—' %></strong>
+                </div>
+                <div class="ops-mini-card">
+                  <span class="ops-mini-label">Racks</span>
+                  <strong><%= safeAssignmentStats.totalRacks ?? '—' %></strong>
+                </div>
+                <div class="ops-mini-card">
+                  <span class="ops-mini-label">Avg / Day</span>
+                  <strong><%= safeAssignmentStats.avgRacksPerDay ?? '—' %></strong>
+                </div>
+                <div class="ops-mini-card">
+                  <span class="ops-mini-label">Max / Day</span>
+                  <strong><%= safeAssignmentStats.maxRacksInSingleDay ?? '—' %></strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="drawer-subcard">
+              <h4>Daily Assignment History</h4>
+              <div class="table-wrap">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Assignment Date</th>
+                      <th>Total Racks</th>
+                      <th>Rack List</th>
+                      <th>Area</th>
+                      <th>Shift</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% safeAssignmentDailySummary.forEach(function(day) { %>
+                      <tr>
+                        <td><%= day.assignmentDate %></td>
+                        <td><%= day.rackCount != null ? day.rackCount : '—' %></td>
+                        <td class="muted small"><%= day.rackList && day.rackList.trim().length ? day.rackList : '—' %></td>
+                        <td><%= day.area || '—' %></td>
+                        <td><%= day.shift || '—' %></td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        <% } %>
+      </div>
+    </section>
+
+    <section id="training" class="section-shell ops-shell">
+      <div class="section-shell-header">
+        <div>
+          <h2>Training & Certifications</h2>
+          <p>Surface only the readiness snapshot here. Use the drawer for full course-level history.</p>
+        </div>
+
+        <div class="header-actions">
+          <a href="/training?q=<%= encodeURIComponent(profile && profile.employeeId ? profile.employeeId : '') %>" class="btn ghost btn-sm">
+            Open Training Records
+          </a>
+          <% if (viewerRoleLocal === 'ADMIN' || viewerRoleLocal === 'SENIOR_MANAGER' || viewerRoleLocal === 'MANAGER') { %>
+            <a href="/training/import" class="btn ghost btn-sm">Open Training Import</a>
+            <a href="/training/new" class="btn ghost btn-sm">+ Add Training Entry</a>
+          <% } %>
+        </div>
+      </div>
+
+      <div class="ops-mini-grid">
+        <div class="ops-mini-card">
+          <span class="ops-mini-label">Training Health</span>
+          <strong><%= trainingHealthScore != null ? trainingHealthScore + '%' : 'N/A' %></strong>
+        </div>
+        <div class="ops-mini-card">
+          <span class="ops-mini-label">Current</span>
+          <strong><%= safeTrainingStats.current %></strong>
+        </div>
+        <div class="ops-mini-card">
+          <span class="ops-mini-label">Expiring</span>
+          <strong><%= safeTrainingStats.expiring %></strong>
+        </div>
+        <div class="ops-mini-card">
+          <span class="ops-mini-label">Expired</span>
+          <strong><%= safeTrainingStats.expired %></strong>
+        </div>
+        <div class="ops-mini-card">
+          <span class="ops-mini-label">In Progress</span>
+          <strong><%= safeTrainingStats.inProgress %></strong>
+        </div>
+      </div>
+
+      <div class="bucket-summary-card">
+        <h3>Training Detail</h3>
+        <p class="bucket-summary-note">
+          Use the side pane to review course history, current status, due dates, and certification frequency without expanding this page.
+        </p>
+
+        <div class="summary-action-row">
+          <button
+            type="button"
+            class="btn ghost btn-sm js-open-profile-drawer"
+            data-drawer-title="Training & Certifications"
+            data-drawer-subtitle="Course history, status, due dates, and certification health."
+            data-drawer-source="drawer-training-content"
+          >
+            View Courses
+          </button>
+        </div>
+      </div>
+
+      <div id="drawer-training-content" class="profile-section-hidden-source">
+        <% if (!safeTrainingGrouped || safeTrainingGrouped.length === 0) { %>
+          <div class="drawer-empty">No training records found for this employee ID.</div>
+        <% } else { %>
+          <div class="drawer-stack">
+            <div class="filter-strip">
+              <span class="mini-chip">All: <strong><%= safeTrainingGrouped.length %></strong></span>
+              <span class="mini-chip">Current: <strong><%= safeTrainingStats.current %></strong></span>
+              <span class="mini-chip warn">Expiring: <strong><%= safeTrainingStats.expiring %></strong></span>
+              <span class="mini-chip warn">Expired: <strong><%= safeTrainingStats.expired %></strong></span>
+            </div>
+
+            <% safeTrainingGrouped.forEach(function(course) { %>
+              <div class="drawer-subcard">
+                <div style="display:flex; justify-content:space-between; gap:0.75rem; flex-wrap:wrap; align-items:flex-start;">
+                  <div>
+                    <h4><%= course.courseName %></h4>
+                    <div class="drawer-list-meta">
+                      Last completion: <strong><%= course.lastCompleted || '—' %></strong>
+                      • Next due: <strong><%= course.nextDue || '—' %></strong>
+                      <% if (course.daysLeft != null) { %> • <strong><%= course.daysLeft %>d</strong><% } %>
+                    </div>
+                  </div>
+
+                  <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+                    <span class="<%= course.overallBadgeClass %>"><%= course.overallLabel %></span>
+                    <% if (course.courseType) { %><span class="chip small"><%= course.courseType %></span><% } %>
+                    <% if (course.categoryLabel) { %><span class="<%= course.categoryChipClass %> small"><%= course.categoryLabel %></span><% } %>
+                  </div>
+                </div>
+
+                <% if (course.records && course.records.length) { %>
+                  <div class="table-wrap" style="margin-top:0.75rem;">
+                    <table class="table">
+                      <thead>
+                        <tr>
+                          <th>Status</th>
+                          <th>Progress</th>
+                          <th>Start</th>
+                          <th>End</th>
+                          <th>Completion</th>
+                          <th>Next Due</th>
+                          <th>Frequency</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <% course.records.forEach(function(r) { %>
+                          <tr style="<% if (r.meta && r.meta.status === 'EXPIRED') { %>background: rgba(239,68,68,0.08);<% } else if (r.meta && r.meta.status === 'EXPIRING') { %>background: rgba(245,158,11,0.08);<% } %>">
+                            <td><span class="<%= r.meta ? r.meta.badgeClass : 'status-badge status-open' %>"><%= r.meta ? r.meta.label : 'Unknown' %></span></td>
+                            <td>
+                              <% const p = r.meta ? r.meta.progressNum : null; %>
+                              <% if (p != null) { %>
+                                <div class="progress-cell">
+                                  <div class="muted small"><%= p %>%</div>
+                                  <div class="progress-bar">
+                                    <div style="width:<%= Math.max(0, Math.min(100, p)) %>%;"></div>
+                                  </div>
+                                </div>
+                              <% } else { %>
+                                <span class="muted">—</span>
+                              <% } %>
+                            </td>
+                            <td><%= r.startDateISO || '—' %></td>
+                            <td><%= r.endDateISO || '—' %></td>
+                            <td><%= r.completionDateISO || '—' %></td>
+                            <td>
+                              <%= r.dueDateISO || '—' %>
+                              <% if (r.meta && r.meta.daysLeft != null) { %><div class="muted small"><%= r.meta.daysLeft %>d</div><% } %>
+                            </td>
+                            <td><%= (r.raw && r.raw.certificationFrequency) ? r.raw.certificationFrequency : '—' %></td>
+                          </tr>
+                        <% }) %>
+                      </tbody>
+                    </table>
+                  </div>
+                <% } else { %>
+                  <div class="drawer-empty" style="margin-top:0.75rem;">No course history rows available.</div>
+                <% } %>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+    </section>
+  </section>
+
+  <section id="coaching" class="page-band band-dev">
+    <div class="band-header">
+      <div>
+        <div class="band-title">Development / History</div>
+        <div class="band-subtitle">
+          Recognition, coaching history, formal reviews, and forward-looking goals in one place.
+        </div>
+      </div>
+    </div>
+
+    <section class="section-shell dev-shell">
+      <div class="section-shell-header">
+        <div>
+          <h2>Coaching & Recognition</h2>
+          <p>
+            Keep the profile focused on summary counts. Open the side pane for the event timeline.
+            <% if (viewerRoleLocal === 'LEAD') { %>
+              (You only see items you submitted.)
+            <% } else if (viewerRoleLocal === 'SUPERVISOR') { %>
+              (You see your items and items submitted by Leads.)
+            <% } %>
+          </p>
+        </div>
+
+        <div class="header-actions">
+          <% if (viewerRoleLocal !== 'LEAD') { %>
+            <a href="/incidents?staffId=<%= staff.id %>" class="btn ghost btn-sm">View All Events</a>
+          <% } %>
+
+          <% if (canCreateIncident) { %>
+            <a href="/incidents/new?staffId=<%= staff.id %>" class="btn ghost btn-sm">+ New Event</a>
+          <% } %>
+        </div>
+      </div>
+
+      <div class="dev-summary-grid">
+        <div class="dev-summary-card">
+          <span class="dev-summary-label">Recognition</span>
+          <strong><%= incStats.positive %></strong>
+          <p>Positive events and kudos recorded.</p>
+        </div>
+        <div class="dev-summary-card">
+          <span class="dev-summary-label">Coaching</span>
+          <strong><%= incStats.coaching %></strong>
+          <p>Development and performance coaching items.</p>
+        </div>
+        <div class="dev-summary-card">
+          <span class="dev-summary-label">Formal</span>
+          <strong><%= incStats.formal %></strong>
+          <p>Formal incidents requiring closer follow-up.</p>
+        </div>
+        <div class="dev-summary-card">
+          <span class="dev-summary-label">Open Follow-Ups</span>
+          <strong><%= incStats.openFollowUps %></strong>
+          <p>Items not yet fully closed out.</p>
+        </div>
+      </div>
+
+      <div class="bucket-summary-card">
+        <h3>Event Timeline</h3>
+        <p class="bucket-summary-note">
+          Open the side pane to read recognition notes, coaching details, themes, and follow-up status.
+        </p>
+
+        <div class="summary-action-row">
+          <button
+            type="button"
+            class="btn ghost btn-sm js-open-profile-drawer"
+            data-drawer-title="Coaching & Recognition"
+            data-drawer-subtitle="Recognition, coaching conversations, and formal event history."
+            data-drawer-source="drawer-coaching-content"
+          >
+            View Event Timeline
+          </button>
+        </div>
+      </div>
+
+      <div id="drawer-coaching-content" class="profile-section-hidden-source">
+        <% if (!visibleIncidents || !visibleIncidents.length) { %>
+          <div class="drawer-empty">No coaching or recognition events visible for your role.</div>
+        <% } else { %>
+          <div class="review-drawer-toolbar">
+            <div class="review-drawer-toolbar-row">
+              <div class="review-drawer-toolbar-group">
+                <span class="review-drawer-toolbar-label">Sort</span>
+                <button type="button" class="btn ghost btn-small js-coaching-sort" data-sort="date-desc">Newest</button>
+                <button type="button" class="btn ghost btn-small js-coaching-sort" data-sort="date-asc">Oldest</button>
+              </div>
+              <div class="review-drawer-toolbar-group">
+                <span class="review-drawer-toolbar-label">Submitted By</span>
+                <select class="review-drawer-select js-coaching-submitter-filter">
+                  <option value="all">All</option>
+                </select>
+              </div>
+              <div class="review-drawer-toolbar-group">
+                <span class="review-drawer-toolbar-label">Type</span>
+                <select class="review-drawer-select js-coaching-type-filter">
+                  <option value="all">All types</option>
+                  <option value="POSITIVE">Recognition</option>
+                  <option value="COACHING">Coaching</option>
+                  <option value="FORMAL">Formal</option>
+                </select>
+              </div>
+              <div class="review-drawer-count"></div>
+            </div>
+            <div class="review-drawer-toolbar-actions">
+              <button type="button" class="btn ghost btn-small js-coaching-expand-all">Expand All</button>
+              <button type="button" class="btn ghost btn-small js-coaching-collapse-all">Collapse All</button>
+            </div>
+          </div>
+
+          <div class="drawer-stack" id="coaching-drawer-stack">
+            <% visibleIncidents.forEach(function(i) {
+              const t = (i.type || 'COACHING').toUpperCase();
+              const tone = (i.tone || 'NEUTRAL').toUpperCase();
+              let typeLabel = 'Coaching';
+              let typeClass = 'status-badge status-open';
+              if (t === 'POSITIVE') { typeLabel = 'Recognition'; typeClass = 'status-badge status-done'; }
+              else if (t === 'FORMAL') { typeLabel = 'Formal'; typeClass = 'status-badge status-danger'; }
+              const requiresFollowUp = !!i.requiresFollowUp;
+              const followStatus = (i.followUpStatus || (requiresFollowUp ? 'OPEN' : 'NO_ACTION')).toUpperCase();
+              const submitterName = (i.Submitter && i.Submitter.name) ? i.Submitter.name : '';
+              const incDateStr = i.incidentDate ? String(i.incidentDate).substring(0, 10) : '';
+            %>
+              <div class="drawer-subcard review-card"
+                data-incident-date="<%= incDateStr %>"
+                data-submitter-name="<%= submitterName %>"
+                data-type="<%= t %>">
+
+                <div class="review-card-header js-review-toggle" role="button" tabindex="0">
+                  <div class="review-card-header-left">
+                    <span class="review-card-period"><%= incDateStr %></span>
+                    <span class="review-card-submitter"><%= submitterName || 'Unknown' %></span>
+                    <span class="<%= typeClass %>"><%= typeLabel %></span>
+                    <% if (tone === 'RECOGNITION' && t === 'POSITIVE') { %><span class="chip small">Kudos</span><% } %>
+                    <% if (tone === 'NEEDS_IMPROVEMENT' && t !== 'POSITIVE') { %><span class="chip small">Coaching Focus</span><% } %>
+                  </div>
+                  <div class="review-card-header-right">
+                    <span class="review-card-overall" style="font-size:0.88rem; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><%= i.title %></span>
+                    <span class="review-card-chevron">›</span>
+                  </div>
+                </div>
+
+                <div class="review-card-body">
+                  <div class="drawer-list-body" style="margin-bottom:0.65rem;">
+                    <%= i.details || 'No additional detail provided.' %>
+                  </div>
+                  <div class="timeline-chips">
+                    <% if (i.impactArea) { %><span class="chip small"><%= i.impactArea %></span><% } %>
+                    <% if (i.theme) { %><span class="chip small"><%= i.theme %></span><% } %>
+                    <% if (!requiresFollowUp) { %>
+                      <span class="chip small">No follow-up</span>
+                    <% } else { %>
+                      <% if (followStatus === 'CLOSED') { %><span class="status-badge status-done">Closed</span>
+                      <% } else if (followStatus === 'IN_PROGRESS') { %><span class="status-badge status-open">In Progress</span>
+                      <% } else { %><span class="status-badge status-open">Follow-up Open</span><% } %>
+                      <% if (i.followUpDueDate) { %><span class="chip small">Due: <%= i.followUpDueDate %></span><% } %>
+                    <% } %>
+                  </div>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+    </section>
+
+    <section id="reviews" class="section-shell dev-shell">
+      <div class="section-shell-header">
+        <div>
+          <h2>Review History</h2>
+          <p>
+            Keep the profile focused on visible scorecards. Open the side pane for full review breakdowns.
+            <% if (viewerRoleLocal === 'LEAD') { %>(You only see reviews you submitted.)<% } %>
+          </p>
+        </div>
+      </div>
+
+      <div class="dev-summary-grid">
+        <div class="dev-summary-card">
+          <span class="dev-summary-label">Visible Reviews</span>
+          <strong><%= ratingHistory && ratingHistory.length ? ratingHistory.length : 0 %></strong>
+          <p>Review count visible for your role.</p>
+        </div>
+        <div class="dev-summary-card">
+          <span class="dev-summary-label">Overall Avg</span>
+          <strong><%= overallAverage != null ? overallAverage.toFixed(2) : 'N/A' %></strong>
+          <p>Across visible reviews only.</p>
+        </div>
+        <div class="dev-summary-card">
+          <span class="dev-summary-label">Current Month Avg</span>
+          <strong><%= currentMonthAverage != null ? currentMonthAverage.toFixed(2) : 'N/A' %></strong>
+          <p>Average for <%= currentMonth %>/<%= currentYear %>.</p>
+        </div>
+        <div class="dev-summary-card">
+          <span class="dev-summary-label">Latest Review</span>
+          <strong><%= latestReview ? latestReview.periodLabel : '—' %></strong>
+          <p><%= latestReview ? ('Submitted by ' + latestReview.submitterName) : 'No review history yet' %></p>
+        </div>
+      </div>
+
+      <% if (ratingHistory && ratingHistory.length >= 2) { %>
+        <div class="review-sparkline-wrap">
+          <div class="review-sparkline-label">Score trend (last <%= Math.min(ratingHistory.length, 12) %> reviews)</div>
+          <canvas id="reviewScoreSparkline" class="review-sparkline-canvas" width="320" height="56"></canvas>
+        </div>
+        <script id="reviewSparklineData" type="application/json">
+          <%- JSON.stringify(ratingHistory.slice(-12).map(function(r) { return { label: r.periodLabel, score: r.overallScore }; })) %>
+        </script>
+      <% } %>
+
+      <% if (ratingHistory && ratingHistory.length > 0) { %>
+        <div class="review-timeline-wrap">
+          <div class="review-timeline-label">Review Timeline</div>
+          <div class="review-timeline-track">
+            <% ratingHistory.slice(-12).forEach(function(r, idx) {
+              const score = r.overallScore;
+              const dotClass = score == null ? 'rt-dot-neutral'
+                : score >= 4 ? 'rt-dot-high'
+                : score >= 3 ? 'rt-dot-mid'
+                : 'rt-dot-low';
+            %>
+              <div class="rt-stop" title="<%= r.periodLabel %> — <%= r.submitterName %>: <%= score != null ? score.toFixed(2) : 'N/A' %>">
+                <div class="rt-dot <%= dotClass %>"></div>
+                <div class="rt-stop-label"><%= r.periodLabel ? r.periodLabel.slice(5) : '' %></div>
+                <% if (score != null) { %><div class="rt-score"><%= score.toFixed(1) %></div><% } %>
+              </div>
+            <% }); %>
+          </div>
+        </div>
+      <% } %>
+
+      <div class="bucket-summary-card">
+        <h3>Review Detail</h3>
+        <p class="bucket-summary-note">
+          Open the side pane to inspect bucket averages, overall comments, and question-level scoring.
+        </p>
+
+        <div class="summary-action-row">
+          <button
+            type="button"
+            class="btn ghost btn-sm js-open-profile-drawer"
+            data-drawer-title="Review History"
+            data-drawer-subtitle="Visible reviews, bucket detail, comments, and question-level scores."
+            data-drawer-source="drawer-reviews-content"
+          >
+            View Reviews
+          </button>
+        </div>
+      </div>
+
+      <div id="drawer-reviews-content" class="profile-section-hidden-source">
+        <% if (!ratingHistory || ratingHistory.length === 0) { %>
+          <div class="drawer-empty">No reviews available.</div>
+        <% } else { %>
+          <div class="review-drawer-toolbar">
+            <div class="review-drawer-toolbar-row">
+              <div class="review-drawer-toolbar-group">
+                <span class="review-drawer-toolbar-label">Sort</span>
+                <button type="button" class="btn ghost btn-small js-review-sort" data-sort="period-desc">Newest</button>
+                <button type="button" class="btn ghost btn-small js-review-sort" data-sort="period-asc">Oldest</button>
+              </div>
+              <div class="review-drawer-toolbar-group">
+                <span class="review-drawer-toolbar-label">Reviewer</span>
+                <select class="review-drawer-select js-review-submitter-filter">
+                  <option value="all">All reviewers</option>
+                </select>
+              </div>
+              <div class="review-drawer-toolbar-group">
+                <span class="review-drawer-toolbar-label">Month</span>
+                <select class="review-drawer-select js-review-month-filter">
+                  <option value="all">All months</option>
+                </select>
+              </div>
+              <div class="review-drawer-toolbar-group">
+                <span class="review-drawer-toolbar-label">Year</span>
+                <select class="review-drawer-select js-review-year-filter">
+                  <option value="all">All years</option>
+                </select>
+              </div>
+              <div class="review-drawer-count"></div>
+            </div>
+            <div class="review-drawer-toolbar-actions">
+              <button type="button" class="btn ghost btn-small js-review-expand-all">Expand All</button>
+              <button type="button" class="btn ghost btn-small js-review-collapse-all">Collapse All</button>
+            </div>
+          </div>
+
+          <div class="drawer-stack" id="review-drawer-stack">
+            <% ratingHistory.forEach(function(r) {
+              const overallFull = getOverallComment(r);
+              const q = r.questions || {};
+              const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+              const monthLabel = r.periodMonth ? (monthNames[r.periodMonth - 1] || r.periodMonth) : '';
+            %>
+              <div class="drawer-subcard review-card"
+                data-period="<%= r.periodLabel %>"
+                data-submitter-name="<%= r.submitterName || '' %>"
+                data-period-year="<%= r.periodYear || '' %>"
+                data-period-month="<%= r.periodMonth || '' %>">
+
+                <div class="review-card-header js-review-toggle" role="button" tabindex="0">
+                  <div class="review-card-header-left">
+                    <span class="review-card-period"><%= monthLabel %> <%= r.periodYear %></span>
+                    <span class="review-card-submitter"><%= r.submitterName %></span>
+                    <div class="review-card-bucket-pills">
+                      <% if (r.buckets && r.buckets.people != null) { %><span class="review-bucket-pill">P: <%= r.buckets.people.toFixed(1) %></span><% } %>
+                      <% if (r.buckets && r.buckets.ownership != null) { %><span class="review-bucket-pill">O: <%= r.buckets.ownership.toFixed(1) %></span><% } %>
+                      <% if (r.buckets && r.buckets.quality != null) { %><span class="review-bucket-pill">Q: <%= r.buckets.quality.toFixed(1) %></span><% } %>
+                      <% if (r.buckets && r.buckets.partnership != null) { %><span class="review-bucket-pill">Pa: <%= r.buckets.partnership.toFixed(1) %></span><% } %>
+                      <% if (r.buckets && r.buckets.leading != null) { %><span class="review-bucket-pill">L: <%= r.buckets.leading.toFixed(1) %></span><% } %>
+                    </div>
+                  </div>
+                  <div class="review-card-header-right">
+                    <span class="review-card-overall"><%= r.overallScore != null ? r.overallScore.toFixed(2) + ' / 5' : 'N/A' %></span>
+                    <span class="review-card-chevron">›</span>
+                  </div>
+                </div>
+
+                <div class="review-card-body">
+                  <% if (canManageReviews) { %>
+                    <div class="review-card-actions">
+                      <a href="/reviews/<%= r.id %>/edit" class="btn ghost btn-small">Edit</a>
+                      <form method="POST" action="/reviews/<%= r.id %>/delete" style="display:inline;"
+                        onsubmit="return confirm('Are you sure you want to delete this review?');">
+                        <button type="submit" class="btn danger btn-small">Delete</button>
+                      </form>
+                    </div>
+                  <% } %>
+
+                  <div class="dev-summary-grid compact" style="margin-top:0.85rem;">
+                    <div class="dev-summary-card compact">
+                      <span class="dev-summary-label">People First</span>
+                      <strong><%= (r.buckets && r.buckets.people != null) ? r.buckets.people.toFixed(2) + ' / 5' : 'N/A' %></strong>
+                    </div>
+                    <div class="dev-summary-card compact">
+                      <span class="dev-summary-label">Ownership</span>
+                      <strong><%= (r.buckets && r.buckets.ownership != null) ? r.buckets.ownership.toFixed(2) + ' / 5' : 'N/A' %></strong>
+                    </div>
+                    <div class="dev-summary-card compact">
+                      <span class="dev-summary-label">Quality</span>
+                      <strong><%= (r.buckets && r.buckets.quality != null) ? r.buckets.quality.toFixed(2) + ' / 5' : 'N/A' %></strong>
+                    </div>
+                    <div class="dev-summary-card compact">
+                      <span class="dev-summary-label">Partnership</span>
+                      <strong><%= (r.buckets && r.buckets.partnership != null) ? r.buckets.partnership.toFixed(2) + ' / 5' : 'N/A' %></strong>
+                    </div>
+                    <% if (r.buckets && r.buckets.leading != null) { %>
+                      <div class="dev-summary-card compact">
+                        <span class="dev-summary-label">Leading</span>
+                        <strong><%= r.buckets.leading.toFixed(2) %> / 5</strong>
+                      </div>
+                    <% } %>
+                  </div>
+
+                  <div class="review-comment-panel">
+                    <span class="dev-summary-label">Overall Comment</span>
+                    <p><%= overallFull || '—' %></p>
+                  </div>
+
+                  <div class="table-wrap" style="margin-top:0.85rem;">
+                    <table class="table review-question-table">
+                      <thead><tr><th>Bucket</th><th>Question</th><th>Score</th><th>Comment</th></tr></thead>
+                      <tbody>
+                        <% if (q.positiveAttitude != null) { %>
+                          <tr><td>People</td><td>Positive Attitude</td><td><%= q.positiveAttitude %> / 5</td><td><%= getScoreComment(r,'positiveAttitude') || '—' %></td></tr>
+                        <% } %>
+                        <% if (q.proactive != null) { %>
+                          <tr><td>People</td><td>Proactive</td><td><%= q.proactive %> / 5</td><td><%= getScoreComment(r,'proactive') || '—' %></td></tr>
+                        <% } %>
+                        <% if (q.integrity != null) { %>
+                          <tr><td>People</td><td>Integrity</td><td><%= q.integrity %> / 5</td><td><%= getScoreComment(r,'integrity') || '—' %></td></tr>
+                        <% } %>
+                        <% if (q.accountability2 != null) { %>
+                          <tr><td>Ownership</td><td>Accountability</td><td><%= q.accountability2 %> / 5</td><td><%= getScoreComment(r,'accountability2') || '—' %></td></tr>
+                        <% } %>
+                        <% if (q.problemSolving != null) { %>
+                          <tr><td>Ownership</td><td>Problem Solving</td><td><%= q.problemSolving %> / 5</td><td><%= getScoreComment(r,'problemSolving') || '—' %></td></tr>
+                        <% } %>
+                        <% if (q.efficiency != null) { %>
+                          <tr><td>Ownership</td><td>Efficiency</td><td><%= q.efficiency %> / 5</td><td><%= getScoreComment(r,'efficiency') || '—' %></td></tr>
+                        <% } %>
+                        <% if (q.resultsOrientation != null) { %>
+                          <tr><td>Quality</td><td>Results</td><td><%= q.resultsOrientation %> / 5</td><td><%= getScoreComment(r,'resultsOrientation') || '—' %></td></tr>
+                        <% } %>
+                        <% if (q.communication != null) { %>
+                          <tr><td>Quality</td><td>Communication</td><td><%= q.communication %> / 5</td><td><%= getScoreComment(r,'communication') || '—' %></td></tr>
+                        <% } %>
+                        <% if (q.continuousImprovement != null) { %>
+                          <tr><td>Quality</td><td>Continuous Improvement</td><td><%= q.continuousImprovement %> / 5</td><td><%= getScoreComment(r,'continuousImprovement') || '—' %></td></tr>
+                        <% } %>
+                        <% if (q.teamwork2 != null) { %>
+                          <tr><td>Partnership</td><td>Teamwork</td><td><%= q.teamwork2 %> / 5</td><td><%= getScoreComment(r,'teamwork2') || '—' %></td></tr>
+                        <% } %>
+                        <% if (q.collaboration != null) { %>
+                          <tr><td>Partnership</td><td>Collaboration</td><td><%= q.collaboration %> / 5</td><td><%= getScoreComment(r,'collaboration') || '—' %></td></tr>
+                        <% } %>
+                        <% if (q.buildTrust != null) { %>
+                          <tr><td>Partnership</td><td>Build Trust</td><td><%= q.buildTrust %> / 5</td><td><%= getScoreComment(r,'buildTrust') || '—' %></td></tr>
+                        <% } %>
+                        <% if (q.decisionMakingWithRisk != null) { %>
+                          <tr><td>Leading</td><td>Decision Making with Risk</td><td><%= q.decisionMakingWithRisk %> / 5</td><td><%= getScoreComment(r,'decisionMakingWithRisk') || '—' %></td></tr>
+                        <% } %>
+                        <% if (q.enableTheTeam != null) { %>
+                          <tr><td>Leading</td><td>Enable the Team</td><td><%= q.enableTheTeam %> / 5</td><td><%= getScoreComment(r,'enableTheTeam') || '—' %></td></tr>
+                        <% } %>
+                        <% if (q.hireDevelopManage != null) { %>
+                          <tr><td>Leading</td><td>Hire/Develop/Manage</td><td><%= q.hireDevelopManage %> / 5</td><td><%= getScoreComment(r,'hireDevelopManage') || '—' %></td></tr>
+                        <% } %>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+    </section>
+
+    <section id="goals" class="section-shell dev-shell">
+      <div class="section-shell-header">
+        <div>
+          <h2>Goals & Development</h2>
+          <p>Keep forward-looking actions visible through scorecards. Open the side pane for full goal detail.</p>
+        </div>
+        <div class="header-actions">
+          <% if (canCreateGoal) { %>
+            <a href="/goals/new?ownerId=<%= staff.id %>" class="btn ghost btn-sm">New Goal</a>
+          <% } %>
+          <a href="/goals?ownerId=<%= staff.id %>" class="btn ghost btn-sm">Manage Goals</a>
+        </div>
+      </div>
+
+      <div class="dev-summary-grid">
+        <div class="dev-summary-card">
+          <span class="dev-summary-label">Total</span>
+          <strong><%= safeGoalStats.total %></strong>
+          <p>Total goals tied to this staff member.</p>
+        </div>
+        <div class="dev-summary-card">
+          <span class="dev-summary-label">Open</span>
+          <strong><%= safeGoalStats.open %></strong>
+          <p>Not started or awaiting action.</p>
+        </div>
+        <div class="dev-summary-card">
+          <span class="dev-summary-label">In Progress</span>
+          <strong><%= safeGoalStats.inProgress %></strong>
+          <p>Active development work underway.</p>
+        </div>
+        <div class="dev-summary-card">
+          <span class="dev-summary-label">Done</span>
+          <strong><%= safeGoalStats.done %></strong>
+          <p>Completed development outcomes.</p>
+        </div>
+      </div>
+
+      <% if (safeGoalStats.total > 0) { %>
+        <div style="margin: 0.5rem 0 1rem;">
+          <% const days = safeGoalStats.daysSinceLastCheckIn; %>
+          <% if (days == null) { %>
+            <span class="chip chip-warn">No check-ins recorded</span>
+          <% } else if (days <= 7) { %>
+            <span class="chip chip-ok">Last check-in: <%= days === 0 ? 'today' : days + 'd ago' %></span>
+          <% } else if (days <= 14) { %>
+            <span class="chip chip-neutral">Last check-in: <%= days %>d ago</span>
+          <% } else { %>
+            <span class="chip chip-warn">⚠ No check-in in <%= days %>d</span>
+          <% } %>
+        </div>
+      <% } %>
+
+      <div class="bucket-summary-card">
+        <h3>Goal Detail</h3>
+        <p class="bucket-summary-note">
+          Open the side pane to review title, status, progress, and due dates for all goals.
+        </p>
+
+        <div class="summary-action-row">
+          <button
+            type="button"
+            class="btn ghost btn-sm js-open-profile-drawer"
+            data-drawer-title="Goals & Development"
+            data-drawer-subtitle="Goal status, progress, and due dates."
+            data-drawer-source="drawer-goals-content"
+          >
+            View Goals
+          </button>
+        </div>
+      </div>
+
+      <div id="drawer-goals-content" class="profile-section-hidden-source">
+        <% if (!staffGoals || staffGoals.length === 0) { %>
+          <div class="drawer-empty">No goals have been created for this staff member.</div>
+        <% } else { %>
+          <div class="review-drawer-toolbar">
+            <div class="review-drawer-toolbar-row">
+              <div class="review-drawer-toolbar-group">
+                <span class="review-drawer-toolbar-label">Sort</span>
+                <button type="button" class="btn ghost btn-small js-goals-sort" data-sort="due-asc">Due Soonest</button>
+                <button type="button" class="btn ghost btn-small js-goals-sort" data-sort="due-desc">Due Latest</button>
+              </div>
+              <div class="review-drawer-toolbar-group">
+                <span class="review-drawer-toolbar-label">Status</span>
+                <select class="review-drawer-select js-goals-status-filter">
+                  <option value="all">All statuses</option>
+                  <option value="OPEN">Open</option>
+                  <option value="IN_PROGRESS">In Progress</option>
+                  <option value="DONE">Done</option>
+                  <option value="ON_HOLD">On Hold</option>
+                </select>
+              </div>
+              <div class="review-drawer-toolbar-group">
+                <span class="review-drawer-toolbar-label">Priority</span>
+                <select class="review-drawer-select js-goals-priority-filter">
+                  <option value="all">All priorities</option>
+                  <option value="HIGH">High</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="LOW">Low</option>
+                </select>
+              </div>
+              <div class="review-drawer-count"></div>
+            </div>
+            <div class="review-drawer-toolbar-actions">
+              <button type="button" class="btn ghost btn-small js-goals-expand-all">Expand All</button>
+              <button type="button" class="btn ghost btn-small js-goals-collapse-all">Collapse All</button>
+            </div>
+          </div>
+
+          <div class="drawer-stack" id="goals-drawer-stack">
+            <% staffGoals.forEach(function(g) {
+              const statusClass =
+                g.status === 'DONE' ? 'status-badge status-done'
+                : g.status === 'ON_HOLD' ? 'status-badge status-danger'
+                : 'status-badge status-open';
+              const priorityClass =
+                g.priority === 'HIGH' ? 'mini-badge mini-bad'
+                : g.priority === 'MEDIUM' ? 'mini-badge mini-warn'
+                : 'mini-badge';
+              const dueDateStr = g.dueDate ? String(g.dueDate).substring(0, 10) : '';
+            %>
+              <div class="drawer-subcard review-card"
+                data-status="<%= g.status || '' %>"
+                data-priority="<%= (g.priority || '').toUpperCase() %>"
+                data-due-date="<%= dueDateStr %>">
+
+                <div class="review-card-header js-review-toggle" role="button" tabindex="0">
+                  <div class="review-card-header-left">
+                    <span class="review-card-period" style="max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><%= g.title %></span>
+                    <span class="<%= statusClass %>"><%= g.status ? g.status.replace('_', ' ') : 'Open' %></span>
+                    <% if (g.priority) { %><span class="<%= priorityClass %>"><%= g.priority %></span><% } %>
+                  </div>
+                  <div class="review-card-header-right">
+                    <span class="review-card-overall"><%= g.progress != null ? g.progress + '%' : '—' %></span>
+                    <% if (dueDateStr) { %><span class="review-card-submitter">Due <%= dueDateStr %></span><% } %>
+                    <span class="review-card-chevron">›</span>
+                  </div>
+                </div>
+
+                <div class="review-card-body">
+                  <div class="progress-cell" style="margin-bottom:0.75rem;">
+                    <div style="font-size:0.78rem; color:rgba(148,163,184,0.85); margin-bottom:0.3rem;">Progress: <%= g.progress != null ? g.progress + '%' : '—' %></div>
+                    <div class="progress-bar"><div style="width:<%= g.progress || 0 %>%;"></div></div>
+                  </div>
+                  <% if (g.description) { %>
+                    <div class="review-comment-panel" style="margin-bottom:0.65rem;">
+                      <span class="dev-summary-label">Description</span>
+                      <p><%= g.description %></p>
+                    </div>
+                  <% } %>
+                  <% if (g.successCriteria) { %>
+                    <div class="review-comment-panel" style="margin-bottom:0.65rem;">
+                      <span class="dev-summary-label">Success Criteria</span>
+                      <p><%= g.successCriteria %></p>
+                    </div>
+                  <% } %>
+                  <% if (g.measure || g.category) { %>
+                    <div class="timeline-chips">
+                      <% if (g.category) { %><span class="chip small"><%= g.category %></span><% } %>
+                      <% if (g.measure) { %><span class="chip small">Measure: <%= g.measure %></span><% } %>
+                    </div>
+                  <% } %>
+                  <div style="margin-top:0.65rem; text-align:right;">
+                    <a href="/goals/<%= g.id %>" class="btn ghost btn-small">View Goal</a>
+                  </div>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+    </section>
+  </section>
+
+  <div class="profile-drawer-backdrop" id="profileDrawerBackdrop"></div>
+  <div id="metricFormulaTooltip"></div>
+  <div id="metricStdPopover"></div>
+
+  <aside class="profile-drawer" id="profileDrawer" aria-hidden="true">
+    <div class="profile-drawer-head">
+      <div>
+        <h3 id="profileDrawerTitle" style="margin:0;">Detail</h3>
+        <p class="muted small" id="profileDrawerSubtitle" style="margin:0.35rem 0 0 0;">—</p>
+      </div>
+      <button type="button" class="profile-drawer-close" id="profileDrawerClose">Close</button>
+    </div>
+
+    <div class="profile-drawer-body" id="profileDrawerBody">
+      <div class="drawer-empty">Choose a section detail to load content here.</div>
+    </div>
+  </aside>
+
+  <div class="pdms-modal-overlay" id="tpOverlay" aria-hidden="true">
+    <div class="pdms-modal" role="dialog" aria-modal="true" aria-labelledby="tpTitle">
+      <div style="display:flex; justify-content:space-between; gap:0.75rem; flex-wrap:wrap; align-items:flex-start;">
+        <div>
+          <h3 id="tpTitle">1:1 Talking Points</h3>
+          <p class="muted small" id="tpMeta" style="margin:0.25rem 0 0 0;">—</p>
+        </div>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <button type="button" class="btn ghost btn-sm" id="tpCopy">Copy</button>
+          <button type="button" class="btn ghost btn-sm" id="tpClose">Close</button>
+        </div>
+      </div>
+
+      <div style="margin-top:0.75rem;">
+        <textarea id="tpText" spellcheck="false"></textarea>
+        <p class="muted small" style="margin-top:0.5rem;">
+          Tip: copy this into Teams or OneNote. You can also use it as the basis for a formal 1:1 entry.
+        </p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  (function () {
+    const navLinks = Array.from(document.querySelectorAll('.sticky-nav a[href^="#"]'));
+    if (!navLinks.length) return;
+
+    const sectionMap = navLinks
+      .map(link => {
+        const id = link.getAttribute('href');
+        const section = document.querySelector(id);
+        return section ? { link, section, id } : null;
+      })
+      .filter(Boolean);
+
+    if (!sectionMap.length) return;
+
+    function setActive(linkToActivate) {
+      navLinks.forEach(link => link.classList.remove('active'));
+      if (linkToActivate) linkToActivate.classList.add('active');
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter(entry => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+
+        if (!visible.length) return;
+
+        const activeEntry = visible[0];
+        const match = sectionMap.find(item => item.section === activeEntry.target);
+        if (match) setActive(match.link);
+      },
+      {
+        root: null,
+        rootMargin: '-20% 0px -60% 0px',
+        threshold: [0.15, 0.25, 0.4, 0.6]
+      }
+    );
+
+    sectionMap.forEach(item => observer.observe(item.section));
+
+    navLinks.forEach(link => {
+      link.addEventListener('click', () => {
+        setActive(link);
+      });
+    });
+
+    setActive(sectionMap[0].link);
+  })();
+</script>
+
+<script>
+  (function () {
+    (function complianceCalendar() {
+      const payload = window.__PDMS_COMPLIANCE__ || { esdByDate: {}, attByDate: {}, staff: {} };
+      const esdByDate = payload.esdByDate || {};
+      const attByDate = payload.attByDate || {};
+      const staffMeta = payload.staff || {};
+
+      const grid = document.getElementById('complianceCalendar');
+      const title = document.getElementById('calTitle');
+      const btnPrev = document.getElementById('calPrevMonth');
+      const btnNext = document.getElementById('calNextMonth');
+      const btnToday = document.getElementById('calToday');
+
+ const drawerSource = document.getElementById('drawer-compliance-day');
+const drawerTitle = document.getElementById('drawerComplianceDayTitle');
+const drawerSubtitle = document.getElementById('drawerComplianceDaySubtitle');
+const drawerOpenTP = document.getElementById('drawerCalOpenTalkingPoints');
+const drawerEsdBlock = document.getElementById('drawerCalEsdBlock');
+const drawerAttBlock = document.getElementById('drawerCalAttBlock');
+
+const profileDrawer = document.getElementById('profileDrawer');
+const profileDrawerBackdrop = document.getElementById('profileDrawerBackdrop');
+const profileDrawerTitle = document.getElementById('profileDrawerTitle');
+const profileDrawerSubtitle = document.getElementById('profileDrawerSubtitle');
+const profileDrawerBody = document.getElementById('profileDrawerBody');
+
+      const riskToggle = document.getElementById('calRiskToggle');
+      const clearSel = document.getElementById('calClearSelection');
+
+      const sumEsdPass = document.getElementById('sumEsdPass');
+      const sumEsdMissing = document.getElementById('sumEsdMissing');
+      const sumAttPresent = document.getElementById('sumAttPresent');
+      const sumAttLate = document.getElementById('sumAttLate');
+      const sumAttAbsent = document.getElementById('sumAttAbsent');
+      const sumLateRate = document.getElementById('sumLateRate');
+
+      if (!grid || !title || !btnPrev || !btnNext || !btnToday) return;
+
+      const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      let selectedDayISO = null;
+
+      function pad2(n){ return String(n).padStart(2,'0'); }
+      function toISODate(y,m,d){ return y + '-' + pad2(m) + '-' + pad2(d); }
+      function monthLabel(date) { return date.toLocaleString(undefined, { month: 'long', year: 'numeric' }); }
+
+      function esc(s) {
+        return String(s || '').replace(/[&<>"']/g, (c) => ({
+          '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+        }[c]));
+      }
+
+      function computeEsdBadge(dayISO) {
+        const e = esdByDate[dayISO];
+        if (!e) return { text: 'ESD: NONE', cls: 'mini-badge mini-muted', level: 'none' };
+        const r = (e.finalResult || '').toUpperCase();
+        if (r === 'PASS') return { text: 'ESD: PASS', cls: 'mini-badge mini-ok', level: 'ok' };
+        return { text: 'ESD: FAIL', cls: 'mini-badge mini-bad', level: 'bad' };
+      }
+
+      function computeAttBadge(dayISO) {
+        const a = attByDate[dayISO];
+        if (!a) return { text: 'ATT: —', cls: 'mini-badge mini-muted', level: 'none' };
+
+        const s = (a.status || '').toUpperCase();
+        const p = (a.punctualityBucket || '').toUpperCase();
+
+        if (s === 'ABSENT') return { text: 'ATT: Absent', cls: 'mini-badge mini-bad', level: 'bad' };
+        if (s === 'LATE' || p === 'LATE' || p === 'UNPUNCTUAL') return { text: 'ATT: Late', cls: 'mini-badge mini-warn', level: 'warn' };
+        if (s === 'PRESENT' || p === 'ON_TIME') return { text: 'ATT: Present', cls: 'mini-badge mini-ok', level: 'ok' };
+        return { text: 'ATT: ' + (a.status || '—'), cls: 'mini-badge', level: 'none' };
+      }
+
+      function overallTint(esdLevel, attLevel) {
+        if (esdLevel === 'bad' || attLevel === 'bad') return 'tint-bad';
+        if (esdLevel === 'none' && attLevel === 'none') return '';
+        if (esdLevel === 'ok' && attLevel === 'ok') return 'tint-ok';
+        if (esdLevel === 'none' && attLevel === 'ok') return 'tint-ok';
+        if (esdLevel === 'ok' && attLevel === 'none') return 'tint-ok';
+        return 'tint-warn';
+      }
+
+      function isIssueDay(dayISO) {
+        const e = esdByDate[dayISO] || null;
+        const a = attByDate[dayISO] || null;
+
+        const esdIssue = (!e) || ((e.finalResult || '').toUpperCase() !== 'PASS');
+        let attIssue = false;
+
+        if (a) {
+          const s = (a.status || '').toUpperCase();
+          const p = (a.punctualityBucket || '').toUpperCase();
+          attIssue = (s === 'ABSENT' || s === 'LATE' || p === 'LATE' || p === 'UNPUNCTUAL');
+        }
+
+        return esdIssue || attIssue;
+      }
+
+      function pct(n, d) {
+        if (!d) return '—';
+        return Math.round((n / d) * 100) + '%';
+      }
+
+      function computeMonthSummary(anchorDate) {
+        const year = anchorDate.getFullYear();
+        const month = anchorDate.getMonth();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        let esdTracked = 0;
+        let esdPass = 0;
+        let esdMissing = 0;
+
+        let attTracked = 0;
+        let attPresent = 0;
+        let attLate = 0;
+        let attAbsent = 0;
+
+        for (let d = 1; d <= daysInMonth; d++) {
+          const iso = toISODate(year, month + 1, d);
+
+          const e = esdByDate[iso];
+          if (!e) {
+            esdMissing++;
+          } else {
+            esdTracked++;
+            if ((e.finalResult || '').toUpperCase() === 'PASS') esdPass++;
+          }
+
+          const a = attByDate[iso];
+          if (a) {
+            attTracked++;
+            const s = (a.status || '').toUpperCase();
+            const p = (a.punctualityBucket || '').toUpperCase();
+
+            if (s === 'ABSENT') attAbsent++;
+            else if (s === 'LATE' || p === 'LATE' || p === 'UNPUNCTUAL') attLate++;
+            else attPresent++;
+          }
+        }
+
+        return {
+          esdTracked, esdPass, esdMissing,
+          attTracked, attPresent, attLate, attAbsent,
+          esdPassRate: (esdTracked ? pct(esdPass, esdTracked) : '—'),
+          latenessRate: (attTracked ? pct(attLate, attTracked) : '—')
+        };
+      }
+
+      function renderMonthSummary(anchorDate) {
+        const s = computeMonthSummary(anchorDate);
+        if (sumEsdPass) sumEsdPass.textContent = 'ESD Pass rate: ' + s.esdPassRate;
+        if (sumEsdMissing) sumEsdMissing.textContent = 'ESD Missing days: ' + s.esdMissing;
+        if (sumAttPresent) sumAttPresent.textContent = 'Present: ' + s.attPresent;
+        if (sumAttLate) sumAttLate.textContent = 'Late: ' + s.attLate;
+        if (sumAttAbsent) sumAttAbsent.textContent = 'Absent: ' + s.attAbsent;
+        if (sumLateRate) sumLateRate.textContent = 'Lateness rate: ' + s.latenessRate;
+      }
+
+      function applyRiskFilter(mode) {
+        const cells = Array.from(grid.querySelectorAll('.cal-day'));
+        const riskOn = (mode || 'all') === 'risk';
+
+        cells.forEach(cell => {
+          const iso = cell.getAttribute('data-iso');
+          const out = cell.classList.contains('is-out');
+
+          if (!riskOn) {
+            cell.classList.remove('is-hidden');
+            return;
+          }
+
+          if (out) {
+            cell.classList.add('is-hidden');
+            return;
+          }
+
+          const issue = isIssueDay(iso);
+          if (!issue) cell.classList.add('is-hidden');
+          else cell.classList.remove('is-hidden');
+        });
+      }
+
+     function openSharedDrawer(titleText, subtitleText, html) {
+  if (!profileDrawer || !profileDrawerBackdrop || !profileDrawerTitle || !profileDrawerSubtitle || !profileDrawerBody) return;
+
+  profileDrawerTitle.textContent = titleText || 'Detail';
+  profileDrawerSubtitle.textContent = subtitleText || '—';
+  profileDrawerBody.innerHTML = html || '<div class="drawer-empty">No detail available.</div>';
+
+  profileDrawer.classList.add('open');
+  profileDrawerBackdrop.classList.add('open');
+  profileDrawer.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+}
+
+function openDetails(dayISO) {
+  selectedDayISO = dayISO;
+
+  const e = esdByDate[dayISO] || null;
+  const a = attByDate[dayISO] || null;
+
+  const subtitleParts = [];
+  if (e && e.shiftLabel) subtitleParts.push('ESD shift: ' + e.shiftLabel);
+  if (a && a.rawStatusSummary) subtitleParts.push('Attendance: ' + a.rawStatusSummary);
+
+  if (drawerTitle) drawerTitle.textContent = 'Details: ' + dayISO;
+  if (drawerSubtitle) drawerSubtitle.textContent = subtitleParts.length ? subtitleParts.join(' • ') : 'No records for this day.';
+
+  if (drawerEsdBlock) {
+    if (!e) {
+      drawerEsdBlock.innerHTML = '<div class="muted">No ESD entries for this day.</div>';
+    } else {
+      drawerEsdBlock.innerHTML = `
+        <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.5rem;">
+          <span class="chip small">Result: <strong>${esc(e.finalResult || '—')}</strong></span>
+          <span class="chip small">Attempts: <strong>${esc(e.totalAttempts)}</strong></span>
+          <span class="chip small">Until PASS: <strong>${esc(e.attemptsUntilPass != null ? e.attemptsUntilPass : '—')}</strong></span>
+        </div>
+        <div class="muted small">First attempt: <strong>${esc(e.firstAttemptTimeLabel || '—')}</strong></div>
+        <div class="muted small">First PASS: <strong>${esc(e.firstPassTimeLabel || '—')}</strong></div>
+        <div class="muted small">Window: <strong>${esc(e.windowLabel || '—')}</strong></div>
+      `;
+    }
+  }
+
+  if (drawerAttBlock) {
+    if (!a) {
+      drawerAttBlock.innerHTML = '<div class="muted">No attendance data for this day.</div>';
+    } else {
+      drawerAttBlock.innerHTML = `
+        <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.5rem;">
+          <span class="chip small">Status: <strong>${esc(a.status || '—')}</strong></span>
+          <span class="chip small">Punctuality: <strong>${esc(a.punctualityBucket || '—')}</strong></span>
+          <span class="chip small">Minutes late: <strong>${esc(a.minutesLate != null ? a.minutesLate : '—')}</strong></span>
+        </div>
+        <div class="muted small">Raw: <strong>${esc(a.rawStatusSummary || '—')}</strong></div>
+      `;
+    }
+  }
+
+  const html = drawerSource ? drawerSource.innerHTML : '<div class="drawer-empty">No detail available.</div>';
+  openSharedDrawer(
+    'Compliance Day Detail',
+    'Daily ESD and attendance detail for ' + dayISO,
+    html
+  );
+
+  setTimeout(() => {
+    const btn = document.getElementById('drawerCalOpenTalkingPoints');
+    if (btn && !btn.dataset.boundTp) {
+      btn.dataset.boundTp = '1';
+      btn.addEventListener('click', openTalkingPoints);
+    }
+  }, 0);
+}
+
+function closeDetails() {
+  selectedDayISO = null;
+}
+
+      function renderCalendar(anchorDate) {
+        const year = anchorDate.getFullYear();
+        const month = anchorDate.getMonth();
+
+        title.textContent = monthLabel(anchorDate);
+        renderMonthSummary(anchorDate);
+        grid.innerHTML = '';
+
+        DOW.forEach(d => {
+          const h = document.createElement('div');
+          h.className = 'cal-head';
+          h.textContent = d;
+          grid.appendChild(h);
+        });
+
+        const first = new Date(year, month, 1);
+        const startDow = first.getDay();
+        const startDate = new Date(year, month, 1 - startDow);
+
+        for (let i = 0; i < 42; i++) {
+          const d = new Date(startDate);
+          d.setDate(startDate.getDate() + i);
+
+          const isOut = d.getMonth() !== month;
+          const dayISO = toISODate(d.getFullYear(), d.getMonth() + 1, d.getDate());
+
+          const esd = computeEsdBadge(dayISO);
+          const att = computeAttBadge(dayISO);
+          const tint = overallTint(esd.level, att.level);
+
+          const cell = document.createElement('div');
+          cell.className = 'cal-day' + (isOut ? ' is-out' : '') + (tint ? ' ' + tint : '');
+          cell.setAttribute('data-iso', dayISO);
+
+          const top = document.createElement('div');
+          top.style.display = 'flex';
+          top.style.justifyContent = 'space-between';
+          top.style.alignItems = 'baseline';
+          top.style.gap = '0.35rem';
+
+          const num = document.createElement('div');
+          num.className = 'date-num';
+          num.textContent = String(d.getDate());
+
+          top.appendChild(num);
+
+          const badges = document.createElement('div');
+          badges.className = 'cal-badges';
+
+          const b1 = document.createElement('span');
+          b1.className = esd.cls;
+          b1.textContent = esd.text;
+
+          const b2 = document.createElement('span');
+          b2.className = att.cls;
+          b2.textContent = att.text;
+
+          badges.appendChild(b1);
+          badges.appendChild(b2);
+
+          cell.appendChild(top);
+          cell.appendChild(badges);
+          cell.addEventListener('click', () => openDetails(dayISO));
+          grid.appendChild(cell);
+        }
+
+        const mode = riskToggle ? (riskToggle.getAttribute('data-mode') || 'all') : 'all';
+        applyRiskFilter(mode);
+      }
+
+      let anchor = new Date();
+      anchor.setHours(0,0,0,0);
+
+      btnPrev.addEventListener('click', () => {
+        anchor = new Date(anchor.getFullYear(), anchor.getMonth() - 1, 1);
+        renderCalendar(anchor);
+      });
+
+      btnNext.addEventListener('click', () => {
+        anchor = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 1);
+        renderCalendar(anchor);
+      });
+
+      btnToday.addEventListener('click', () => {
+        anchor = new Date();
+        anchor.setHours(0,0,0,0);
+        renderCalendar(anchor);
+      });
+
+      if (clearSel) {
+  clearSel.addEventListener('click', () => {
+    selectedDayISO = null;
+    const drawer = document.getElementById('profileDrawer');
+    const backdrop = document.getElementById('profileDrawerBackdrop');
+    if (drawer) {
+      drawer.classList.remove('open');
+      drawer.setAttribute('aria-hidden', 'true');
+    }
+    if (backdrop) backdrop.classList.remove('open');
+    document.body.style.overflow = '';
+  });
+}
+
+      if (riskToggle) {
+        riskToggle.addEventListener('click', () => {
+          const mode = riskToggle.getAttribute('data-mode') || 'all';
+          const next = (mode === 'all') ? 'risk' : 'all';
+          riskToggle.setAttribute('data-mode', next);
+          riskToggle.textContent = (next === 'risk') ? 'Risk filter: ON' : 'Risk filter: OFF';
+          applyRiskFilter(next);
+        });
+      }
+
+      const tpOverlay = document.getElementById('tpOverlay');
+      const tpClose = document.getElementById('tpClose');
+      const tpCopy = document.getElementById('tpCopy');
+      const tpText = document.getElementById('tpText');
+      const tpMeta = document.getElementById('tpMeta');
+
+      function buildTalkingPoints(dayISO) {
+        const e = esdByDate[dayISO] || null;
+        const a = attByDate[dayISO] || null;
+
+        const lines = [];
+        lines.push(`1:1 Talking Points`);
+        lines.push(`Staff: ${staffMeta.name || 'Staff'}${staffMeta.employeeId ? ' (Emp ' + staffMeta.employeeId + ')' : ''}`);
+        if (staffMeta.position) lines.push(`Position: ${staffMeta.position}`);
+        lines.push(`Date: ${dayISO}`);
+        lines.push(``);
+        lines.push(`What went well:`);
+        lines.push(`- `);
+        lines.push(``);
+        lines.push(`Opportunities / follow-up:`);
+
+        if (!e) {
+          lines.push(`- ESD: No record found. Confirm process and timing, reinforce daily compliance expectations.`);
+        } else if ((e.finalResult || '').toUpperCase() !== 'PASS') {
+          lines.push(`- ESD: ${e.finalResult || 'FAIL'} (Attempts: ${e.totalAttempts || '—'}). Ask what caused the failure and what support is needed.`);
+        } else {
+          lines.push(`- ESD: PASS (First PASS: ${e.firstPassTimeLabel || '—'}).`);
+        }
+
+        if (a) {
+          const s = (a.status || '').toUpperCase();
+          const p = (a.punctualityBucket || '').toUpperCase();
+          if (s === 'ABSENT') lines.push(`- Attendance: Absent. Confirm reason, policy alignment, and plan for prevention.`);
+          else if (s === 'LATE' || p === 'LATE' || p === 'UNPUNCTUAL') lines.push(`- Attendance: Late (${a.minutesLate != null ? a.minutesLate + ' min' : '—'}). Confirm root cause and corrective habit.`);
+          else lines.push(`- Attendance: Present / on time.`);
+        } else {
+          lines.push(`- Attendance: No record found. Verify data source or badge scan behavior.`);
+        }
+
+        lines.push(``);
+        lines.push(`Action items:`);
+        lines.push(`- Owner: ${staffMeta.name || 'Staff'} | Due: ____ | Action: ____`);
+        lines.push(`- Owner: Lead/Supervisor | Due: ____ | Action: ____`);
+        lines.push(``);
+        lines.push(`Notes:`);
+        lines.push(`- `);
+
+        return lines.join('\n');
+      }
+
+      function openTalkingPoints() {
+        const dayISO = selectedDayISO;
+        if (!dayISO) return;
+
+        if (tpMeta) tpMeta.textContent = `Staff: ${staffMeta.name || 'Staff'} • Date: ${dayISO}`;
+        if (tpText) tpText.value = buildTalkingPoints(dayISO);
+
+        if (tpOverlay) {
+          tpOverlay.style.display = 'flex';
+          tpOverlay.setAttribute('aria-hidden', 'false');
+        }
+      }
+
+      function closeTalkingPoints() {
+        if (tpOverlay) {
+          tpOverlay.style.display = 'none';
+          tpOverlay.setAttribute('aria-hidden', 'true');
+        }
+      }
+
+      if (drawerOpenTP) drawerOpenTP.addEventListener('click', openTalkingPoints);
+      if (tpClose) tpClose.addEventListener('click', closeTalkingPoints);
+      if (tpOverlay) {
+        tpOverlay.addEventListener('click', (e) => {
+          if (e.target === tpOverlay) closeTalkingPoints();
+        });
+      }
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeTalkingPoints();
+      });
+
+      if (tpCopy) {
+        tpCopy.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(tpText.value || '');
+            tpCopy.textContent = 'Copied';
+            setTimeout(() => tpCopy.textContent = 'Copy', 900);
+          } catch (err) {
+            alert('Copy failed. You can manually copy from the text box.');
+          }
+        });
+      }
+
+      renderCalendar(anchor);
+    })();
+  })();
+</script>
+
+<script>
+  (function () {
+    const drawer = document.getElementById('profileDrawer');
+    const backdrop = document.getElementById('profileDrawerBackdrop');
+    const closeBtn = document.getElementById('profileDrawerClose');
+    const titleEl = document.getElementById('profileDrawerTitle');
+    const subtitleEl = document.getElementById('profileDrawerSubtitle');
+    const bodyEl = document.getElementById('profileDrawerBody');
+
+    if (!drawer || !backdrop || !closeBtn || !titleEl || !subtitleEl || !bodyEl) return;
+
+    function openDrawer() {
+      drawer.classList.add('open');
+      backdrop.classList.add('open');
+      drawer.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeDrawer() {
+      drawer.classList.remove('open');
+      backdrop.classList.remove('open');
+      drawer.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+
+    function loadDrawerContent(sourceId, title, subtitle) {
+      const src = document.getElementById(sourceId);
+
+      titleEl.textContent = title || 'Detail';
+      subtitleEl.textContent = subtitle || '—';
+
+      if (!src) {
+        bodyEl.innerHTML = '<div class="drawer-empty">Detail source not found.</div>';
+        openDrawer();
+        return;
+      }
+
+      bodyEl.innerHTML = src.innerHTML || '<div class="drawer-empty">No detail available.</div>';
+      openDrawer();
+
+      if (sourceId === 'drawer-reviews-content') {
+        initReviewDrawer();
+      } else if (sourceId === 'drawer-coaching-content') {
+        initCoachingDrawer();
+      } else if (sourceId === 'drawer-goals-content') {
+        initGoalsDrawer();
+      }
+    }
+
+    function bindDrawerTriggers(root) {
+      (root || document).querySelectorAll('.js-open-profile-drawer').forEach((btn) => {
+        if (btn.dataset.drawerBound === '1') return;
+        btn.dataset.drawerBound = '1';
+
+        btn.addEventListener('click', () => {
+          loadDrawerContent(
+            btn.getAttribute('data-drawer-source'),
+            btn.getAttribute('data-drawer-title'),
+            btn.getAttribute('data-drawer-subtitle')
+          );
+        });
+      });
+    }
+
+    bindDrawerTriggers(document);
+
+    // ── Metric formula tooltip + STD badge popover ──────────────────────────
+    (function() {
+      const tip = document.getElementById('metricFormulaTooltip');
+      const stdPop = document.getElementById('metricStdPopover');
+      if (!tip || !stdPop) return;
+
+      let hideTimer = null;
+      let stdVisible = false;
+      let activeTipId = null;
+
+      // ── Formula tooltip ──────────────────────────────────────────
+      function buildFormulaHtml(f) {
+        if (!f) return '<span style="opacity:0.5">No data</span>';
+        let html = '';
+        if (f.aggregate) {
+          html += `<div style="margin-bottom:0.5rem;font-weight:600;color:rgba(226,232,240,0.9)">${f.aggregate}</div>`;
+        }
+        if (f.cols && f.rows && f.rows.length) {
+          html += '<table style="width:100%;border-collapse:collapse;font-size:0.72rem">';
+          html += '<thead><tr>' + f.cols.map(c =>
+            `<th style="text-align:left;padding:0.2rem 0.4rem 0.2rem 0;color:rgba(226,232,240,0.4);font-weight:600;border-bottom:1px solid rgba(255,255,255,0.08)">${c}</th>`
+          ).join('') + '</tr></thead><tbody>';
+          f.rows.forEach(function(r) {
+            html += '<tr>' + r.map((cell, i) =>
+              `<td style="padding:0.22rem 0.4rem 0.22rem 0;color:rgba(226,232,240,${i === 0 ? '0.5' : '0.85'});border-bottom:1px solid rgba(255,255,255,0.04)">${cell ?? '—'}</td>`
+            ).join('') + '</tr>';
+          });
+          html += '</tbody></table>';
+        } else if (f.cols) {
+          html += `<div style="opacity:0.4;font-size:0.72rem">No date-level data in window</div>`;
+        }
+        return html;
+      }
+
+      function positionAbovePill(anchor) {
+        const el = tip;
+        el.style.display = 'block';
+        const rect = anchor.getBoundingClientRect();
+        const tw = el.offsetWidth, th = el.offsetHeight;
+        let left = rect.left + rect.width / 2 - tw / 2;
+        let top = rect.top - th - 10;
+        left = Math.max(8, Math.min(left, window.innerWidth - tw - 8));
+        if (top < 8) top = rect.bottom + 10;
+        el.style.left = left + 'px';
+        el.style.top = top + 'px';
+      }
+
+      function showFormulaTip(trigger) {
+        clearTimeout(hideTimer);
+        const id = trigger.getAttribute('data-row-id');
+        if (activeTipId === id && tip.style.display === 'block') return; // already showing
+        activeTipId = id;
+        const f = (window.__mf || {})[id];
+        tip.innerHTML = buildFormulaHtml(f);
+        const row = trigger.closest('.detail-row');
+        const pill = row ? row.querySelector('.detail-row-score') : trigger;
+        positionAbovePill(pill || trigger);
+      }
+
+      function hideTip() {
+        hideTimer = setTimeout(() => { tip.style.display = 'none'; activeTipId = null; }, 100);
+      }
+
+      tip.addEventListener('mouseover', () => clearTimeout(hideTimer));
+      tip.addEventListener('mouseout', hideTip);
+
+      // ── STD badge popover ────────────────────────────────────────
+      function buildStdHtml(s) {
+        if (!s) return '';
+        const dirLabel = s.direction === 'lower' ? '▼ Lower is better' : s.direction === 'higher' ? '▲ Higher is better' : 'Informational';
+        const dirColor = s.direction === 'lower' ? '#86efac' : s.direction === 'higher' ? '#86efac' : '#94a3b8';
+        let html = `<div style="font-weight:700;margin-bottom:0.45rem;color:#a5b4fc">Scoring Standard</div>`;
+        html += `<div class="std-popover-row"><span class="std-popover-key">Direction</span><span class="std-popover-val" style="color:${dirColor}">${dirLabel}</span></div>`;
+        if (s.direction !== 'none') {
+          html += `<div class="std-popover-row"><span class="std-popover-key">Score 100</span><span class="std-popover-val" style="color:#86efac">${s.good}</span></div>`;
+          html += `<div class="std-popover-row"><span class="std-popover-key">Score 0</span><span class="std-popover-val" style="color:#fca5a5">${s.bad}</span></div>`;
+          html += `<div class="std-popover-row"><span class="std-popover-key">Scale</span><span class="std-popover-val">Linear between thresholds</span></div>`;
+        }
+        html += `<div class="std-popover-row"><span class="std-popover-key">Weight</span><span class="std-popover-val">${s.weight}</span></div>`;
+        if (s.note) html += `<div class="std-popover-note">${s.note}</div>`;
+        return html;
+      }
+
+      function positionStdAboveBadge(badge) {
+        stdPop.style.display = 'block';
+        stdPop.style.pointerEvents = 'auto';
+        const rect = badge.getBoundingClientRect();
+        const pw = stdPop.offsetWidth, ph = stdPop.offsetHeight;
+        let left = rect.left + rect.width / 2 - pw / 2;
+        let top = rect.top - ph - 10;
+        left = Math.max(8, Math.min(left, window.innerWidth - pw - 8));
+        if (top < 8) top = rect.bottom + 10;
+        stdPop.style.left = left + 'px';
+        stdPop.style.top = top + 'px';
+      }
+
+      function hideStdPop() {
+        stdPop.style.display = 'none';
+        stdPop.style.pointerEvents = 'none';
+        stdVisible = false;
+      }
+
+      // Delegate events
+      document.addEventListener('mouseover', function(e) {
+        const trigger = e.target.closest('.metric-formula-trigger');
+        if (trigger) showFormulaTip(trigger);
+      });
+      document.addEventListener('mouseout', function(e) {
+        if (e.target.closest('.metric-formula-trigger')) hideTip();
+      });
+
+      document.addEventListener('click', function(e) {
+        const badge = e.target.closest('.metric-std-trigger');
+        if (badge) {
+          e.stopPropagation();
+          const id = badge.getAttribute('data-row-id');
+          const s = (window.__ms || {})[id];
+          if (stdVisible && stdPop.dataset.activeId === id) {
+            hideStdPop();
+          } else {
+            stdPop.innerHTML = buildStdHtml(s);
+            stdPop.dataset.activeId = id;
+            stdVisible = true;
+            positionStdAboveBadge(badge);
+          }
+          return;
+        }
+        if (!e.target.closest('#metricStdPopover')) hideStdPop();
+      });
+    })();
+
+    // Review drawer — sort, filter, collapse
+    let reviewSortOrder = 'period-desc';
+
+    const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    function initReviewDrawer() {
+      const stack = bodyEl.querySelector('#review-drawer-stack');
+      if (!stack) return;
+
+      const cards = Array.from(stack.querySelectorAll('.review-card'));
+
+      // Collect unique submitters, years, months from cards
+      const submitters = [...new Set(cards.map(c => c.dataset.submitterName || '').filter(Boolean))].sort();
+      const years = [...new Set(cards.map(c => c.dataset.periodYear || '').filter(Boolean))].sort((a, b) => b - a);
+      const months = [...new Set(cards.map(c => c.dataset.periodMonth || '').filter(Boolean))].sort((a, b) => a - b);
+
+      const submitterSel = bodyEl.querySelector('.js-review-submitter-filter');
+      const monthSel = bodyEl.querySelector('.js-review-month-filter');
+      const yearSel = bodyEl.querySelector('.js-review-year-filter');
+
+      if (submitterSel) {
+        submitters.forEach(name => {
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          submitterSel.appendChild(opt);
+        });
+      }
+      if (yearSel) {
+        years.forEach(yr => {
+          const opt = document.createElement('option');
+          opt.value = yr;
+          opt.textContent = yr;
+          yearSel.appendChild(opt);
+        });
+      }
+      if (monthSel) {
+        months.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m;
+          opt.textContent = MONTH_NAMES[parseInt(m, 10) - 1] || m;
+          monthSel.appendChild(opt);
+        });
+      }
+
+      // Set default sort active
+      reviewSortOrder = 'period-desc';
+      const defaultSort = bodyEl.querySelector('.js-review-sort[data-sort="period-desc"]');
+      if (defaultSort) defaultSort.classList.add('active-sort');
+
+      applyReviewSortFilter();
+    }
+
+    function applyReviewSortFilter() {
+      const stack = bodyEl.querySelector('#review-drawer-stack');
+      if (!stack) return;
+
+      const submitterSel = bodyEl.querySelector('.js-review-submitter-filter');
+      const monthSel = bodyEl.querySelector('.js-review-month-filter');
+      const yearSel = bodyEl.querySelector('.js-review-year-filter');
+
+      const submitterVal = submitterSel ? submitterSel.value : 'all';
+      const monthVal = monthSel ? monthSel.value : 'all';
+      const yearVal = yearSel ? yearSel.value : 'all';
+
+      const cards = Array.from(stack.querySelectorAll('.review-card'));
+
+      let visible = cards.filter(c => {
+        if (submitterVal !== 'all' && (c.dataset.submitterName || '') !== submitterVal) return false;
+        if (monthVal !== 'all' && String(c.dataset.periodMonth || '') !== String(monthVal)) return false;
+        if (yearVal !== 'all' && String(c.dataset.periodYear || '') !== String(yearVal)) return false;
+        return true;
+      });
+
+      cards.forEach(c => { c.style.display = 'none'; });
+      visible.forEach(c => { c.style.display = ''; });
+
+      visible.sort((a, b) => {
+        const pa = a.dataset.period || '';
+        const pb = b.dataset.period || '';
+        if (reviewSortOrder === 'period-asc') return pa < pb ? -1 : pa > pb ? 1 : 0;
+        return pa > pb ? -1 : pa < pb ? 1 : 0;
+      });
+      visible.forEach(c => stack.appendChild(c));
+
+      const countEl = bodyEl.querySelector('.review-drawer-count');
+      if (countEl) {
+        countEl.textContent = `${visible.length} of ${cards.length} review${cards.length !== 1 ? 's' : ''}`;
+      }
+    }
+
+    bodyEl.addEventListener('click', function(e) {
+      // Sort buttons
+      const sortBtn = e.target.closest('.js-review-sort');
+      if (sortBtn) {
+        reviewSortOrder = sortBtn.dataset.sort;
+        bodyEl.querySelectorAll('.js-review-sort').forEach(b => b.classList.remove('active-sort'));
+        sortBtn.classList.add('active-sort');
+        applyReviewSortFilter();
+        return;
+      }
+
+      // Expand/collapse all
+      if (e.target.closest('.js-review-expand-all')) {
+        bodyEl.querySelectorAll('.review-card').forEach(c => c.classList.add('open'));
+        return;
+      }
+      if (e.target.closest('.js-review-collapse-all')) {
+        bodyEl.querySelectorAll('.review-card').forEach(c => c.classList.remove('open'));
+        return;
+      }
+
+      // Individual card toggle
+      const toggle = e.target.closest('.js-review-toggle');
+      if (toggle) {
+        const card = toggle.closest('.review-card');
+        if (card) card.classList.toggle('open');
+        return;
+      }
+    });
+
+    bodyEl.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        const toggle = e.target.closest('.js-review-toggle');
+        if (toggle) {
+          e.preventDefault();
+          const card = toggle.closest('.review-card');
+          if (card) card.classList.toggle('open');
+        }
+      }
+    });
+
+    bodyEl.addEventListener('change', function(e) {
+      if (e.target.matches('.js-review-submitter-filter, .js-review-month-filter, .js-review-year-filter')) {
+        applyReviewSortFilter();
+      }
+      if (e.target.matches('.js-coaching-submitter-filter, .js-coaching-type-filter')) {
+        applyCoachingSortFilter();
+      }
+      if (e.target.matches('.js-goals-status-filter, .js-goals-priority-filter')) {
+        applyGoalsSortFilter();
+      }
+    });
+
+    // ── Coaching drawer ──────────────────────────────────────────────────────
+    let coachingSortOrder = 'date-desc';
+
+    function initCoachingDrawer() {
+      const stack = bodyEl.querySelector('#coaching-drawer-stack');
+      if (!stack) return;
+
+      const cards = Array.from(stack.querySelectorAll('.review-card'));
+      const submitters = [...new Set(cards.map(c => c.dataset.submitterName || '').filter(Boolean))].sort();
+
+      const submitterSel = bodyEl.querySelector('.js-coaching-submitter-filter');
+      if (submitterSel) {
+        submitters.forEach(name => {
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          submitterSel.appendChild(opt);
+        });
+      }
+
+      coachingSortOrder = 'date-desc';
+      const defaultSort = bodyEl.querySelector('.js-coaching-sort[data-sort="date-desc"]');
+      if (defaultSort) defaultSort.classList.add('active-sort');
+
+      applyCoachingSortFilter();
+    }
+
+    function applyCoachingSortFilter() {
+      const stack = bodyEl.querySelector('#coaching-drawer-stack');
+      if (!stack) return;
+
+      const submitterSel = bodyEl.querySelector('.js-coaching-submitter-filter');
+      const typeSel = bodyEl.querySelector('.js-coaching-type-filter');
+      const submitterVal = submitterSel ? submitterSel.value : 'all';
+      const typeVal = typeSel ? typeSel.value : 'all';
+
+      const cards = Array.from(stack.querySelectorAll('.review-card'));
+      const visible = cards.filter(c => {
+        if (submitterVal !== 'all' && (c.dataset.submitterName || '') !== submitterVal) return false;
+        if (typeVal !== 'all' && (c.dataset.type || '') !== typeVal) return false;
+        return true;
+      });
+
+      cards.forEach(c => { c.style.display = 'none'; });
+      visible.forEach(c => { c.style.display = ''; });
+
+      visible.sort((a, b) => {
+        const da = a.dataset.incidentDate || '';
+        const db = b.dataset.incidentDate || '';
+        if (coachingSortOrder === 'date-asc') return da < db ? -1 : da > db ? 1 : 0;
+        return da > db ? -1 : da < db ? 1 : 0;
+      });
+      visible.forEach(c => stack.appendChild(c));
+
+      const countEl = bodyEl.querySelector('#coaching-drawer-stack ~ .review-drawer-count, .review-drawer-count');
+      const toolbarCount = bodyEl.querySelector('.review-drawer-toolbar .review-drawer-count');
+      if (toolbarCount) toolbarCount.textContent = `${visible.length} of ${cards.length}`;
+    }
+
+    bodyEl.addEventListener('click', function(e) {
+      // Already bound — extend with coaching/goals
+    });
+
+    // Extend the existing bodyEl click handler via an additional listener
+    bodyEl.addEventListener('click', function(e) {
+      const coachingSort = e.target.closest('.js-coaching-sort');
+      if (coachingSort) {
+        coachingSortOrder = coachingSort.dataset.sort;
+        bodyEl.querySelectorAll('.js-coaching-sort').forEach(b => b.classList.remove('active-sort'));
+        coachingSort.classList.add('active-sort');
+        applyCoachingSortFilter();
+        return;
+      }
+      if (e.target.closest('.js-coaching-expand-all')) {
+        bodyEl.querySelectorAll('#coaching-drawer-stack .review-card').forEach(c => c.classList.add('open'));
+        return;
+      }
+      if (e.target.closest('.js-coaching-collapse-all')) {
+        bodyEl.querySelectorAll('#coaching-drawer-stack .review-card').forEach(c => c.classList.remove('open'));
+        return;
+      }
+
+      const goalsSort = e.target.closest('.js-goals-sort');
+      if (goalsSort) {
+        goalsSortOrder = goalsSort.dataset.sort;
+        bodyEl.querySelectorAll('.js-goals-sort').forEach(b => b.classList.remove('active-sort'));
+        goalsSort.classList.add('active-sort');
+        applyGoalsSortFilter();
+        return;
+      }
+      if (e.target.closest('.js-goals-expand-all')) {
+        bodyEl.querySelectorAll('#goals-drawer-stack .review-card').forEach(c => c.classList.add('open'));
+        return;
+      }
+      if (e.target.closest('.js-goals-collapse-all')) {
+        bodyEl.querySelectorAll('#goals-drawer-stack .review-card').forEach(c => c.classList.remove('open'));
+        return;
+      }
+    });
+
+    // ── Goals drawer ─────────────────────────────────────────────────────────
+    let goalsSortOrder = 'due-asc';
+
+    function initGoalsDrawer() {
+      goalsSortOrder = 'due-asc';
+      const defaultSort = bodyEl.querySelector('.js-goals-sort[data-sort="due-asc"]');
+      if (defaultSort) defaultSort.classList.add('active-sort');
+      applyGoalsSortFilter();
+    }
+
+    function applyGoalsSortFilter() {
+      const stack = bodyEl.querySelector('#goals-drawer-stack');
+      if (!stack) return;
+
+      const statusSel = bodyEl.querySelector('.js-goals-status-filter');
+      const prioritySel = bodyEl.querySelector('.js-goals-priority-filter');
+      const statusVal = statusSel ? statusSel.value : 'all';
+      const priorityVal = prioritySel ? prioritySel.value : 'all';
+
+      const cards = Array.from(stack.querySelectorAll('.review-card'));
+      const visible = cards.filter(c => {
+        if (statusVal !== 'all' && (c.dataset.status || '') !== statusVal) return false;
+        if (priorityVal !== 'all' && (c.dataset.priority || '') !== priorityVal) return false;
+        return true;
+      });
+
+      cards.forEach(c => { c.style.display = 'none'; });
+      visible.forEach(c => { c.style.display = ''; });
+
+      visible.sort((a, b) => {
+        const da = a.dataset.dueDate || '9999-99-99';
+        const db = b.dataset.dueDate || '9999-99-99';
+        if (goalsSortOrder === 'due-asc') return da < db ? -1 : da > db ? 1 : 0;
+        return da > db ? -1 : da < db ? 1 : 0;
+      });
+      visible.forEach(c => stack.appendChild(c));
+
+      const toolbarCount = bodyEl.querySelector('.review-drawer-toolbar .review-drawer-count');
+      if (toolbarCount) toolbarCount.textContent = `${visible.length} of ${cards.length}`;
+    }
+
+    closeBtn.addEventListener('click', closeDrawer);
+    backdrop.addEventListener('click', closeDrawer);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeDrawer();
+    });
+  })();
+</script>
+
+</main>
+<script src="/js/staffProfile.js"></script>
+<script>
+(function () {
+  const dataEl = document.getElementById('reviewSparklineData');
+  const canvas = document.getElementById('reviewScoreSparkline');
+  if (!dataEl || !canvas) return;
+
+  let points;
+  try { points = JSON.parse(dataEl.textContent || '[]'); } catch(e) { return; }
+  if (!points.length) return;
+
+  const scores = points.map(function(p) { return p.score; });
+  const valid = scores.filter(function(s) { return s != null && !isNaN(s); });
+  if (!valid.length) return;
+
+  const minScore = Math.max(0, Math.min.apply(null, valid) - 0.5);
+  const maxScore = Math.min(5, Math.max.apply(null, valid) + 0.5);
+  const range = maxScore - minScore || 1;
+
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const pad = { top: 8, bottom: 8, left: 4, right: 4 };
+  const plotW = W - pad.left - pad.right;
+  const plotH = H - pad.top - pad.bottom;
+  const n = scores.length;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // draw midline at score 3
+  const midY = pad.top + plotH * (1 - (3 - minScore) / range);
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(pad.left, midY);
+  ctx.lineTo(pad.left + plotW, midY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // build path
+  const xs = [], ys = [];
+  for (var i = 0; i < n; i++) {
+    var s = scores[i];
+    xs.push(pad.left + (i / (n - 1 || 1)) * plotW);
+    ys.push(s != null ? pad.top + plotH * (1 - (s - minScore) / range) : null);
+  }
+
+  // fill gradient
+  var grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + plotH);
+  grad.addColorStop(0, 'rgba(99,102,241,0.25)');
+  grad.addColorStop(1, 'rgba(99,102,241,0.02)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  var started = false;
+  for (var i = 0; i < n; i++) {
+    if (ys[i] == null) continue;
+    if (!started) { ctx.moveTo(xs[i], ys[i]); started = true; }
+    else ctx.lineTo(xs[i], ys[i]);
+  }
+  ctx.lineTo(xs[n-1], pad.top + plotH);
+  ctx.lineTo(xs[0], pad.top + plotH);
+  ctx.closePath();
+  ctx.fill();
+
+  // line
+  ctx.strokeStyle = 'rgba(99,102,241,0.85)';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  started = false;
+  for (var i = 0; i < n; i++) {
+    if (ys[i] == null) { started = false; continue; }
+    if (!started) { ctx.moveTo(xs[i], ys[i]); started = true; }
+    else ctx.lineTo(xs[i], ys[i]);
+  }
+  ctx.stroke();
+
+  // dots
+  for (var i = 0; i < n; i++) {
+    if (ys[i] == null) continue;
+    ctx.beginPath();
+    ctx.arc(xs[i], ys[i], 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#818cf8';
+    ctx.fill();
+  }
+})();
+</script>
+</body>
+</html>

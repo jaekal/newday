@@ -1,0 +1,351 @@
+<%- include('../layout') %>
+
+<style>
+  .assign-table-row:nth-child(even) { background-color: rgba(17, 24, 39, 0.45); }
+  .assign-table-row:hover { background-color: rgba(59, 130, 246, 0.25); }
+  .scope-chip {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.05);
+    font-size: 12px;
+  }
+  .assign-tools-grid {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    margin-bottom: 1rem;
+  }
+  .assign-bulk-box {
+    min-height: 110px;
+    resize: vertical;
+  }
+  .assign-hint {
+    font-size: 12px;
+    color: rgba(229, 231, 235, 0.72);
+    margin-top: 0.35rem;
+  }
+  .assign-status {
+    display: inline-flex;
+    padding: 0.2rem 0.45rem;
+    border-radius: 999px;
+    font-size: 11px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.06);
+  }
+</style>
+
+<%
+  const u = typeof viewer !== 'undefined' ? viewer : (typeof currentUser !== 'undefined' ? currentUser : null);
+  const vp = typeof viewerProfile !== 'undefined' ? viewerProfile : (u && u.StaffProfile ? u.StaffProfile : null);
+  const viewerRole = u ? u.role : '';
+  const vs = typeof viewerScope !== 'undefined' ? viewerScope : null;
+  const scopeBuildingText = vs && vs.label ? vs.label.buildingText : (vp && vp.building ? vp.building : '');
+  const scopeShiftText = vs && vs.label ? vs.label.shiftText : (vp && vp.shift ? vp.shift : '');
+  const list = Array.isArray(reviewers) ? reviewers : [];
+  const selected = typeof selectedReviewer !== 'undefined' ? selectedReviewer : null;
+  const selectionLabel = (viewerRole === 'SUPERVISOR')
+    ? 'Select Lead'
+    : 'Select Reviewer (Lead / Supervisor / Manager)';
+  const pageError = typeof error !== 'undefined' ? error : null;
+  const assignmentMap = typeof assignedAssignmentMap !== 'undefined' ? assignedAssignmentMap : new Map();
+%>
+
+<section class="page-header">
+  <div>
+    <h2>Review Assignments</h2>
+
+    <% if (pageError) { %>
+      <p style="color:red; white-space:pre-line;"><%= pageError %></p>
+    <% } %>
+
+    <p class="muted">
+      Assign reviewers in bulk, set an expected review due date, and keep coverage aligned to scope.
+    </p>
+
+    <% if (viewerRole !== 'ADMIN') { %>
+      <div style="margin-top:0.75rem;">
+        <span class="scope-chip">
+          <strong>Scope:</strong>
+          <span><%= scopeBuildingText || 'N/A' %></span>
+          <span>/</span>
+          <span><%= scopeShiftText || 'N/A' %></span>
+        </span>
+      </div>
+    <% } %>
+  </div>
+</section>
+
+<section class="card">
+  <form method="GET" action="/assignments" class="inline-form">
+    <label for="leadId"><%= selectionLabel %></label>
+    <select id="leadId" name="leadId" onchange="this.form.submit()">
+      <option value="">- Choose -</option>
+      <% list.forEach(function (r) { %>
+        <option value="<%= r.id %>" <%= selected && selected.id === r.id ? 'selected' : '' %>>
+          <%= r.name %> (<%= r.role %>)
+          <% if (r.StaffProfile && (r.StaffProfile.building || r.StaffProfile.shift)) { %>
+            - <%= r.StaffProfile.building || 'N/A' %> / <%= r.StaffProfile.shift || 'N/A' %>
+          <% } %>
+        </option>
+      <% }); %>
+    </select>
+
+    <noscript>
+      <button type="submit" class="btn primary">Load</button>
+    </noscript>
+  </form>
+
+  <% if (!list.length) { %>
+    <p class="muted" style="margin-top:0.75rem;">
+      No reviewers are available in your current scope.
+    </p>
+  <% } %>
+</section>
+
+<% if (!selected) { %>
+  <section class="card">
+    <p class="muted">Pick a reviewer above to manage their assignments.</p>
+  </section>
+<% } else if (!staffList || staffList.length === 0) { %>
+  <section class="card">
+    <h3>Assignments for <%= selected.name %> (<%= selected.role %>)</h3>
+    <p class="muted">
+      No eligible people were found in this reviewer's scope.
+    </p>
+  </section>
+<% } else { %>
+  <section class="card">
+    <h3>Assignments for <%= selected.name %> (<%= selected.role %>)</h3>
+    <p class="muted">
+      Use search, checkbox selection, or bulk name paste. Saving applies one due date to every selected assignment in this submission.
+    </p>
+
+    <form method="POST" action="/assignments" id="assignmentForm">
+      <input type="hidden" name="leadId" value="<%= selected.id %>" />
+
+      <div class="assign-tools-grid">
+        <div style="display:flex; flex-direction:column;">
+          <label for="staffSearch" class="muted">Search Staff</label>
+          <input
+            type="text"
+            id="staffSearch"
+            placeholder="Filter by name, role, username, or employee ID..."
+          />
+        </div>
+
+        <div style="display:flex; flex-direction:column;">
+          <label for="dueDate" class="muted">Review Due Date</label>
+          <input type="date" id="dueDate" name="dueDate" />
+          <div class="assign-hint">Applied to all selected assignments when you save.</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:1rem;">
+        <label for="bulkStaffNames" class="muted" style="display:block; margin-bottom:0.4rem;">Bulk Assign by Name</label>
+        <textarea
+          id="bulkStaffNames"
+          name="bulkStaffNames"
+          class="assign-bulk-box"
+          placeholder="Paste names, usernames, or employee IDs. Separate with new lines, commas, or semicolons."
+        ></textarea>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.6rem;">
+          <button type="button" id="applyBulkBtn" class="btn ghost">Apply Bulk Paste</button>
+          <button type="button" id="selectAllBtn" class="btn ghost">Select All Visible</button>
+          <button type="button" id="clearAllBtn" class="btn ghost">Clear All Visible</button>
+        </div>
+        <div id="bulkResult" class="assign-hint">Press Enter in the bulk box to match and select names.</div>
+      </div>
+
+      <div class="card" style="padding:0; max-height:520px; overflow:auto;">
+        <table class="table" style="width:100%; border-collapse:collapse;">
+          <thead style="position:sticky; top:0; z-index:5; background:rgba(31,41,55,0.95);">
+            <tr>
+              <th style="width:72px;">Assign</th>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Placement</th>
+              <th>Current Due</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% staffList.forEach(function (s) { 
+              const assignment = assignmentMap.get ? assignmentMap.get(s.id) : null;
+              const employeeId = s.StaffProfile && s.StaffProfile.employeeId ? s.StaffProfile.employeeId : '';
+              const building = s.StaffProfile && s.StaffProfile.building ? s.StaffProfile.building : '';
+              const shift = s.StaffProfile && s.StaffProfile.shift ? s.StaffProfile.shift : '';
+            %>
+              <tr
+                class="assign-table-row"
+                data-staff-row="1"
+                data-search="<%= [s.name, s.role, s.username || '', employeeId].join(' ').toLowerCase() %>"
+                data-match-keys="<%= [s.name, s.username || '', employeeId].filter(Boolean).map(function (v) { return String(v).trim().toLowerCase().replace(/\\s+/g, ' '); }).join('|') %>"
+              >
+                <td>
+                  <input
+                    type="checkbox"
+                    name="staffIds"
+                    value="<%= s.id %>"
+                    <%= assignedIds && assignedIds.has(s.id) ? 'checked' : '' %>
+                  />
+                </td>
+                <td>
+                  <strong><%= s.name %></strong>
+                  <% if (s.username) { %>
+                    <div class="muted" style="font-size:12px;"><%= s.username %></div>
+                  <% } %>
+                  <% if (employeeId) { %>
+                    <div class="muted" style="font-size:12px;">ID: <%= employeeId %></div>
+                  <% } %>
+                </td>
+                <td><%= s.role %></td>
+                <td class="muted"><%= building || 'N/A' %> / <%= shift || 'N/A' %></td>
+                <td>
+                  <% if (assignment && assignment.dueDate) { %>
+                    <span class="assign-status"><%= assignment.dueDate %></span>
+                  <% } else if (assignedIds && assignedIds.has(s.id)) { %>
+                    <span class="assign-status">Assigned</span>
+                  <% } else { %>
+                    <span class="muted">-</span>
+                  <% } %>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="margin-top:1rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+        <p class="muted" id="staffCountSummary"><%= staffList.length %> people available in this scope.</p>
+        <button type="submit" class="btn primary">Save Assignments</button>
+      </div>
+    </form>
+  </section>
+
+  <script>
+    (function () {
+      const searchInput = document.getElementById('staffSearch');
+      const bulkInput = document.getElementById('bulkStaffNames');
+      const bulkResult = document.getElementById('bulkResult');
+      const rows = Array.from(document.querySelectorAll('tr[data-staff-row="1"]'));
+      const selectAllBtn = document.getElementById('selectAllBtn');
+      const clearAllBtn = document.getElementById('clearAllBtn');
+      const applyBulkBtn = document.getElementById('applyBulkBtn');
+      const summaryEl = document.getElementById('staffCountSummary');
+
+      function parseNames(raw) {
+        return Array.from(new Set(
+          String(raw || '')
+            .split(/[\r\n,;]+/)
+            .map(function (part) { return part.trim(); })
+            .filter(Boolean)
+        ));
+      }
+
+      function normalizeName(value) {
+        return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+      }
+
+      function updateSummary() {
+        if (!summaryEl) return;
+        const total = rows.length;
+        const visible = rows.filter(function (row) { return row.style.display !== 'none'; }).length;
+        const checked = rows.filter(function (row) {
+          const cb = row.querySelector('input[type="checkbox"][name="staffIds"]');
+          return cb && cb.checked;
+        }).length;
+
+        summaryEl.textContent = visible === total
+          ? checked + ' selected out of ' + total + ' available.'
+          : checked + ' selected; ' + visible + ' of ' + total + ' visible.';
+      }
+
+      function filterRows() {
+        const term = (searchInput.value || '').toLowerCase();
+        rows.forEach(function (row) {
+          const searchData = (row.getAttribute('data-search') || '').toLowerCase();
+          row.style.display = (!term || searchData.includes(term)) ? '' : 'none';
+        });
+        updateSummary();
+      }
+
+      function setAllChecked(checked) {
+        rows.forEach(function (row) {
+          if (row.style.display === 'none') return;
+          const cb = row.querySelector('input[type="checkbox"][name="staffIds"]');
+          if (cb) cb.checked = checked;
+        });
+        updateSummary();
+      }
+
+      function applyBulkSelection() {
+        const names = parseNames(bulkInput.value);
+        if (!names.length) {
+          if (bulkResult) bulkResult.textContent = 'Paste one or more names, usernames, or employee IDs first.';
+          return;
+        }
+
+        let matched = 0;
+        const unmatched = [];
+
+        names.forEach(function (name) {
+          const key = normalizeName(name);
+          let found = false;
+
+          rows.forEach(function (row) {
+            const keys = String(row.getAttribute('data-match-keys') || '')
+              .split('|')
+              .map(normalizeName)
+              .filter(Boolean);
+
+            if (!keys.includes(key)) return;
+            const cb = row.querySelector('input[type="checkbox"][name="staffIds"]');
+            if (cb) {
+              cb.checked = true;
+              found = true;
+            }
+          });
+
+          if (found) matched += 1;
+          else unmatched.push(name);
+        });
+
+        if (bulkResult) {
+          bulkResult.textContent = unmatched.length
+            ? 'Matched ' + matched + ' entry' + (matched === 1 ? '' : 'ies') + '. Unmatched: ' + unmatched.join(', ')
+            : 'Matched ' + matched + ' entr' + (matched === 1 ? 'y' : 'ies') + ' successfully.';
+        }
+
+        bulkInput.value = '';
+        updateSummary();
+      }
+
+      if (searchInput) searchInput.addEventListener('input', filterRows);
+      if (selectAllBtn) selectAllBtn.addEventListener('click', function () { setAllChecked(true); });
+      if (clearAllBtn) clearAllBtn.addEventListener('click', function () { setAllChecked(false); });
+      if (applyBulkBtn) applyBulkBtn.addEventListener('click', applyBulkSelection);
+      if (bulkInput) {
+        bulkInput.addEventListener('keydown', function (event) {
+          if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            applyBulkSelection();
+          }
+        });
+      }
+
+      rows.forEach(function (row) {
+        const cb = row.querySelector('input[type="checkbox"][name="staffIds"]');
+        if (cb) cb.addEventListener('change', updateSummary);
+      });
+
+      updateSummary();
+    })();
+  </script>
+<% } %>
+
+</main>
+</body>
+</html>

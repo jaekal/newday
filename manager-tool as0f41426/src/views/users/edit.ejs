@@ -1,0 +1,648 @@
+<!-- src/views/users/edit.ejs -->
+<%- include('../layout') %>
+
+<style>
+  .uf-page { max-width: 1060px; }
+
+  .uf-alert {
+    display: flex; align-items: flex-start; gap: 0.625rem;
+    background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.35);
+    border-radius: 6px; padding: 0.75rem 1rem;
+    color: #fca5a5; font-size: 0.875rem; white-space: pre-line;
+    margin-bottom: 1.25rem;
+  }
+  .uf-alert svg { flex-shrink: 0; margin-top: 1px; }
+
+  .uf-layout { display: flex; gap: 1.25rem; align-items: flex-start; }
+  .uf-sidebar { width: 230px; flex-shrink: 0; position: sticky; top: 1rem; }
+  .uf-main    { flex: 1 1 0; min-width: 0; }
+
+  .uf-id-card {
+    background: rgba(17,24,39,0.6); border: 1px solid rgba(55,65,81,0.7);
+    border-radius: 8px; padding: 1rem; margin-bottom: 0.75rem;
+  }
+  .uf-avatar-wrap { display: flex; justify-content: center; margin-bottom: 0.875rem; }
+  .uf-avatar {
+    width: 88px; height: 88px; border-radius: 999px; object-fit: cover;
+    border: 2px solid rgba(59,130,246,0.7);
+  }
+  .uf-avatar-placeholder {
+    width: 88px; height: 88px; border-radius: 999px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(31,41,55,0.9); color: #9ca3af; font-size: 1.75rem;
+    border: 2px dashed rgba(75,85,99,0.7);
+  }
+  .uf-id-meta { font-size: 0.8125rem; color: #9ca3af; }
+  .uf-id-meta .row { margin-bottom: 0.25rem; }
+  .uf-id-meta strong { color: #d1d5db; }
+  .uf-id-section-label {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em;
+    color: #6b7280; margin: 0.625rem 0 0.3rem;
+  }
+  .uf-status-pill {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.55rem; border-radius: 999px;
+  }
+  .uf-status-pill.active  { background: rgba(34,197,94,0.15);  color: #86efac; border: 1px solid rgba(34,197,94,0.3); }
+  .uf-status-pill.inactive{ background: rgba(239,68,68,0.12);  color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+  .uf-status-pill.warn    { background: rgba(234,179,8,0.12);  color: #fde047; border: 1px solid rgba(234,179,8,0.3); }
+
+  .uf-photo-form { margin-top: 0.625rem; }
+  .uf-photo-form input[type="file"] { font-size: 0.75rem; width: 100%; }
+  .uf-photo-form .btn { margin-top: 0.4rem; width: 100%; text-align: center; font-size: 0.8125rem; }
+
+  .uf-section {
+    background: rgba(17,24,39,0.6); border: 1px solid rgba(55,65,81,0.7);
+    border-radius: 8px; margin-bottom: 0.75rem; overflow: hidden;
+  }
+  .uf-section summary {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.875rem 1.125rem; cursor: pointer; list-style: none; user-select: none;
+  }
+  .uf-section summary::-webkit-details-marker { display: none; }
+  .uf-section summary:hover { background: rgba(255,255,255,0.03); }
+  .uf-section-title {
+    display: flex; align-items: center; gap: 0.625rem;
+    font-size: 0.9375rem; font-weight: 600; color: #e5e7eb;
+  }
+  .uf-section-chevron { color: #6b7280; transition: transform 0.2s; flex-shrink: 0; }
+  details[open] .uf-section-chevron { transform: rotate(180deg); }
+  .uf-section-body { padding: 1rem 1.125rem 1.125rem; border-top: 1px solid rgba(55,65,81,0.5); }
+
+  .uf-grid { display: grid; gap: 0.875rem; }
+  .uf-grid-2 { grid-template-columns: 1fr 1fr; }
+  .uf-grid-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  @media (max-width: 640px) {
+    .uf-layout { flex-direction: column; }
+    .uf-sidebar { width: 100%; position: static; }
+    .uf-grid-2, .uf-grid-5 { grid-template-columns: 1fr; }
+  }
+
+  .uf-field { display: flex; flex-direction: column; gap: 0.3rem; }
+  .uf-field label { font-size: 0.8125rem; font-weight: 500; color: #d1d5db; }
+  .uf-field .uf-hint { font-size: 0.75rem; color: #6b7280; }
+  .uf-field input, .uf-field select, .uf-field textarea { width: 100%; box-sizing: border-box; }
+  .uf-field textarea { resize: vertical; }
+  .uf-field input[readonly] { opacity: 0.6; cursor: not-allowed; }
+
+  .uf-pw-wrap { position: relative; display: flex; align-items: center; }
+  .uf-pw-wrap input { flex: 1; padding-right: 2.5rem; }
+  .uf-pw-toggle {
+    position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer; padding: 0.2rem;
+    color: #6b7280; display: flex; align-items: center;
+  }
+  .uf-pw-toggle:hover { color: #d1d5db; }
+
+  .uf-divider { height: 1px; background: rgba(55,65,81,0.5); margin: 0.875rem 0; }
+  .uf-sub-label {
+    font-size: 0.78rem; font-weight: 700; color: #6b7280;
+    text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.5rem;
+  }
+
+  .uf-actions {
+    position: sticky; bottom: 0;
+    background: rgba(11,18,32,0.95); backdrop-filter: blur(6px);
+    border-top: 1px solid rgba(55,65,81,0.6);
+    padding: 0.75rem 0; margin-top: 1rem;
+    display: flex; align-items: center; gap: 0.75rem;
+  }
+
+  .uf-scope-card {
+    background: rgba(17,24,39,0.6); border: 1px solid rgba(55,65,81,0.7);
+    border-radius: 8px; padding: 1.125rem; margin-top: 0.75rem;
+  }
+  .uf-scope-card h3 { margin: 0 0 0.25rem; font-size: 0.9375rem; }
+  .uf-scope-card p  { margin: 0 0 0.75rem; font-size: 0.8125rem; color: #9ca3af; }
+  .uf-checkbox-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.35rem; }
+  .uf-checkbox-label {
+    display: flex; align-items: center; gap: 0.45rem;
+    font-size: 0.8125rem; color: #d1d5db; cursor: pointer;
+  }
+</style>
+
+<%
+  const lockIdentity = (isManager && !isAdmin);
+  const hasBuildings = Array.isArray(buildingOptions) && buildingOptions.length > 0;
+  const hasShifts    = Array.isArray(shiftOptions) && shiftOptions.length > 0;
+  const resolvedPositionTypes = Array.isArray(positionTypes) && positionTypes.length ? positionTypes : ['TECHNICIAN', 'LEAD', 'CHAMPION', 'SPECIALIST', 'SUPERVISOR', 'MANAGER'];
+
+  const employmentStatusValue = String(user.employmentStatus || 'ACTIVE').toUpperCase();
+
+  const domainDisplay =
+    (roster && roster.domainUsername)   ? roster.domainUsername :
+    (profile && profile.domainUsername) ? profile.domainUsername :
+    (user.username || '');
+
+  const effBuilding =
+    (roster && roster.building)   ? roster.building :
+    (profile && profile.building) ? profile.building : '';
+
+  const effShift =
+    (roster && roster.shift)   ? roster.shift :
+    (profile && profile.shift) ? profile.shift : '';
+
+  const placementSource =
+    (roster && (roster.building || roster.shift)) ? 'Roster' :
+    (profile && (profile.building || profile.shift)) ? 'StaffProfile' : 'None';
+%>
+
+<div class="uf-page">
+
+  <% if (error) { %>
+    <div class="uf-alert">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="8" cy="8" r="7" stroke="#f87171" stroke-width="1.5"/>
+        <path d="M8 5v3.5M8 10.5v.5" stroke="#f87171" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <%= error %>
+    </div>
+  <% } %>
+
+  <div class="uf-layout">
+
+    <!-- ── SIDEBAR ──────────────────────────────────────────────── -->
+    <aside class="uf-sidebar">
+      <div class="uf-id-card">
+        <div class="uf-avatar-wrap">
+          <% if (user.avatarPath) { %>
+            <img class="uf-avatar" src="<%= user.avatarPath %>" alt="<%= user.name %>"
+              onerror="this.onerror=null;this.src='/images/default-avatar.png';" />
+          <% } else { %>
+            <div class="uf-avatar-placeholder"><%= (user.name || '?').charAt(0).toUpperCase() %></div>
+          <% } %>
+        </div>
+
+        <form method="POST" action="/admin/users/<%= user.id %>/avatar" enctype="multipart/form-data" class="uf-photo-form">
+          <input type="file" name="avatar" accept="image/*" required />
+          <button type="submit" class="btn primary">Update Photo</button>
+        </form>
+
+        <hr style="margin: 0.75rem 0; opacity: 0.3;" />
+
+        <div class="uf-id-meta">
+          <div class="row"><strong>ID:</strong> <%= user.id %></div>
+          <% if (profile && profile.employeeId) { %>
+            <div class="row"><strong>Emp ID:</strong> <%= profile.employeeId %></div>
+          <% } %>
+          <div class="row"><strong>Domain:</strong> <%= domainDisplay || '—' %></div>
+          <% if (!roster) { %>
+            <div class="row" style="color:#f97316;">(No roster entry)</div>
+          <% } %>
+
+          <div class="uf-id-section-label">Placement</div>
+          <div class="row">Building: <%= effBuilding || '—' %></div>
+          <div class="row">Shift: <%= effShift || '—' %></div>
+          <div class="row">Source: <%= placementSource %></div>
+
+          <div class="uf-id-section-label">Status</div>
+          <%
+            const empPillClass   = employmentStatusValue === 'ACTIVE' ? 'active' : 'inactive';
+            const loginPillClass = user.isEnabled ? 'active' : 'warn';
+          %>
+          <div style="display:flex; flex-wrap:wrap; gap:0.3rem; margin-bottom:0.3rem;">
+            <span class="uf-status-pill <%= empPillClass %>"><%= employmentStatusValue %></span>
+            <span class="uf-status-pill <%= loginPillClass %>">Login <%= user.isEnabled ? 'ON' : 'OFF' %></span>
+          </div>
+          <% if (user.offboardedAt) { %>
+            <div class="row">Offboarded: <%= String(user.offboardedAt).slice(0, 10) %></div>
+          <% } %>
+        </div>
+
+        <% if (isManager && !isAdmin) { %>
+          <hr style="margin: 0.75rem 0; opacity: 0.3;" />
+          <div class="uf-id-section-label">Your Scope</div>
+          <div class="uf-id-meta">
+            <div class="row">Shifts: <%= (viewerManagerShifts || []).join(', ') || '(none)' %></div>
+            <div class="row">Buildings: <%= (viewerManagerBuildings || []).join(', ') || '(none)' %></div>
+          </div>
+        <% } %>
+      </div>
+    </aside>
+
+    <!-- ── MAIN ─────────────────────────────────────────────────── -->
+    <div class="uf-main">
+      <div style="margin-bottom: 1rem;">
+        <h2 style="margin: 0 0 0.15rem; font-size: 1.25rem;">Edit User: <%= user.name %></h2>
+        <p style="margin: 0; font-size: 0.8125rem; color: #9ca3af;">
+          Role: <%= user.role %> &nbsp;&bull;&nbsp; Username: <%= user.username %>
+        </p>
+      </div>
+
+      <form method="POST" action="/admin/users/<%= user.id %>/update">
+
+        <!-- hidden mirrors -->
+        <input type="hidden" id="sync_rosterBuilding" name="rosterBuilding" value="<%= effBuilding %>" />
+        <input type="hidden" id="sync_rosterShift"    name="rosterShift"    value="<%= effShift %>" />
+        <input type="hidden" id="sync_domainProfile"  name="domainUsernameProfile" value="<%= domainDisplay %>" />
+
+        <!-- ── ACCOUNT ─────────────────────────────────────────── -->
+        <details class="uf-section" open>
+          <summary>
+            <span class="uf-section-title">Account</span>
+            <svg class="uf-section-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </summary>
+          <div class="uf-section-body">
+            <div class="uf-grid uf-grid-2">
+              <div class="uf-field">
+                <label for="e_name">Full Name</label>
+                <input type="text" id="e_name" name="name" value="<%= user.name %>" required />
+              </div>
+              <div class="uf-field">
+                <label for="e_username">Username</label>
+                <input type="text" id="e_username" name="username" value="<%= user.username %>" required <%= lockIdentity ? 'readonly' : '' %> />
+                <% if (lockIdentity) { %><span class="uf-hint">Admin-only.</span><% } %>
+              </div>
+              <div class="uf-field">
+                <label for="e_email">Email</label>
+                <input type="email" id="e_email" name="email" value="<%= user.email %>" required />
+              </div>
+              <div class="uf-field">
+                <label for="e_phone">Phone</label>
+                <input type="text" id="e_phone" name="phone" value="<%= user.phone || '' %>" />
+              </div>
+              <div class="uf-field">
+                <label for="e_role">Role</label>
+                <% if (lockIdentity) { %>
+                  <input type="text" value="<%= user.role %>" readonly />
+                  <input type="hidden" name="role" value="<%= user.role %>" />
+                  <span class="uf-hint">Admin-only.</span>
+                <% } else { %>
+                  <select id="e_role" name="role" required>
+                    <% (roles || []).forEach(r => { %>
+                      <option value="<%= r %>" <% if ((user.role || '').toUpperCase() === r) { %>selected<% } %>><%= r %></option>
+                    <% }) %>
+                  </select>
+                <% } %>
+              </div>
+            </div>
+
+            <% if (isAdmin) { %>
+              <div class="uf-divider"></div>
+              <div class="uf-sub-label">Reset Password</div>
+              <div class="uf-grid uf-grid-2">
+                <div class="uf-field">
+                  <label for="e_newPw">New Password <span style="color:#6b7280; font-weight:400;">(leave blank to keep current)</span></label>
+                  <div class="uf-pw-wrap">
+                    <input type="password" id="e_newPw" name="newPassword" />
+                    <button type="button" class="uf-pw-toggle" aria-label="Show/hide password" data-target="e_newPw">
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" class="icon-eye">
+                        <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                        <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/>
+                      </svg>
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" class="icon-eye-off" style="display:none;">
+                        <path d="M2 2l12 12M6.5 6.6A2 2 0 0010 9.5M4.2 4.3C2.7 5.4 1 8 1 8s2.5 5 7 5c1.4 0 2.7-.4 3.8-1M7 3.1C7.3 3 7.7 3 8 3c4.5 0 7 5 7 5s-.7 1.4-1.9 2.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            <% } %>
+          </div>
+        </details>
+
+        <!-- ── ACCOUNT STATUS ──────────────────────────────────── -->
+        <details class="uf-section">
+          <summary>
+            <span class="uf-section-title">Account Status</span>
+            <svg class="uf-section-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </summary>
+          <div class="uf-section-body">
+            <p style="margin: 0 0 0.875rem; font-size: 0.8125rem; color: #9ca3af;">
+              Control employment tracking and whether sign-in remains enabled.
+            </p>
+            <div class="uf-grid uf-grid-2">
+              <div class="uf-field">
+                <label for="employmentStatus">Employment Status</label>
+                <% if (isAdmin) { %>
+                  <select id="employmentStatus" name="employmentStatus">
+                    <% (employmentStatuses || ['ACTIVE', 'RESIGNED', 'TERMINATED']).forEach(function (status) { %>
+                      <option value="<%= status %>" <%= employmentStatusValue === status ? 'selected' : '' %>><%= status %></option>
+                    <% }) %>
+                  </select>
+                <% } else { %>
+                  <input type="text" value="<%= employmentStatusValue %>" readonly />
+                  <input type="hidden" name="employmentStatus" value="<%= employmentStatusValue %>" />
+                  <span class="uf-hint">Admin-only.</span>
+                <% } %>
+              </div>
+              <div class="uf-field">
+                <label for="isEnabled">Login Access</label>
+                <% if (isAdmin) { %>
+                  <select id="isEnabled" name="isEnabled">
+                    <option value="true"  <%= user.isEnabled  ? 'selected' : '' %>>Enabled</option>
+                    <option value="false" <%= !user.isEnabled ? 'selected' : '' %>>Disabled</option>
+                  </select>
+                <% } else { %>
+                  <input type="text" value="<%= user.isEnabled ? 'Enabled' : 'Disabled' %>" readonly />
+                  <input type="hidden" name="isEnabled" value="<%= user.isEnabled ? 'true' : 'false' %>" />
+                <% } %>
+              </div>
+              <div class="uf-field">
+                <label for="offboardedAt">Offboarded Date</label>
+                <% if (isAdmin) { %>
+                  <input type="date" id="offboardedAt" name="offboardedAt" value="<%= user.offboardedAt ? String(user.offboardedAt).slice(0, 10) : '' %>" />
+                <% } else { %>
+                  <input type="text" value="<%= user.offboardedAt ? String(user.offboardedAt).slice(0, 10) : '' %>" readonly />
+                  <input type="hidden" name="offboardedAt" value="<%= user.offboardedAt ? String(user.offboardedAt).slice(0, 10) : '' %>" />
+                <% } %>
+              </div>
+              <div class="uf-field">
+                <label for="offboardReason">Offboard Reason</label>
+                <% if (isAdmin) { %>
+                  <input type="text" id="offboardReason" name="offboardReason" value="<%= user.offboardReason || '' %>" placeholder="Reason for resignation or termination" />
+                <% } else { %>
+                  <input type="text" value="<%= user.offboardReason || '' %>" readonly />
+                  <input type="hidden" name="offboardReason" value="<%= user.offboardReason || '' %>" />
+                <% } %>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <!-- ── IDENTITY & PLACEMENT ────────────────────────────── -->
+        <details class="uf-section">
+          <summary>
+            <span class="uf-section-title">Identity &amp; Placement</span>
+            <svg class="uf-section-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </summary>
+          <div class="uf-section-body">
+            <div class="uf-grid uf-grid-2">
+              <div class="uf-field">
+                <label for="e_empId">Employee ID</label>
+                <input type="text" id="e_empId" name="employeeId" value="<%= profile && profile.employeeId ? profile.employeeId : '' %>" />
+              </div>
+              <div class="uf-field">
+                <label for="e_posType">Position Type</label>
+                <% if (lockIdentity) { %>
+                  <input type="text" value="<%= profile && profile.positionType ? profile.positionType : '' %>" readonly />
+                  <input type="hidden" name="positionType" value="<%= profile && profile.positionType ? profile.positionType : '' %>" />
+                <% } else { %>
+                  <select id="e_posType" name="positionType">
+                    <option value="">(Select)</option>
+                    <% resolvedPositionTypes.forEach(function (pt) { %>
+                      <option value="<%= pt %>" <%= (profile && profile.positionType === pt) ? 'selected' : '' %>><%= pt %></option>
+                    <% }) %>
+                  </select>
+                <% } %>
+              </div>
+              <div class="uf-field">
+                <label for="e_domainUser">Domain Username</label>
+                <input
+                  type="text"
+                  id="e_domainUser"
+                  name="rosterDomainUsername"
+                  value="<%= roster && roster.domainUsername ? roster.domainUsername : (profile && profile.domainUsername ? profile.domainUsername : '') %>"
+                  placeholder="e.g. jsmith"
+                  <%= lockIdentity ? 'readonly' : '' %>
+                />
+                <span class="uf-hint">Primary link to roster and staff alias records.</span>
+              </div>
+              <div class="uf-field" style="align-self: end;"><!-- spacer --></div>
+              <div class="uf-field">
+                <label for="e_startDate">Start Date</label>
+                <input type="date" id="e_startDate" name="startDate" value="<%= profile && profile.startDate ? profile.startDate : '' %>" />
+              </div>
+              <div class="uf-field">
+                <label for="e_dob">Date of Birth</label>
+                <input type="date" id="e_dob" name="dateOfBirth" value="<%= profile && profile.dateOfBirth ? profile.dateOfBirth : '' %>" />
+              </div>
+            </div>
+
+            <div class="uf-divider"></div>
+            <div class="uf-sub-label">Building &amp; Shift</div>
+            <div class="uf-grid uf-grid-2">
+              <div class="uf-field">
+                <label for="e_building">Building</label>
+                <% if (!hasBuildings) { %>
+                  <div style="font-size:0.75rem; color:#f97316; margin-bottom:0.2rem;">No building options available.</div>
+                  <input type="text" id="e_building" name="building" value="<%= effBuilding %>" />
+                <% } else { %>
+                  <select id="e_building" name="building">
+                    <option value="">(None)</option>
+                    <% buildingOptions.forEach(function (b) { %>
+                      <option value="<%= b %>" <%= effBuilding === b ? 'selected' : '' %>><%= b %></option>
+                    <% }) %>
+                  </select>
+                <% } %>
+              </div>
+              <div class="uf-field">
+                <label for="e_shift">Shift</label>
+                <% if (!hasShifts) { %>
+                  <div style="font-size:0.75rem; color:#f97316; margin-bottom:0.2rem;">No shift options available.</div>
+                  <input type="text" id="e_shift" name="shift" value="<%= effShift %>" />
+                <% } else { %>
+                  <select id="e_shift" name="shift">
+                    <option value="">(None)</option>
+                    <% (shiftOptions || []).forEach(function (sh) { %>
+                      <option value="<%= sh %>" <%= effShift === sh ? 'selected' : '' %>><%= sh %></option>
+                    <% }) %>
+                  </select>
+                <% } %>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <!-- ── VEHICLE & PARKING ───────────────────────────────── -->
+        <details class="uf-section">
+          <summary>
+            <span class="uf-section-title">Vehicle &amp; Parking</span>
+            <svg class="uf-section-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </summary>
+          <div class="uf-section-body">
+            <div class="uf-grid uf-grid-5">
+              <div class="uf-field"><label for="e_carYear">Car Year</label><input type="text" id="e_carYear" name="carYear" value="<%= profile && profile.carYear ? profile.carYear : '' %>" /></div>
+              <div class="uf-field"><label for="e_carMake">Car Make</label><input type="text" id="e_carMake" name="carMake" value="<%= profile && profile.carMake ? profile.carMake : '' %>" /></div>
+              <div class="uf-field"><label for="e_carModel">Car Model</label><input type="text" id="e_carModel" name="carModel" value="<%= profile && profile.carModel ? profile.carModel : '' %>" /></div>
+              <div class="uf-field"><label for="e_carColor">Car Color</label><input type="text" id="e_carColor" name="carColor" value="<%= profile && profile.carColor ? profile.carColor : '' %>" /></div>
+              <div class="uf-field"><label for="e_plate">License Plate</label><input type="text" id="e_plate" name="licensePlate" value="<%= profile && profile.licensePlate ? profile.licensePlate : '' %>" /></div>
+            </div>
+          </div>
+        </details>
+
+        <!-- ── EDUCATION & CREDENTIALS ────────────────────────── -->
+        <details class="uf-section">
+          <summary>
+            <span class="uf-section-title">Education &amp; Credentials</span>
+            <svg class="uf-section-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </summary>
+          <div class="uf-section-body">
+            <div class="uf-grid uf-grid-2">
+              <div class="uf-field"><label for="e_eduLevel">Highest Education Level</label><input type="text" id="e_eduLevel" name="highestEducationLevel" value="<%= profile && profile.highestEducationLevel ? profile.highestEducationLevel : '' %>" /></div>
+              <div class="uf-field"><label for="e_school">School Name</label><input type="text" id="e_school" name="schoolName" value="<%= profile && profile.schoolName ? profile.schoolName : '' %>" /></div>
+              <div class="uf-field"><label for="e_degree">Degree Name</label><input type="text" id="e_degree" name="degreeName" value="<%= profile && profile.degreeName ? profile.degreeName : '' %>" /></div>
+              <div class="uf-field"><label for="e_fos">Field of Study</label><input type="text" id="e_fos" name="fieldOfStudy" value="<%= profile && profile.fieldOfStudy ? profile.fieldOfStudy : '' %>" /></div>
+              <div class="uf-field"><label for="e_gradYear">Graduation Year</label><input type="text" id="e_gradYear" name="graduationYear" value="<%= profile && profile.graduationYear ? profile.graduationYear : '' %>" /></div>
+              <div class="uf-field"><label for="e_certs">Certifications</label><input type="text" id="e_certs" name="certificationsText" value="<%= profile && profile.certificationsText ? profile.certificationsText : '' %>" /></div>
+            </div>
+          </div>
+        </details>
+
+        <!-- ── PROFILE & SKILLS ────────────────────────────────── -->
+        <details class="uf-section">
+          <summary>
+            <span class="uf-section-title">Profile &amp; Skills</span>
+            <svg class="uf-section-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </summary>
+          <div class="uf-section-body">
+            <div class="uf-grid uf-grid-2">
+              <div class="uf-field"><label for="e_aboutMe">About Me</label><textarea id="e_aboutMe" name="aboutMe" rows="4"><%= profile && profile.aboutMe ? profile.aboutMe : '' %></textarea></div>
+              <div class="uf-field"><label for="e_strengths">Key Strengths</label><textarea id="e_strengths" name="keyStrengths" rows="4"><%= profile && profile.keyStrengths ? profile.keyStrengths : '' %></textarea></div>
+              <div class="uf-field"><label for="e_devFocus">Development Focus</label><textarea id="e_devFocus" name="developmentFocus" rows="4"><%= profile && profile.developmentFocus ? profile.developmentFocus : '' %></textarea></div>
+              <div class="uf-field"><label for="e_techSkills">Technical Skills</label><textarea id="e_techSkills" name="technicalSkills" rows="4"><%= profile && profile.technicalSkills ? profile.technicalSkills : '' %></textarea></div>
+              <div class="uf-field"><label for="e_softSkills">Soft Skills</label><textarea id="e_softSkills" name="softSkills" rows="4"><%= profile && profile.softSkills ? profile.softSkills : '' %></textarea></div>
+            </div>
+          </div>
+        </details>
+
+        <div class="uf-actions">
+          <button type="submit" class="btn primary">Save Changes</button>
+          <a href="/admin/users" class="btn ghost">Back</a>
+        </div>
+      </form>
+
+      <!-- ── MANAGER SCOPE ───────────────────────────────────────── -->
+      <% if (isAdmin && ['MANAGER','SENIOR_MANAGER'].includes((user.role || '').toUpperCase())) { %>
+        <form method="POST" action="/admin/users/<%= user.id %>/manager-scope" class="uf-scope-card">
+          <h3>Manager Scope</h3>
+          <p>Managers can edit users only within the selected building + shift combinations.</p>
+
+          <div class="uf-sub-label" style="margin-bottom: 0.5rem;">Shifts</div>
+          <% if (hasShifts) { %>
+            <div class="uf-checkbox-grid" style="margin-bottom: 0.5rem;">
+              <% (shiftOptions || []).forEach(function (sh) { %>
+                <label class="uf-checkbox-label">
+                  <input type="checkbox" name="managerShifts" value="<%= sh %>" <%= (targetManagerShifts || []).includes(sh) ? 'checked' : '' %> />
+                  <span><%= sh %></span>
+                </label>
+              <% }) %>
+            </div>
+          <% } %>
+          <div style="display:flex; gap:0.5rem; align-items:center; margin-bottom:0.875rem;">
+            <input type="text" id="newShiftInput" placeholder="Add shift (e.g. 2nd)" style="flex:1; font-size:0.8rem;" />
+            <button type="button" class="btn ghost btn-sm" onclick="addScopeItem('newShiftInput','managerShifts','shiftCheckGrid')">Add</button>
+          </div>
+          <div id="shiftCheckGrid"></div>
+
+          <div class="uf-sub-label" style="margin-bottom: 0.5rem;">Buildings</div>
+          <% if (hasBuildings) { %>
+            <div class="uf-checkbox-grid" style="margin-bottom: 0.5rem;">
+              <% (buildingOptions || []).forEach(function (b) { %>
+                <label class="uf-checkbox-label">
+                  <input type="checkbox" name="managerBuildings" value="<%= b %>" <%= (targetManagerBuildings || []).includes(b) ? 'checked' : '' %> />
+                  <span><%= b %></span>
+                </label>
+              <% }) %>
+            </div>
+          <% } %>
+          <div style="display:flex; gap:0.5rem; align-items:center; margin-bottom:0.875rem;">
+            <input type="text" id="newBuildingInput" placeholder="Add building (e.g. B4050)" style="flex:1; font-size:0.8rem;" />
+            <button type="button" class="btn ghost btn-sm" onclick="addScopeItem('newBuildingInput','managerBuildings','buildingCheckGrid')">Add</button>
+          </div>
+          <div id="buildingCheckGrid"></div>
+
+          <script>
+          function addScopeItem(inputId, fieldName, gridId) {
+            var val = document.getElementById(inputId).value.trim();
+            if (!val) return;
+            // Check not already in existing checkboxes
+            var existing = document.querySelectorAll('input[name="' + fieldName + '"]');
+            for (var i = 0; i < existing.length; i++) {
+              if (existing[i].value === val) { existing[i].checked = true; document.getElementById(inputId).value = ''; return; }
+            }
+            var grid = document.getElementById(gridId);
+            var label = document.createElement('label');
+            label.className = 'uf-checkbox-label';
+            label.innerHTML = '<input type="checkbox" name="' + fieldName + '" value="' + val.replace(/"/g,'&quot;') + '" checked /><span>' + val + '</span>';
+            grid.appendChild(label);
+            document.getElementById(inputId).value = '';
+          }
+          </script>
+
+          <button type="submit" class="btn primary">Save Manager Scope</button>
+        </form>
+      <% } %>
+
+    </div><!-- /.uf-main -->
+  </div><!-- /.uf-layout -->
+</div><!-- /.uf-page -->
+
+<% if (isAdmin) { %>
+<script>
+(function () {
+  /* ── Employment status sync ── */
+  const statusEl         = document.getElementById('employmentStatus');
+  const enabledEl        = document.getElementById('isEnabled');
+  const offboardedAtEl   = document.getElementById('offboardedAt');
+  const offboardReasonEl = document.getElementById('offboardReason');
+
+  if (statusEl) {
+    function syncEmploymentUI() {
+      const status   = String(statusEl.value || 'ACTIVE').toUpperCase();
+      const inactive = status === 'RESIGNED' || status === 'TERMINATED';
+      if (enabledEl && status === 'ACTIVE') enabledEl.value = 'true';
+      if (offboardedAtEl)   { offboardedAtEl.disabled   = !inactive; if (!inactive) offboardedAtEl.value   = ''; }
+      if (offboardReasonEl) { offboardReasonEl.disabled = !inactive; if (!inactive) offboardReasonEl.value = ''; }
+    }
+    statusEl.addEventListener('change', syncEmploymentUI);
+    syncEmploymentUI();
+  }
+})();
+</script>
+<% } %>
+
+<script>
+(function () {
+  /* ── Mirror building/shift to roster hidden inputs ── */
+  function mirrorField(sourceId, hiddenId) {
+    var src    = document.getElementById(sourceId);
+    var hidden = document.getElementById(hiddenId);
+    if (!src || !hidden) return;
+    function sync() { hidden.value = src.value; }
+    src.addEventListener('change', sync);
+    sync();
+  }
+  mirrorField('e_building', 'sync_rosterBuilding');
+  mirrorField('e_shift',    'sync_rosterShift');
+
+  /* ── Mirror domain username to profile hidden input ── */
+  var domainInput  = document.getElementById('e_domainUser');
+  var domainMirror = document.getElementById('sync_domainProfile');
+  if (domainInput && domainMirror) {
+    function syncDomain() { domainMirror.value = domainInput.value.trim(); }
+    domainInput.addEventListener('input', syncDomain);
+    syncDomain();
+  }
+
+  /* ── Password show/hide toggles ── */
+  document.querySelectorAll('.uf-pw-toggle').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var input  = document.getElementById(btn.dataset.target);
+      var eyeOn  = btn.querySelector('.icon-eye');
+      var eyeOff = btn.querySelector('.icon-eye-off');
+      if (!input) return;
+      var showing = input.type === 'text';
+      input.type  = showing ? 'password' : 'text';
+      if (eyeOn)  eyeOn.style.display  = showing ? ''     : 'none';
+      if (eyeOff) eyeOff.style.display = showing ? 'none' : '';
+    });
+  });
+})();
+</script>
+
+</main>
+</body>
+</html>

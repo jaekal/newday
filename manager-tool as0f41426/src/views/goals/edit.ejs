@@ -1,0 +1,500 @@
+<%- include('../layout') %>
+
+<%
+  const _ownerGoalStats = ownerGoalStats || {};
+%>
+
+<section class="page-header" style="display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap; align-items:flex-start;">
+  <div>
+    <h2 style="margin-bottom:0.25rem;">Edit Goal</h2>
+    <p class="muted" style="max-width:780px;">
+      Update ownership, timeline, progress, and completion criteria with the same sharp tools used in creation.
+    </p>
+  </div>
+
+  <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+    <a href="/goals" class="btn ghost">Back to Goals</a>
+    <a href="/goals/<%= goal.id %>" class="btn ghost">View Timeline</a>
+  </div>
+</section>
+
+<style>
+  .goal-form-grid {
+    display:grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap:1rem;
+    align-items:start;
+  }
+
+  @media (max-width: 980px) {
+    .goal-form-grid { grid-template-columns: 1fr; }
+  }
+
+  .field-row {
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:0.75rem;
+  }
+
+  @media (max-width: 720px) {
+    .field-row { grid-template-columns: 1fr; }
+  }
+
+  .field label {
+    display:block;
+    font-weight:600;
+    margin-bottom:0.35rem;
+  }
+
+  .field .hint {
+    margin-top:0.35rem;
+    font-size:0.85rem;
+    opacity:0.8;
+  }
+
+  .field input,
+  .field textarea,
+  .field select {
+    width:100%;
+    border:1px solid rgba(255,255,255,0.10);
+    background: rgba(15,23,42,0.55);
+    color: rgba(229,231,235,0.95);
+    border-radius: 12px;
+    padding: 0.6rem 0.75rem;
+    outline:none;
+  }
+
+  .field input:focus,
+  .field textarea:focus,
+  .field select:focus {
+    outline: 2px solid rgba(59,130,246,0.35);
+  }
+
+  .char-counter {
+    font-size:0.85rem;
+    opacity:0.8;
+    text-align:right;
+  }
+
+  .goal-preview {
+    border:1px solid rgba(255,255,255,0.08);
+    background:rgba(17,24,39,0.55);
+    border-radius:16px;
+    padding:0.9rem;
+  }
+
+  .goal-preview-title {
+    margin:0;
+    font-size:1.05rem;
+    line-height:1.25;
+  }
+
+  .goal-preview-desc {
+    margin-top:0.5rem;
+    color:rgba(156,163,175,0.95);
+    font-size:0.9rem;
+    line-height:1.35;
+  }
+
+  .preview-row {
+    display:flex;
+    gap:0.4rem;
+    flex-wrap:wrap;
+    margin-top:0.55rem;
+  }
+
+  .step-chip,
+  .date-chip {
+    display:inline-flex;
+    align-items:center;
+    gap:0.35rem;
+    padding:0.28rem 0.6rem;
+    border-radius:999px;
+    border:1px solid rgba(255,255,255,0.10);
+    font-size:0.78rem;
+    background:rgba(15,23,42,0.55);
+    cursor:pointer;
+    color:inherit;
+  }
+
+  .date-chip:hover {
+    outline:2px solid rgba(59,130,246,0.25);
+  }
+
+  .section-block {
+    margin-top:1rem;
+    padding-top:1rem;
+    border-top:1px solid rgba(255,255,255,0.06);
+  }
+
+  .chip-row {
+    display:flex;
+    gap:0.45rem;
+    flex-wrap:wrap;
+    margin-top:0.5rem;
+  }
+
+  .owner-context-grid {
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:0.55rem;
+    margin-top:0.75rem;
+  }
+
+  .owner-kpi {
+    border:1px solid rgba(255,255,255,0.08);
+    background:rgba(15,23,42,0.4);
+    border-radius:12px;
+    padding:0.7rem;
+  }
+
+  .owner-kpi strong {
+    display:block;
+    font-size:1.05rem;
+  }
+</style>
+
+<form method="POST" action="/goals/<%= goal.id %>/update" id="goalEditForm">
+  <div class="goal-form-grid">
+    <section class="card" style="padding:1rem;">
+      <div class="section-header" style="margin-bottom:0.75rem;">
+        <div>
+          <h3 style="margin-bottom:0.2rem;">Goal Details</h3>
+          <p class="muted small" style="margin:0;">
+            Refine the target, ownership, and timeline without losing the story of what success means.
+          </p>
+        </div>
+      </div>
+
+      <div class="field" style="margin-bottom:0.85rem;">
+        <label for="goalTitle">Title</label>
+        <input
+          id="goalTitle"
+          type="text"
+          name="title"
+          value="<%= goal.title || '' %>"
+          required
+          maxlength="140"
+        />
+        <div class="char-counter" id="titleCounter">0 / 140</div>
+      </div>
+
+      <div class="field-row" style="margin-bottom:0.85rem;">
+        <div class="field">
+          <label for="goalCategory">Category</label>
+          <select id="goalCategory" name="category">
+            <option value="">Select category</option>
+            <option value="TRAINING" <%= goal.category === 'TRAINING' ? 'selected' : '' %>>Training</option>
+            <option value="CERTIFICATION" <%= goal.category === 'CERTIFICATION' ? 'selected' : '' %>>Certification</option>
+            <option value="ATTENDANCE" <%= goal.category === 'ATTENDANCE' ? 'selected' : '' %>>Attendance</option>
+            <option value="QUALITY" <%= goal.category === 'QUALITY' ? 'selected' : '' %>>Quality</option>
+            <option value="PERFORMANCE" <%= goal.category === 'PERFORMANCE' ? 'selected' : '' %>>Performance</option>
+            <option value="DEVELOPMENT" <%= goal.category === 'DEVELOPMENT' ? 'selected' : '' %>>Development</option>
+            <option value="SAFETY" <%= goal.category === 'SAFETY' ? 'selected' : '' %>>Safety</option>
+            <option value="PROCESS" <%= goal.category === 'PROCESS' ? 'selected' : '' %>>Process / CI</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="goalPriority">Priority</label>
+          <select id="goalPriority" name="priority">
+            <option value="">Select priority</option>
+            <option value="LOW" <%= goal.priority === 'LOW' ? 'selected' : '' %>>Low</option>
+            <option value="MEDIUM" <%= goal.priority === 'MEDIUM' ? 'selected' : '' %>>Medium</option>
+            <option value="HIGH" <%= goal.priority === 'HIGH' ? 'selected' : '' %>>High</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field" style="margin-bottom:0.85rem;">
+        <label for="goalType">Goal Type</label>
+        <select id="goalType" name="type">
+          <option value="DEVELOPMENT" <%= (!goal.type || goal.type === 'DEVELOPMENT') ? 'selected' : '' %>>Development — skill building, learning, growth</option>
+          <option value="PERFORMANCE" <%= goal.type === 'PERFORMANCE' ? 'selected' : '' %>>Performance — output targets, KPIs, metrics</option>
+          <option value="PROJECT" <%= goal.type === 'PROJECT' ? 'selected' : '' %>>Project — specific deliverable or initiative</option>
+        </select>
+      </div>
+
+      <div class="field" style="margin-bottom:0.85rem;">
+        <label for="goalDescription">Description</label>
+        <textarea id="goalDescription" name="description" rows="5" maxlength="1200"><%= goal.description || '' %></textarea>
+        <div class="char-counter" id="descCounter">0 / 1200</div>
+      </div>
+
+      <div class="section-block">
+        <div class="field-row" style="margin-bottom:0.85rem;">
+          <div class="field">
+            <label for="goalSuccess">Success Criteria</label>
+            <textarea id="goalSuccess" name="successCriteria" rows="4" maxlength="600"><%= goal.successCriteria || '' %></textarea>
+          </div>
+
+          <div class="field">
+            <label for="goalMeasure">Measure / KPI</label>
+            <input id="goalMeasure" type="text" name="measure" maxlength="180" value="<%= goal.measure || '' %>" />
+          </div>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <div class="field-row" style="margin-bottom:0.85rem;">
+          <div class="field">
+            <label for="goalOwner">Owner</label>
+            <select id="goalOwner" name="ownerId">
+              <% staff.forEach(s => { %>
+                <option value="<%= s.id %>" <% if (s.id === goal.ownerId) { %>selected<% } %>>
+                  <%= s.name %>
+                </option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="goalDue">Due Date</label>
+            <input id="goalDue" type="date" name="dueDate" value="<%= goal.dueDate || '' %>" />
+            <div class="chip-row">
+              <button type="button" class="date-chip" data-due-shortcut="7">+7 days</button>
+              <button type="button" class="date-chip" data-due-shortcut="30">+30 days</button>
+              <button type="button" class="date-chip" data-due-shortcut="EOM">End of month</button>
+              <button type="button" class="date-chip" data-due-shortcut="QTR">Quarter end</button>
+              <button type="button" class="date-chip" data-due-shortcut="CLEAR">Clear</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="goalStatus">Status</label>
+            <select id="goalStatus" name="status">
+              <option value="OPEN" <%= goal.status === 'OPEN' ? 'selected' : '' %>>OPEN</option>
+              <option value="IN_PROGRESS" <%= goal.status === 'IN_PROGRESS' ? 'selected' : '' %>>IN PROGRESS</option>
+              <option value="DONE" <%= goal.status === 'DONE' ? 'selected' : '' %>>DONE</option>
+              <option value="ON_HOLD" <%= goal.status === 'ON_HOLD' ? 'selected' : '' %>>ON HOLD</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="goalProgress">Progress</label>
+            <input id="goalProgress" type="number" name="progress" min="0" max="100" value="<%= goal.progress || 0 %>" />
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:0.75rem; flex-wrap:wrap; margin-top:1rem;">
+        <p class="muted small" style="margin:0;">
+          Tip: goals marked <strong>DONE</strong> should usually reflect <strong>100%</strong> progress.
+        </p>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <a href="/goals" class="btn ghost">Cancel</a>
+          <button type="submit" class="btn primary">Save Changes</button>
+        </div>
+      </div>
+    </section>
+
+    <aside style="display:flex; flex-direction:column; gap:1rem;">
+      <section class="goal-preview">
+        <h3 style="margin:0 0 0.5rem 0;">Live Preview</h3>
+
+        <div class="preview-row">
+          <span class="step-chip" id="previewStatus"><%= goal.status || 'OPEN' %></span>
+          <span class="step-chip" id="previewProgress"><%= goal.progress || 0 %>%</span>
+        </div>
+
+        <h4 class="goal-preview-title" id="previewTitle"><%= goal.title || 'Goal title' %></h4>
+
+        <div class="preview-row">
+          <span class="step-chip" id="previewCategory"><%= goal.category || 'Uncategorized' %></span>
+          <span class="step-chip" id="previewPriority"><%= goal.priority ? (goal.priority + ' Priority') : 'No Priority' %></span>
+          <span class="step-chip" id="previewDue"><%= goal.dueDate ? ('Due: ' + goal.dueDate) : 'No due date' %></span>
+        </div>
+
+        <div class="goal-preview-desc" id="previewDesc">
+          <%= goal.description || 'Goal description preview.' %>
+        </div>
+
+        <div class="preview-row">
+          <span class="step-chip" id="previewOwner">Owner: <%= (staff.find(s => s.id === goal.ownerId) || {}).name || '—' %></span>
+          <span class="step-chip" id="previewMeasure"><%= goal.measure ? ('KPI: ' + goal.measure) : 'KPI: —' %></span>
+        </div>
+      </section>
+
+      <section class="card" style="padding:1rem;">
+        <div class="section-header" style="margin-bottom:0.75rem;">
+          <div>
+            <h3 style="margin-bottom:0.2rem;">Owner Context</h3>
+            <p class="muted small" style="margin:0;">
+              See the current goal load for the selected owner.
+            </p>
+          </div>
+        </div>
+
+        <div class="owner-context-grid">
+          <div class="owner-kpi">
+            <span class="muted small">Open</span>
+            <strong id="ownerStatOpen">0</strong>
+          </div>
+          <div class="owner-kpi">
+            <span class="muted small">At Risk</span>
+            <strong id="ownerStatRisk">0</strong>
+          </div>
+          <div class="owner-kpi">
+            <span class="muted small">Overdue</span>
+            <strong id="ownerStatOverdue">0</strong>
+          </div>
+          <div class="owner-kpi">
+            <span class="muted small">Completed</span>
+            <strong id="ownerStatDone">0</strong>
+          </div>
+        </div>
+
+        <p class="muted small" style="margin-top:0.75rem;" id="ownerStatSummary">
+          Select an owner to view current workload.
+        </p>
+      </section>
+    </aside>
+  </div>
+</form>
+
+<script>
+  (function () {
+    const ownerStatsMap = <%- JSON.stringify(_ownerGoalStats) %>;
+
+    const title = document.getElementById('goalTitle');
+    const desc = document.getElementById('goalDescription');
+    const category = document.getElementById('goalCategory');
+    const priority = document.getElementById('goalPriority');
+    const owner = document.getElementById('goalOwner');
+    const due = document.getElementById('goalDue');
+    const measure = document.getElementById('goalMeasure');
+    const status = document.getElementById('goalStatus');
+    const progress = document.getElementById('goalProgress');
+
+    const titleCounter = document.getElementById('titleCounter');
+    const descCounter = document.getElementById('descCounter');
+
+    const previewTitle = document.getElementById('previewTitle');
+    const previewDesc = document.getElementById('previewDesc');
+    const previewCategory = document.getElementById('previewCategory');
+    const previewPriority = document.getElementById('previewPriority');
+    const previewDue = document.getElementById('previewDue');
+    const previewOwner = document.getElementById('previewOwner');
+    const previewMeasure = document.getElementById('previewMeasure');
+    const previewStatus = document.getElementById('previewStatus');
+    const previewProgress = document.getElementById('previewProgress');
+
+    const ownerStatOpen = document.getElementById('ownerStatOpen');
+    const ownerStatRisk = document.getElementById('ownerStatRisk');
+    const ownerStatOverdue = document.getElementById('ownerStatOverdue');
+    const ownerStatDone = document.getElementById('ownerStatDone');
+    const ownerStatSummary = document.getElementById('ownerStatSummary');
+
+    function setCounter(el, counterEl, max) {
+      if (!el || !counterEl) return;
+      counterEl.textContent = (el.value || '').length + ' / ' + max;
+    }
+
+    function syncPreview() {
+      if (previewTitle) previewTitle.textContent = (title && title.value.trim()) || 'Goal title';
+      if (previewDesc) previewDesc.textContent = (desc && desc.value.trim()) || 'Goal description preview.';
+      if (previewCategory) previewCategory.textContent = (category && category.value) || 'Uncategorized';
+      if (previewPriority) previewPriority.textContent = (priority && priority.value) ? (priority.value + ' Priority') : 'No Priority';
+      if (previewDue) previewDue.textContent = (due && due.value) ? ('Due: ' + due.value) : 'No due date';
+      if (previewMeasure) previewMeasure.textContent = (measure && measure.value.trim()) ? ('KPI: ' + measure.value.trim()) : 'KPI: —';
+      if (previewStatus) previewStatus.textContent = (status && status.value) || 'OPEN';
+      if (previewProgress) previewProgress.textContent = ((progress && progress.value) || 0) + '%';
+
+      const ownerText = owner && owner.options && owner.selectedIndex >= 0
+        ? owner.options[owner.selectedIndex].text
+        : '—';
+      if (previewOwner) previewOwner.textContent = 'Owner: ' + ownerText;
+    }
+
+    function syncOwnerStats() {
+      if (!owner) return;
+      const ownerId = String(owner.value || '');
+      const stats = ownerStatsMap[ownerId] || {
+        totalOpen: 0,
+        atRisk: 0,
+        overdue: 0,
+        done: 0,
+        onHold: 0,
+      };
+
+      if (ownerStatOpen) ownerStatOpen.textContent = String(stats.totalOpen || 0);
+      if (ownerStatRisk) ownerStatRisk.textContent = String(stats.atRisk || 0);
+      if (ownerStatOverdue) ownerStatOverdue.textContent = String(stats.overdue || 0);
+      if (ownerStatDone) ownerStatDone.textContent = String(stats.done || 0);
+
+      if (ownerStatSummary) {
+        const ownerText = owner.options && owner.selectedIndex >= 0
+          ? owner.options[owner.selectedIndex].text
+          : 'this owner';
+
+        ownerStatSummary.textContent =
+          ownerText + ' currently has ' +
+          (stats.totalOpen || 0) + ' open, ' +
+          (stats.atRisk || 0) + ' at risk, and ' +
+          (stats.overdue || 0) + ' overdue goals.';
+      }
+    }
+
+    function formatISODate(dateObj) {
+      const y = dateObj.getFullYear();
+      const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const d = String(dateObj.getDate()).padStart(2, '0');
+      return y + '-' + m + '-' + d;
+    }
+
+    function setDueShortcut(mode) {
+      if (!due) return;
+
+      const now = new Date();
+      const d = new Date(now);
+      d.setHours(0, 0, 0, 0);
+
+      if (mode === '7') {
+        d.setDate(d.getDate() + 7);
+        due.value = formatISODate(d);
+      } else if (mode === '30') {
+        d.setDate(d.getDate() + 30);
+        due.value = formatISODate(d);
+      } else if (mode === 'EOM') {
+        const eom = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+        due.value = formatISODate(eom);
+      } else if (mode === 'QTR') {
+        const quarter = Math.floor(d.getMonth() / 3);
+        const quarterEndMonth = (quarter * 3) + 2;
+        const quarterEnd = new Date(d.getFullYear(), quarterEndMonth + 1, 0);
+        due.value = formatISODate(quarterEnd);
+      } else if (mode === 'CLEAR') {
+        due.value = '';
+      }
+
+      syncAll();
+    }
+
+    function syncAll() {
+      setCounter(title, titleCounter, 140);
+      setCounter(desc, descCounter, 1200);
+      syncPreview();
+      syncOwnerStats();
+    }
+
+    [title, desc, category, priority, owner, due, measure, status, progress].forEach((el) => {
+      if (!el) return;
+      el.addEventListener('input', syncAll);
+      el.addEventListener('change', syncAll);
+    });
+
+    document.querySelectorAll('[data-due-shortcut]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        setDueShortcut(btn.getAttribute('data-due-shortcut'));
+      });
+    });
+
+    syncAll();
+  })();
+</script>
+
+</main>
+</body>
+</html>

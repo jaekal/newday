@@ -1,0 +1,87 @@
+<%- include('../layout') %>
+
+<h2>Data Exports</h2>
+
+<p class="muted">
+  Download CSV or JSON files for offline analysis, reporting, or backup.
+</p>
+
+<div class="card-grid">
+
+  <!-- Reviews -->
+  <div class="card">
+    <h3>Performance Reviews</h3>
+    <p class="muted">
+      All monthly reviews, including staff, submitter, scores, and comments.
+      You can filter by month and year before downloading.
+    </p>
+
+    <form method="GET"
+          action="/exports/reviews.csv"
+          class="inline-form"
+          style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.75rem;">
+      <div class="field-inline">
+        <label for="reviewsCsvMonth">Month</label>
+        <input id="reviewsCsvMonth" type="number" name="month" min="1" max="12" value="<%= defaultMonth %>" />
+      </div>
+      <div class="field-inline">
+        <label for="reviewsCsvYear">Year</label>
+        <input id="reviewsCsvYear" type="number" name="year" min="2020" max="2100" value="<%= defaultYear %>" />
+      </div>
+      <button type="submit" class="btn primary" style="align-self:flex-end;">
+        Download Reviews CSV
+      </button>
+    </form>
+
+    <form method="GET"
+          action="/exports/reviews.json"
+          class="inline-form"
+          style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.5rem;">
+      <div class="field-inline">
+        <label for="reviewsJsonMonth">Month</label>
+        <input id="reviewsJsonMonth" type="number" name="month" min="1" max="12" value="<%= defaultMonth %>" />
+      </div>
+      <div class="field-inline">
+        <label for="reviewsJsonYear">Year</label>
+        <input id="reviewsJsonYear" type="number" name="year" min="2020" max="2100" value="<%= defaultYear %>" />
+      </div>
+      <button type="submit" class="btn ghost" style="align-self:flex-end;">
+        Download Reviews JSON
+      </button>
+    </form>
+  </div>
+
+  <!-- Goals -->
+  <div class="card">
+    <h3>Goals / OKRs</h3>
+    <p class="muted">
+      All goals with owner, status, progress, and due dates.
+    </p>
+    <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.75rem;">
+      <a class="btn primary" href="/exports/goals.csv">Download Goals CSV</a>
+      <a class="btn ghost" href="/exports/goals.json">Download Goals JSON</a>
+    </div>
+  </div>
+
+  <!-- Users & Staff Profiles -->
+  <div class="card">
+    <h3>Users &amp; Staff Profiles</h3>
+    <p class="muted">
+      Full dump of Users + StaffProfile fields (building/shift, tenure, domain fields,
+      vehicle info, education, skills), plus optional roster identity mapping when available.
+    </p>
+    <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.75rem;">
+      <a class="btn primary" href="/exports/users-staff.csv">
+        Download Users &amp; Staff CSV
+      </a>
+      <a class="btn ghost" href="/exports/users-staff.json">
+        Download Users &amp; Staff JSON
+      </a>
+    </div>
+  </div>
+
+</div>
+
+</main>
+</body>
+</html>

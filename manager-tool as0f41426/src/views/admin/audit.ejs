@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title || 'Admin Audit Center' %></title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+      margin: 0;
+      padding: 24px;
+    }
+
+    .page {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* ── Header ── */
+    .audit-header {
+      margin-bottom: 24px;
+    }
+    .audit-header h1 {
+      margin: 0 0 6px;
+      font-size: 1.5rem;
+      color: #f9fafb;
+    }
+    .audit-header p {
+      margin: 0;
+      color: #9ca3af;
+      font-size: 0.9rem;
+    }
+
+    /* ── Nav bar (tabs + filters in one row) ── */
+    .audit-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    /* Home button */
+    .btn-home {
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      background: #1f2937;
+      color: #9ca3af;
+      font-weight: 600;
+      font-size: 0.875rem;
+      border: 1px solid #374151;
+      transition: background 0.15s, color 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+    .btn-home:hover { background: #374151; color: #e5e7eb; }
+
+    /* Divider between tabs and filters */
+    .nav-divider {
+      width: 1px;
+      height: 28px;
+      background: #374151;
+      flex-shrink: 0;
+      margin: 0 4px;
+    }
+
+    /* Tabs */
+    .tab {
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      background: #1f2937;
+      color: #9ca3af;
+      font-weight: 600;
+      font-size: 0.875rem;
+      border: 1px solid #374151;
+      transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .tab:hover { background: #374151; color: #e5e7eb; }
+    .tab.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+
+    /* Inline filter inputs */
+    .filter-input,
+    .filter-select {
+      background: #1f2937;
+      border: 1px solid #374151;
+      color: #e5e7eb;
+      border-radius: 8px;
+      padding: 7px 12px;
+      font-size: 0.875rem;
+      outline: none;
+      height: 36px;
+    }
+    .filter-input { width: 160px; }
+    .filter-select { width: 130px; }
+    .filter-input:focus, .filter-select:focus { border-color: #3b82f6; }
+
+    .btn-apply {
+      padding: 7px 14px;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      height: 36px;
+      white-space: nowrap;
+    }
+    .btn-apply:hover { background: #1d4ed8; }
+    .btn-clear-filter {
+      padding: 7px 14px;
+      background: #374151;
+      color: #9ca3af;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      height: 36px;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+    }
+    .btn-clear-filter:hover { color: #e5e7eb; background: #4b5563; }
+
+    /* ── Results meta ── */
+    .results-meta {
+      font-size: 0.82rem;
+      color: #6b7280;
+      margin-bottom: 14px;
+    }
+
+    /* ── Log list ── */
+    .log-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    /* ── Log card ── */
+    .log-card {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      padding: 14px 16px;
+      border-left: 4px solid #374151;
+      position: relative;
+    }
+    .log-card.sev-success { border-left-color: #22c55e; }
+    .log-card.sev-warn    { border-left-color: #f59e0b; }
+    .log-card.sev-danger  { border-left-color: #ef4444; }
+    .log-card.sev-neutral { border-left-color: #374151; }
+
+    .log-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    .log-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .log-title {
+      font-weight: 700;
+      color: #f9fafb;
+      font-size: 0.95rem;
+    }
+
+    .log-subtitle {
+      color: #9ca3af;
+      font-size: 0.85rem;
+      margin-top: 2px;
+    }
+
+    .log-time {
+      color: #6b7280;
+      font-size: 0.8rem;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* ── Source badge ── */
+    .source-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .source-badge.login    { background: rgba(59,130,246,0.18); color: #93c5fd; border: 1px solid rgba(59,130,246,0.35); }
+    .source-badge.activity { background: rgba(168,85,247,0.18); color: #d8b4fe; border: 1px solid rgba(168,85,247,0.35); }
+
+    /* ── Severity badge ── */
+    .sev-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      text-transform: uppercase;
+    }
+    .sev-badge.success { background: rgba(34,197,94,0.18);  color: #86efac; border: 1px solid rgba(34,197,94,0.35); }
+    .sev-badge.warn    { background: rgba(245,158,11,0.18); color: #fcd34d; border: 1px solid rgba(245,158,11,0.35); }
+    .sev-badge.danger  { background: rgba(239,68,68,0.16);  color: #fca5a5; border: 1px solid rgba(239,68,68,0.35); }
+    .sev-badge.neutral { display: none; }
+
+    /* ── Meta row ── */
+    .log-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 0.8rem;
+      color: #9ca3af;
+      margin-bottom: 6px;
+    }
+    .log-meta strong { color: #e5e7eb; }
+
+    /* ── Summary ── */
+    .log-summary {
+      font-size: 0.85rem;
+      color: #fca5a5;
+      margin-bottom: 8px;
+      background: rgba(239,68,68,0.08);
+      border-radius: 6px;
+      padding: 6px 10px;
+      border-left: 3px solid rgba(239,68,68,0.4);
+    }
+
+    /* ── Details ── */
+    details { margin-top: 8px; }
+    summary {
+      cursor: pointer;
+      color: #60a5fa;
+      font-size: 0.8rem;
+      font-weight: 600;
+      user-select: none;
+    }
+    summary:hover { color: #93c5fd; }
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #0f172a;
+      border: 1px solid #1f2937;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 0.78rem;
+      overflow-x: auto;
+      color: #d1d5db;
+      margin-top: 8px;
+    }
+
+    /* ── Empty ── */
+    .empty {
+      color: #6b7280;
+      padding: 32px 0;
+      text-align: center;
+    }
+
+    /* ── Pagination ── */
+    .pagination {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      align-items: center;
+      font-size: 0.85rem;
+      color: #9ca3af;
+    }
+    .pagination a {
+      padding: 7px 14px;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      color: #e5e7eb;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .pagination a:hover { background: #374151; }
+
+    /* ── Bulk actions toolbar ── */
+    .bulk-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+    }
+    .bulk-toolbar label {
+      font-size: 0.82rem;
+      color: #9ca3af;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .bulk-count {
+      font-size: 0.82rem;
+      color: #9ca3af;
+      flex: 1;
+    }
+    .btn-delete-selected {
+      padding: 7px 14px;
+      background: rgba(239,68,68,0.15);
+      color: #fca5a5;
+      border: 1px solid rgba(239,68,68,0.4);
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+    .btn-delete-selected:hover { background: rgba(239,68,68,0.3); }
+    .btn-delete-selected:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Purge zone ── */
+    .purge-zone {
+      margin-top: 24px;
+      border-top: 1px solid #1f2937;
+      padding-top: 18px;
+    }
+    .purge-zone h3 {
+      margin: 0 0 12px;
+      font-size: 0.9rem;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .purge-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .btn-purge {
+      padding: 8px 16px;
+      background: rgba(239,68,68,0.12);
+      color: #fca5a5;
+      border: 1px solid rgba(239,68,68,0.35);
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .btn-purge:hover { background: rgba(239,68,68,0.28); }
+
+    /* ── Card checkbox ── */
+    .card-check {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: #ef4444;
+    }
+
+    /* ── Delete single btn ── */
+    .btn-delete-single {
+      font-size: 0.75rem;
+      color: #6b7280;
+      background: none;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      padding: 3px 8px;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .btn-delete-single:hover { color: #fca5a5; border-color: rgba(239,68,68,0.4); }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <div class="audit-header">
+      <h1>Admin Audit Center</h1>
+      <p>Login history and application activity log for administrator review.</p>
+    </div>
+
+    <%
+      function tabUrl(tabName) {
+        const params = new URLSearchParams({
+          tab: tabName,
+          ...(filterActor   ? { actor: filterActor }       : {}),
+          ...(filterSeverity ? { severity: filterSeverity } : {}),
+          limit: String(limit),
+        });
+        return '/admin/audit?' + params.toString();
+      }
+      function pageUrl(newOffset) {
+        const params = new URLSearchParams({
+          tab: currentTab,
+          ...(filterActor    ? { actor: filterActor }       : {}),
+          ...(filterSeverity ? { severity: filterSeverity } : {}),
+          limit: String(limit),
+          offset: String(newOffset),
+        });
+        return '/admin/audit?' + params.toString();
+      }
+    %>
+
+    <form method="GET" action="/admin/audit" class="audit-nav">
+      <input type="hidden" name="limit" value="<%= limit %>" />
+
+      <a href="/" class="btn-home">&#8592; Home</a>
+
+      <div class="nav-divider"></div>
+
+      <a class="tab <%= currentTab === 'combined'  ? 'active' : '' %>" href="<%= tabUrl('combined')  %>">Combined</a>
+      <a class="tab <%= currentTab === 'logins'    ? 'active' : '' %>" href="<%= tabUrl('logins')    %>">Login History</a>
+      <a class="tab <%= currentTab === 'activity'  ? 'active' : '' %>" href="<%= tabUrl('activity')  %>">Change History</a>
+
+      <input type="hidden" name="tab" value="<%= currentTab %>" />
+      <div class="nav-divider"></div>
+
+      <input
+        class="filter-input"
+        type="text"
+        name="actor"
+        value="<%= filterActor %>"
+        placeholder="Search actor…"
+      />
+
+      <select class="filter-select" name="severity">
+        <option value="">All severities</option>
+        <option value="success"  <%= filterSeverity === 'success'  ? 'selected' : '' %>>Success</option>
+        <option value="warn"     <%= filterSeverity === 'warn'     ? 'selected' : '' %>>Warning</option>
+        <option value="danger"   <%= filterSeverity === 'danger'   ? 'selected' : '' %>>Danger</option>
+        <option value="neutral"  <%= filterSeverity === 'neutral'  ? 'selected' : '' %>>Neutral</option>
+      </select>
+
+      <button type="submit" class="btn-apply">Apply</button>
+      <a href="/admin/audit?tab=<%= currentTab %>&limit=<%= limit %>" class="btn-clear-filter">Clear</a>
+    </form>
+
+    <div class="results-meta">
+      Showing <%= offset + 1 %>–<%= offset + rows.length %> of <%= totalCount %> entries
+    </div>
+
+    <% if (!rows.length) { %>
+      <div class="empty">No audit entries match your filters.</div>
+    <% } else { %>
+
+      <form id="bulkForm" method="POST" action="/admin/audit/purge">
+        <div class="bulk-toolbar">
+          <label>
+            <input type="checkbox" id="selectAll" />
+            Select all on page
+          </label>
+          <span class="bulk-count" id="selCount">0 selected</span>
+          <button type="submit" class="btn-delete-selected" id="deleteSelectedBtn" disabled
+            onclick="return confirm('Delete all selected entries? This cannot be undone.')">
+            Delete Selected
+          </button>
+        </div>
+
+        <div class="log-list">
+          <% rows.forEach(row => { %>
+            <div class="log-card sev-<%= row.severity %>">
+
+              <input
+                type="checkbox"
+                class="card-check entry-check"
+                name="entries[]"
+                value="<%= row.source %>:<%= row.id %>"
+              />
+
+              <div class="log-top">
+                <div>
+                  <div class="log-title-row">
+                    <span class="log-title"><%= row.title %></span>
+                    <% if (currentTab === 'combined') { %>
+                      <span class="source-badge <%= row.source %>"><%= row.source === 'login' ? 'Login' : 'Activity' %></span>
+                    <% } %>
+                    <span class="sev-badge <%= row.severity %>"><%= row.severity %></span>
+                  </div>
+                  <% if (row.subtitle) { %>
+                    <div class="log-subtitle"><%= row.subtitle %></div>
+                  <% } %>
+                </div>
+                <div class="log-time">
+                  <%= new Date(row.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) %>
+                </div>
+              </div>
+
+              <div class="log-meta">
+                <span><strong>Actor:</strong> <%= row.actor %></span>
+                <% if (row.role) { %><span><strong>Role:</strong> <%= row.role %></span><% } %>
+                <% if (row.ipAddress) { %><span><strong>IP:</strong> <%= row.ipAddress %></span><% } %>
+              </div>
+
+              <% if (row.summary) { %>
+                <div class="log-summary"><%= row.summary %></div>
+              <% } %>
+
+              <details>
+                <summary>View details</summary>
+                <pre><%= JSON.stringify(row.details, null, 2) %></pre>
+              </details>
+
+              <form method="POST" action="/admin/audit/delete" style="display:inline;">
+                <input type="hidden" name="id" value="<%= row.id %>" />
+                <input type="hidden" name="source" value="<%= row.source %>" />
+                <button type="submit" class="btn-delete-single"
+                  onclick="return confirm('Delete this entry?')">
+                  Delete record
+                </button>
+              </form>
+
+            </div>
+          <% }) %>
+        </div>
+      </form>
+
+      <div class="pagination">
+        <% if (hasPrev) { %>
+          <a href="<%= pageUrl(Math.max(0, offset - limit)) %>">&larr; Previous</a>
+        <% } %>
+        <span>Page <%= Math.floor(offset / limit) + 1 %></span>
+        <% if (hasMore) { %>
+          <a href="<%= pageUrl(offset + limit) %>">Next &rarr;</a>
+        <% } %>
+      </div>
+
+      <div class="purge-zone">
+        <h3>Purge entire category</h3>
+        <div class="purge-buttons">
+          <form method="POST" action="/admin/audit/purge" style="display:inline;">
+            <input type="hidden" name="category" value="all-login" />
+            <button type="submit" class="btn-purge"
+              onclick="return confirm('Permanently delete ALL login history? This cannot be undone.')">
+              Purge All Login History
+            </button>
+          </form>
+          <form method="POST" action="/admin/audit/purge" style="display:inline;">
+            <input type="hidden" name="category" value="all-activity" />
+            <button type="submit" class="btn-purge"
+              onclick="return confirm('Permanently delete ALL change history? This cannot be undone.')">
+              Purge All Change History
+            </button>
+          </form>
+          <form method="POST" action="/admin/audit/purge" style="display:inline;">
+            <input type="hidden" name="category" value="all" />
+            <button type="submit" class="btn-purge"
+              onclick="return confirm('Permanently delete ALL audit records? This cannot be undone.')">
+              Purge Everything
+            </button>
+          </form>
+        </div>
+      </div>
+    <% } %>
+
+    <script>
+      const selectAll = document.getElementById('selectAll');
+      const deleteBtn = document.getElementById('deleteSelectedBtn');
+      const countLabel = document.getElementById('selCount');
+
+      function updateToolbar() {
+        const checked = document.querySelectorAll('.entry-check:checked');
+        countLabel.textContent = checked.length + ' selected';
+        deleteBtn.disabled = checked.length === 0;
+      }
+
+      if (selectAll) {
+        selectAll.addEventListener('change', () => {
+          document.querySelectorAll('.entry-check').forEach(cb => cb.checked = selectAll.checked);
+          updateToolbar();
+        });
+      }
+
+      document.querySelectorAll('.entry-check').forEach(cb => {
+        cb.addEventListener('change', updateToolbar);
+      });
+    </script>
+
+  </div>
+</body>
+</html>

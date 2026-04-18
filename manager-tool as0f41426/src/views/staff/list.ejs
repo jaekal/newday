@@ -1,0 +1,737 @@
+<%- include('../layout') %>
+
+<style>
+  .staff-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .staff-table-row:nth-child(even) {
+    background-color: rgba(17, 24, 39, 0.42);
+  }
+
+  .staff-table-row:hover {
+    background-color: rgba(59, 130, 246, 0.18);
+  }
+
+  .staff-table-row.is-inactive {
+    background-color: rgba(120, 113, 108, 0.22);
+  }
+
+  .staff-table-row.is-resigned {
+    background-color: rgba(245, 158, 11, 0.14);
+  }
+
+  .staff-table-row.is-terminated {
+    background-color: rgba(239, 68, 68, 0.14);
+  }
+
+  .staff-toolbar-card,
+  .staff-table-card {
+    overflow: hidden;
+  }
+
+  .staff-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .staff-header h2 {
+    margin-bottom: 0.2rem;
+  }
+
+  .staff-header p {
+    margin: 0;
+    max-width: 860px;
+  }
+
+  .staff-header-actions {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .staff-toolbar-card {
+    padding: 0.9rem 1rem;
+    position: sticky;
+    top: 0.75rem;
+    z-index: 15;
+    backdrop-filter: blur(8px);
+  }
+
+  .staff-filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: end;
+  }
+
+  .staff-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.28rem;
+    min-width: 130px;
+    flex: 0 0 auto;
+  }
+
+  .staff-filter-group.search {
+    min-width: 280px;
+    flex: 1 1 360px;
+  }
+
+  .staff-filter-group label {
+    font-size: 0.78rem;
+    line-height: 1;
+    color: rgba(156, 163, 175, 0.96);
+    margin: 0;
+  }
+
+  .staff-filter-group input,
+  .staff-filter-group select {
+    height: 38px;
+    min-height: 38px;
+    padding: 0.45rem 0.7rem;
+    font-size: 0.92rem;
+  }
+
+  .staff-filter-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-left: auto;
+    flex-wrap: wrap;
+  }
+
+  .staff-filter-actions .btn {
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    padding: 0 1rem;
+  }
+
+  .staff-active-filters {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .staff-chip-row {
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.22rem 0.6rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.10);
+    background: rgba(15,23,42,0.45);
+    color: rgba(229,231,235,0.95);
+    font-size: 0.82rem;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .chip.muted {
+    opacity: 0.86;
+  }
+
+  .staff-summary-inline {
+    color: rgba(209,213,219,0.92);
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+
+  .staff-table-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid rgba(75,85,99,0.35);
+    flex-wrap: wrap;
+    background: rgba(17,24,39,0.45);
+  }
+
+  .staff-table-title {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .staff-table-title h3 {
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  .staff-table-title p {
+    margin: 0;
+    color: rgba(156,163,175,0.95);
+    font-size: 0.86rem;
+  }
+
+  .position-badge,
+  .placement-badge,
+  .trend-badge,
+  .staff-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.22rem 0.52rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    line-height: 1.15;
+    border: 1px solid rgba(255,255,255,0.08);
+    white-space: nowrap;
+  }
+
+  .position-badge {
+    background: rgba(37, 99, 235, 0.14);
+    color: #dbeafe;
+  }
+
+  .placement-badge {
+    background: rgba(34, 197, 94, 0.12);
+    color: #dcfce7;
+  }
+
+  .trend-badge.good {
+    background: rgba(34, 197, 94, 0.14);
+    color: #dcfce7;
+  }
+
+  .trend-badge.warn {
+    background: rgba(245, 158, 11, 0.16);
+    color: #fde68a;
+  }
+
+  .trend-badge.bad {
+    background: rgba(239, 68, 68, 0.16);
+    color: #fecaca;
+  }
+
+  .trend-badge.neutral {
+    background: rgba(148, 163, 184, 0.14);
+    color: #e2e8f0;
+  }
+
+  .staff-status-badge.active {
+    background: rgba(34, 197, 94, 0.14);
+    color: #dcfce7;
+  }
+
+  .staff-status-badge.resigned {
+    background: rgba(245, 158, 11, 0.16);
+    color: #fde68a;
+  }
+
+  .staff-status-badge.terminated {
+    background: rgba(239, 68, 68, 0.16);
+    color: #fecaca;
+  }
+
+  .staff-name-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.32rem;
+    min-width: 230px;
+  }
+
+  .staff-name-main {
+    font-weight: 600;
+    color: #f9fafb;
+  }
+
+  .staff-subtext {
+    font-size: 0.82rem;
+    color: rgba(156,163,175,0.96);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    align-items: center;
+  }
+
+  .staff-subtext .divider {
+    opacity: 0.45;
+  }
+
+  .staff-updated {
+    color: rgba(209,213,219,0.94);
+    font-size: 0.88rem;
+    white-space: nowrap;
+  }
+
+  .staff-actions-cell {
+    width: 1%;
+    white-space: nowrap;
+    padding-right: 1.1rem !important;
+  }
+
+  .staff-actions {
+    display: inline-flex;
+    gap: 0.45rem;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  .staff-actions .btn {
+    white-space: nowrap;
+    min-width: 76px;
+    justify-content: center;
+    border-radius: 10px;
+    padding: 0.42rem 0.82rem;
+  }
+
+  .staff-actions .btn.ghost {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .staff-table-card {
+    padding: 0;
+    overflow-x: auto;
+  }
+
+  .staff-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 980px;
+  }
+
+  .staff-table thead {
+    background: rgba(31,41,55,0.96);
+    color: #e5e7eb;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .staff-table th,
+  .staff-table td {
+    padding: 0.78rem 0.85rem;
+    text-align: left;
+    border-top: 1px solid rgba(75,85,99,0.32);
+    vertical-align: middle;
+  }
+
+  .staff-table th:last-child,
+  .staff-table td:last-child {
+    padding-right: 1.1rem;
+  }
+
+  .staff-empty {
+    padding: 1.2rem;
+    text-align: center;
+    color: rgba(156,163,175,0.96);
+  }
+
+  .staff-pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.85rem 1rem;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    border-top: 1px solid rgba(75,85,99,0.35);
+  }
+
+  .staff-pagination-controls {
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+  }
+
+  .staff-mini-note {
+    color: rgba(156,163,175,0.92);
+    font-size: 0.82rem;
+  }
+
+  @media (max-width: 1400px) {
+    .staff-filter-actions {
+      margin-left: 0;
+    }
+  }
+
+  @media (max-width: 780px) {
+    .staff-filter-group,
+    .staff-filter-group.search {
+      min-width: 100%;
+      flex: 1 1 100%;
+    }
+
+    .staff-filter-actions {
+      width: 100%;
+      justify-content: flex-start;
+    }
+
+    .staff-header-actions {
+      width: 100%;
+      justify-content: flex-start;
+    }
+
+    .staff-active-filters {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .staff-summary-inline {
+      white-space: normal;
+    }
+  }
+</style>
+
+<%
+  const pg = pagination || {};
+  const pageSizeValue = String(pg.pageSize || '25');
+
+  const roleLocal = (typeof viewerRole !== 'undefined' && viewerRole) ? String(viewerRole).toUpperCase()
+                  : (typeof currentUserRole !== 'undefined' && currentUserRole) ? String(currentUserRole).toUpperCase()
+                  : '';
+
+  const canEditStaff = (roleLocal === 'ADMIN' || roleLocal === 'SENIOR_MANAGER' || roleLocal === 'MANAGER' || roleLocal === 'SUPERVISOR');
+
+  const f = filters || {};
+  const effectiveRosterBuilding = (f.rosterBuilding != null && String(f.rosterBuilding).trim() !== '')
+    ? String(f.rosterBuilding)
+    : (f.building != null ? String(f.building) : '');
+
+  const effectiveRosterShift = (f.rosterShift != null && String(f.rosterShift).trim() !== '')
+    ? String(f.rosterShift)
+    : (f.shift != null ? String(f.shift) : '');
+
+  const effectiveSortBy = f.sortBy || 'name';
+  const effectiveSortDir = f.sortDir || 'ASC';
+
+  const activeFilterCount =
+    (f.q ? 1 : 0) +
+    (effectiveRosterBuilding ? 1 : 0) +
+    (effectiveRosterShift ? 1 : 0) +
+    (f.positionType ? 1 : 0);
+
+  function formatDateTime(value) {
+    if (!value) return '—';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }
+%>
+
+<section class="staff-page">
+  <section class="page-header staff-header">
+    <div>
+      <h2>Staff Roster</h2>
+      <p class="muted">
+        View, search, and manage staff records by scope, placement, and role.
+      </p>
+    </div>
+
+    <div class="staff-header-actions">
+      <% if (canEditStaff) { %>
+        <a href="/admin/users/new" class="btn primary">Add Staff</a>
+      <% } %>
+    </div>
+  </section>
+
+  <% if (skuImportError) { %>
+    <p style="color:red; white-space:pre-line;"><%= skuImportError %></p>
+  <% } %>
+
+  <% if (skuImportSummary) { %>
+    <p style="color:limegreen; white-space:pre-line;"><%= skuImportSummary %></p>
+  <% } %>
+
+  <form method="GET" action="/staff" class="card staff-toolbar-card">
+    <div class="staff-filter-row">
+      <div class="staff-filter-group search">
+        <label for="q">Search</label>
+        <input
+          id="q"
+          type="text"
+          name="q"
+          placeholder="Search by name, employee ID, trend, or domain username"
+          value="<%= (f && f.q) ? f.q : '' %>"
+        />
+      </div>
+
+      <div class="staff-filter-group">
+        <label for="rosterBuilding">Building</label>
+        <select id="rosterBuilding" name="rosterBuilding">
+          <option value="">All</option>
+          <% (buildingOptions || []).forEach(function (b) { %>
+            <option value="<%= b %>" <%= (effectiveRosterBuilding === b) ? 'selected' : '' %>><%= b %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="staff-filter-group">
+        <label for="rosterShift">Shift</label>
+        <select id="rosterShift" name="rosterShift">
+          <option value="">All</option>
+          <% (shiftOptions || []).forEach(function (sh) { %>
+            <option value="<%= sh %>" <%= (effectiveRosterShift === sh) ? 'selected' : '' %>><%= sh %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="staff-filter-group">
+        <label for="positionType">Position</label>
+        <select id="positionType" name="positionType">
+          <option value="">All</option>
+          <% (positionTypeOptions || []).forEach(function (pt) { %>
+            <option value="<%= pt %>" <%= (f && f.positionType === pt) ? 'selected' : '' %>><%= pt %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="staff-filter-group">
+        <label for="sortBy">Sort</label>
+        <select id="sortBy" name="sortBy">
+          <option value="name" <%= (effectiveSortBy === 'name') ? 'selected' : '' %>>Name</option>
+          <option value="employeeId" <%= (effectiveSortBy === 'employeeId') ? 'selected' : '' %>>Employee ID</option>
+          <option value="positionType" <%= (effectiveSortBy === 'positionType') ? 'selected' : '' %>>Position</option>
+          <option value="rosterBuilding" <%= (effectiveSortBy === 'rosterBuilding') ? 'selected' : '' %>>Building</option>
+          <option value="rosterShift" <%= (effectiveSortBy === 'rosterShift') ? 'selected' : '' %>>Shift</option>
+          <option value="overallTrend" <%= (effectiveSortBy === 'overallTrend') ? 'selected' : '' %>>Overall Trend</option>
+          <option value="lastUpdated" <%= (effectiveSortBy === 'lastUpdated') ? 'selected' : '' %>>Last Updated</option>
+        </select>
+      </div>
+
+      <div class="staff-filter-group">
+        <label for="sortDir">Direction</label>
+        <select id="sortDir" name="sortDir">
+          <option value="ASC" <%= (effectiveSortDir === 'ASC') ? 'selected' : '' %>>Asc</option>
+          <option value="DESC" <%= (effectiveSortDir === 'DESC') ? 'selected' : '' %>>Desc</option>
+        </select>
+      </div>
+
+      <div class="staff-filter-group">
+        <label for="pageSize">Rows</label>
+        <select id="pageSize" name="pageSize">
+          <option value="10"  <%= pageSizeValue === '10'  ? 'selected' : '' %>>10</option>
+          <option value="25"  <%= pageSizeValue === '25'  ? 'selected' : '' %>>25</option>
+          <option value="50"  <%= pageSizeValue === '50'  ? 'selected' : '' %>>50</option>
+          <option value="100" <%= pageSizeValue === '100' ? 'selected' : '' %>>100</option>
+          <option value="all" <%= pg.showAll ? 'selected' : '' %>>All</option>
+        </select>
+      </div>
+
+      <input type="hidden" name="page" value="1" />
+
+      <div class="staff-filter-actions">
+        <button type="submit" class="btn primary">Apply</button>
+        <a href="/staff" class="btn ghost">Reset</a>
+      </div>
+    </div>
+
+    <div class="staff-active-filters">
+      <div class="staff-chip-row">
+        <% if (f.q) { %>
+          <span class="chip">🔎 <strong>Search</strong>: <%= f.q %></span>
+        <% } %>
+        <% if (effectiveRosterBuilding) { %>
+          <span class="chip">🏢 <strong>Building</strong>: <%= effectiveRosterBuilding %></span>
+        <% } %>
+        <% if (effectiveRosterShift) { %>
+          <span class="chip">🕒 <strong>Shift</strong>: <%= effectiveRosterShift %></span>
+        <% } %>
+        <% if (f.positionType) { %>
+          <span class="chip">👤 <strong>Position</strong>: <%= f.positionType %></span>
+        <% } %>
+        <% if (activeFilterCount === 0) { %>
+          <span class="chip muted">Showing all staff in scope</span>
+        <% } %>
+      </div>
+
+      <div class="staff-summary-inline">
+        <% if (pg.showAll) { %>
+          Showing all <strong><%= pg.totalUsers || (staff || []).length %></strong> record(s)
+        <% } else if (pagination) { %>
+          Showing <strong><%= pg.from %></strong> to <strong><%= pg.to %></strong>
+          of <strong><%= pg.totalUsers %></strong>
+        <% } else { %>
+          Showing <strong><%= (staff || []).length %></strong> record(s)
+        <% } %>
+      </div>
+    </div>
+  </form>
+
+  <div class="card staff-table-card">
+    <div class="staff-table-topbar">
+      <div class="staff-table-title">
+        <h3>Roster View</h3>
+        <p>Focused for review, editing, and quick staff record validation.</p>
+      </div>
+    </div>
+
+    <table class="staff-table" cellpadding="0" cellspacing="0">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Position</th>
+          <th>Placement</th>
+          <th>Tenure</th>
+          <th>Last Updated</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <% if (!staff || staff.length === 0) { %>
+          <tr>
+            <td colspan="6" class="staff-empty">
+              <% if (f && f.q && f.q.length > 0) { %>
+                No staff found matching "<%= f.q %>" with the current filters.
+              <% } else { %>
+                No staff records are available for your scope.
+              <% } %>
+            </td>
+          </tr>
+        <% } else { %>
+          <% staff.forEach(function (s) {
+               const p = s.StaffProfile || {};
+               const placementBuilding = s.rosterBuilding || p.building || 'Unassigned';
+               const placementShift = s.rosterShift || p.shift || 'No Shift';
+               const trendLabel = s.overallTrendLabel || 'Not Rated';
+               const trendTone = s.overallTrendTone || 'neutral';
+               const statusValue = String(s.employmentStatus || 'ACTIVE').toUpperCase();
+               const statusClass = statusValue.toLowerCase();
+          %>
+            <tr class="staff-table-row<%= s.isInactive ? ' is-inactive' : '' %><%= statusValue === 'RESIGNED' ? ' is-resigned' : '' %><%= statusValue === 'TERMINATED' ? ' is-terminated' : '' %>">
+              <td>
+                <div class="staff-name-cell">
+                  <span class="staff-name-main"><%= s.name || 'Unnamed Staff' %></span>
+                  <div class="staff-subtext">
+                    <span>ID: <%= p.employeeId || 'Not set' %></span>
+                    <span class="divider">•</span>
+                    <span class="trend-badge <%= trendTone %>"><%= trendLabel %></span>
+                    <span class="divider">•</span>
+                    <span class="staff-status-badge <%= statusClass %>"><%= statusValue %></span>
+                  </div>
+                </div>
+              </td>
+
+              <td>
+                <span class="position-badge"><%= p.positionType || 'TECHNICIAN' %></span>
+              </td>
+
+              <td>
+                <span class="placement-badge"><%= placementBuilding %> • <%= placementShift %></span>
+              </td>
+
+              <td><%= s.tenureLabel || 'N/A' %></td>
+
+              <td>
+                <span class="staff-updated"><%= formatDateTime(s.profileLastUpdated) %></span>
+              </td>
+
+              <td class="staff-actions-cell">
+                <div class="staff-actions">
+                  <a href="/staff/<%= s.id %>" class="btn ghost btn-small">View</a>
+                  <% if (canEditStaff) { %>
+                    <a href="/staff/<%= s.id %>/edit" class="btn primary btn-small">Edit</a>
+                  <% } %>
+                </div>
+              </td>
+            </tr>
+          <% }); %>
+        <% } %>
+      </tbody>
+    </table>
+
+    <% if (pagination) { %>
+      <div class="staff-pagination">
+        <div>
+          <div class="muted">
+            <% if (pg.showAll) { %>
+              Showing all <strong><%= pg.totalUsers %></strong> staff record(s).
+            <% } else { %>
+              Showing <strong><%= pg.from %></strong>–<strong><%= pg.to %></strong>
+              of <strong><%= pg.totalUsers %></strong>.
+              Page <strong><%= pg.page %></strong> of <strong><%= pg.totalPages %></strong>.
+            <% } %>
+          </div>
+          <% if (pg.showAll && (pg.totalUsers || 0) > 100) { %>
+            <div class="staff-mini-note">Large result set loaded. Use filters for faster browsing.</div>
+          <% } %>
+        </div>
+
+        <% if (!pg.showAll && pg.totalPages > 1) { %>
+          <div class="staff-pagination-controls">
+            <% if (pg.page > 1) { %>
+              <form method="GET" action="/staff" style="display:inline;">
+                <input type="hidden" name="q" value="<%= (f && f.q) ? f.q : '' %>" />
+                <input type="hidden" name="rosterBuilding" value="<%= effectiveRosterBuilding || '' %>" />
+                <input type="hidden" name="rosterShift" value="<%= effectiveRosterShift || '' %>" />
+                <input type="hidden" name="positionType" value="<%= (f && f.positionType) ? f.positionType : '' %>" />
+                <input type="hidden" name="sortBy" value="<%= effectiveSortBy %>" />
+                <input type="hidden" name="sortDir" value="<%= effectiveSortDir %>" />
+                <input type="hidden" name="pageSize" value="<%= pg.pageSize %>" />
+                <input type="hidden" name="page" value="1" />
+                <button type="submit" class="btn small ghost">First</button>
+              </form>
+
+              <form method="GET" action="/staff" style="display:inline;">
+                <input type="hidden" name="q" value="<%= (f && f.q) ? f.q : '' %>" />
+                <input type="hidden" name="rosterBuilding" value="<%= effectiveRosterBuilding || '' %>" />
+                <input type="hidden" name="rosterShift" value="<%= effectiveRosterShift || '' %>" />
+                <input type="hidden" name="positionType" value="<%= (f && f.positionType) ? f.positionType : '' %>" />
+                <input type="hidden" name="sortBy" value="<%= effectiveSortBy %>" />
+                <input type="hidden" name="sortDir" value="<%= effectiveSortDir %>" />
+                <input type="hidden" name="pageSize" value="<%= pg.pageSize %>" />
+                <input type="hidden" name="page" value="<%= pg.page - 1 %>" />
+                <button type="submit" class="btn small ghost">Previous</button>
+              </form>
+            <% } %>
+
+            <% if (pg.page < pg.totalPages) { %>
+              <form method="GET" action="/staff" style="display:inline;">
+                <input type="hidden" name="q" value="<%= (f && f.q) ? f.q : '' %>" />
+                <input type="hidden" name="rosterBuilding" value="<%= effectiveRosterBuilding || '' %>" />
+                <input type="hidden" name="rosterShift" value="<%= effectiveRosterShift || '' %>" />
+                <input type="hidden" name="positionType" value="<%= (f && f.positionType) ? f.positionType : '' %>" />
+                <input type="hidden" name="sortBy" value="<%= effectiveSortBy %>" />
+                <input type="hidden" name="sortDir" value="<%= effectiveSortDir %>" />
+                <input type="hidden" name="pageSize" value="<%= pg.pageSize %>" />
+                <input type="hidden" name="page" value="<%= pg.page + 1 %>" />
+                <button type="submit" class="btn small ghost">Next</button>
+              </form>
+
+              <form method="GET" action="/staff" style="display:inline;">
+                <input type="hidden" name="q" value="<%= (f && f.q) ? f.q : '' %>" />
+                <input type="hidden" name="rosterBuilding" value="<%= effectiveRosterBuilding || '' %>" />
+                <input type="hidden" name="rosterShift" value="<%= effectiveRosterShift || '' %>" />
+                <input type="hidden" name="positionType" value="<%= (f && f.positionType) ? f.positionType : '' %>" />
+                <input type="hidden" name="sortBy" value="<%= effectiveSortBy %>" />
+                <input type="hidden" name="sortDir" value="<%= effectiveSortDir %>" />
+                <input type="hidden" name="pageSize" value="<%= pg.pageSize %>" />
+                <input type="hidden" name="page" value="<%= pg.totalPages %>" />
+                <button type="submit" class="btn small ghost">Last</button>
+              </form>
+            <% } %>
+          </div>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+</section>

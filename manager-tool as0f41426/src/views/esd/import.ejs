@@ -1,0 +1,53 @@
+<%- include('../layout') %>
+
+<section class="page-header">
+  <div>
+    <h2>ESD Import – Daily Compliance Logs</h2>
+    <p class="muted">
+      Upload ESD log exports to feed Daily ESD compliance on staff profiles.
+      Expected columns: <code>LogDateTime</code>, <code>Emp.Id</code>, <code>Name</code>, <code>Result</code>.
+    </p>
+  </div>
+  <div>
+    <a href="/staff" class="btn ghost">Back to Staff Roster</a>
+  </div>
+</section>
+
+<div class="card">
+  <% if (importError) { %>
+    <pre class="alert alert-error"><%= importError %></pre>
+  <% } %>
+
+  <% if (importSummary) { %>
+    <pre class="alert alert-success" style="white-space:pre-wrap;"><%= importSummary %></pre>
+  <% } %>
+
+  <form
+    method="POST"
+    action="/esd/import"
+    enctype="multipart/form-data"
+    style="display:flex; flex-direction:column; gap:1rem; max-width:480px;"
+  >
+    <label>
+      <span>ESD Log File (CSV or Excel)</span>
+      <input type="file" name="file" accept=".csv,.xlsx,.xls" required />
+    </label>
+
+    <p class="muted small">
+      The importer will:
+      <ul class="muted small" style="margin-top:0.25rem;">
+        <li>Match <strong>Emp.Id</strong> to <strong>StaffProfile.employeeId</strong> where possible.</li>
+        <li>Fallback to matching by <strong>Name</strong> if Emp.Id is missing.</li>
+        <li>Skip duplicates with the same <em>staffId + LogDateTime + Result</em>.</li>
+      </ul>
+    </p>
+
+    <div style="display:flex; gap:0.5rem; justify-content:flex-end; margin-top:0.5rem;">
+      <button type="submit" class="btn primary">Upload &amp; Import</button>
+    </div>
+  </form>
+</div>
+
+</main>
+</body>
+</html>

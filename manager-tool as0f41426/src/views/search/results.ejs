@@ -1,0 +1,102 @@
+<%- include('../layout') %>
+
+<div class="page-header">
+  <h1>Search</h1>
+</div>
+
+<form method="GET" action="/search" class="search-bar-form" style="margin-bottom:1.5rem;">
+  <div style="display:flex; gap:0.5rem; max-width:560px;">
+    <input
+      type="text"
+      name="q"
+      value="<%= q %>"
+      placeholder="Search staff, goals, incidents, reviews…"
+      class="search-input"
+      autofocus
+      style="flex:1;"
+    />
+    <button type="submit" class="btn primary">Search</button>
+  </div>
+  <p class="muted small" style="margin-top:0.4rem;">Search across staff names, usernames, goal titles, incidents, and review comments.</p>
+</form>
+
+<% if (q && q.length < 2) { %>
+  <p class="muted">Enter at least 2 characters to search.</p>
+<% } else if (results) { %>
+  <% const total = results.staffResults.length + results.goalResults.length + results.incidentResults.length + results.reviewResults.length; %>
+  <p class="muted small" style="margin-bottom:1rem;"><%= total %> result<%= total !== 1 ? 's' : '' %> for "<strong><%= q %></strong>"</p>
+
+  <% if (results.staffResults.length) { %>
+    <section class="card" style="margin-bottom:1rem;">
+      <h3 style="margin-bottom:0.6rem;">Staff (<%= results.staffResults.length %>)</h3>
+      <ul class="search-result-list">
+        <% results.staffResults.forEach(function(s) { %>
+          <li>
+            <a href="/staff/<%= s.id %>" class="search-result-link">
+              <strong><%= s.name %></strong>
+              <span class="muted small"> · <%= s.role %></span>
+              <% if (s.StaffProfile && s.StaffProfile.positionType) { %><span class="muted small"> · <%= s.StaffProfile.positionType %></span><% } %>
+              <% if (s.StaffProfile && s.StaffProfile.employeeId) { %><span class="muted small"> · #<%= s.StaffProfile.employeeId %></span><% } %>
+            </a>
+          </li>
+        <% }); %>
+      </ul>
+    </section>
+  <% } %>
+
+  <% if (results.goalResults.length) { %>
+    <section class="card" style="margin-bottom:1rem;">
+      <h3 style="margin-bottom:0.6rem;">Goals (<%= results.goalResults.length %>)</h3>
+      <ul class="search-result-list">
+        <% results.goalResults.forEach(function(g) { %>
+          <li>
+            <a href="/goals/<%= g.id %>" class="search-result-link">
+              <strong><%= g.title %></strong>
+              <span class="muted small"> · <%= g.status %></span>
+              <% if (g.Owner) { %><span class="muted small"> · <%= g.Owner.name %></span><% } %>
+            </a>
+          </li>
+        <% }); %>
+      </ul>
+    </section>
+  <% } %>
+
+  <% if (results.incidentResults.length) { %>
+    <section class="card" style="margin-bottom:1rem;">
+      <h3 style="margin-bottom:0.6rem;">Incidents (<%= results.incidentResults.length %>)</h3>
+      <ul class="search-result-list">
+        <% results.incidentResults.forEach(function(inc) { %>
+          <li>
+            <a href="/incidents/<%= inc.id %>" class="search-result-link">
+              <strong><%= inc.title || '(no title)' %></strong>
+              <span class="muted small"> · <%= inc.incidentDate ? String(inc.incidentDate).slice(0,10) : '' %></span>
+              <% if (inc.severity) { %><span class="muted small"> · <%= inc.severity %></span><% } %>
+              <% if (inc.Staff) { %><span class="muted small"> · <%= inc.Staff.name %></span><% } %>
+            </a>
+          </li>
+        <% }); %>
+      </ul>
+    </section>
+  <% } %>
+
+  <% if (results.reviewResults.length) { %>
+    <section class="card" style="margin-bottom:1rem;">
+      <h3 style="margin-bottom:0.6rem;">Reviews (<%= results.reviewResults.length %>)</h3>
+      <ul class="search-result-list">
+        <% results.reviewResults.forEach(function(r) { %>
+          <li>
+            <a href="/reviews/<%= r.id %>/edit" class="search-result-link">
+              <strong><%= r.Staff ? r.Staff.name : 'Unknown' %></strong>
+              <span class="muted small"> · <%= r.periodMonth %>/<%= r.periodYear %></span>
+              <% if (r.Submitter) { %><span class="muted small"> · by <%= r.Submitter.name %></span><% } %>
+            </a>
+          </li>
+        <% }); %>
+      </ul>
+    </section>
+  <% } %>
+
+  <% if (total === 0) { %>
+    <p class="muted">No results found for "<strong><%= q %></strong>".</p>
+  <% } %>
+<% } %>

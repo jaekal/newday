@@ -1,0 +1,402 @@
+<!-- src/views/users/new.ejs -->
+<%- include('../layout') %>
+
+<style>
+  .uf-page { max-width: 860px; }
+  .uf-page-header { margin-bottom: 1.25rem; }
+  .uf-page-header h2 { margin: 0 0 0.25rem; font-size: 1.35rem; }
+  .uf-page-header p { margin: 0; color: var(--text-muted, #9ca3af); font-size: 0.875rem; }
+
+  .uf-alert {
+    display: flex; align-items: flex-start; gap: 0.625rem;
+    background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.35);
+    border-radius: 6px; padding: 0.75rem 1rem;
+    color: #fca5a5; font-size: 0.875rem; white-space: pre-line;
+    margin-bottom: 1.25rem;
+  }
+  .uf-alert svg { flex-shrink: 0; margin-top: 1px; }
+
+  .uf-section {
+    background: rgba(17,24,39,0.6); border: 1px solid rgba(55,65,81,0.7);
+    border-radius: 8px; margin-bottom: 0.75rem; overflow: hidden;
+  }
+  .uf-section summary {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.875rem 1.125rem; cursor: pointer; list-style: none;
+    user-select: none;
+  }
+  .uf-section summary::-webkit-details-marker { display: none; }
+  .uf-section summary:hover { background: rgba(255,255,255,0.03); }
+  .uf-section-title {
+    display: flex; align-items: center; gap: 0.625rem;
+    font-size: 0.9375rem; font-weight: 600; color: #e5e7eb;
+  }
+  .uf-section-title .uf-badge {
+    font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.45rem;
+    border-radius: 999px; background: rgba(59,130,246,0.2); color: #93c5fd;
+    border: 1px solid rgba(59,130,246,0.3); text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .uf-section-chevron { color: #6b7280; transition: transform 0.2s; flex-shrink: 0; }
+  details[open] .uf-section-chevron { transform: rotate(180deg); }
+  .uf-section-body { padding: 1rem 1.125rem 1.125rem; border-top: 1px solid rgba(55,65,81,0.5); }
+
+  .uf-grid { display: grid; gap: 0.875rem; }
+  .uf-grid-2 { grid-template-columns: 1fr 1fr; }
+  .uf-grid-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  @media (max-width: 600px) {
+    .uf-grid-2, .uf-grid-5 { grid-template-columns: 1fr; }
+  }
+
+  .uf-field { display: flex; flex-direction: column; gap: 0.3rem; }
+  .uf-field label { font-size: 0.8125rem; font-weight: 500; color: #d1d5db; }
+  .uf-field .uf-hint { font-size: 0.75rem; color: #6b7280; }
+  .uf-field input, .uf-field select, .uf-field textarea { width: 100%; box-sizing: border-box; }
+  .uf-field textarea { resize: vertical; }
+
+  .uf-pw-wrap { position: relative; display: flex; align-items: center; }
+  .uf-pw-wrap input { flex: 1; padding-right: 2.5rem; }
+  .uf-pw-toggle {
+    position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer; padding: 0.2rem;
+    color: #6b7280; display: flex; align-items: center;
+  }
+  .uf-pw-toggle:hover { color: #d1d5db; }
+
+  .uf-divider { height: 1px; background: rgba(55,65,81,0.5); margin: 0.875rem 0; }
+  .uf-sub-label {
+    font-size: 0.78rem; font-weight: 700; color: #6b7280;
+    text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.5rem;
+  }
+
+  .uf-actions {
+    position: sticky; bottom: 0;
+    background: rgba(11,18,32,0.95); backdrop-filter: blur(6px);
+    border-top: 1px solid rgba(55,65,81,0.6);
+    padding: 0.75rem 0; margin-top: 1rem;
+    display: flex; align-items: center; gap: 0.75rem;
+  }
+</style>
+
+<%
+  const hasBuildings = (buildingOptions || []).length > 0;
+  const hasShifts    = (shiftOptions || []).length > 0;
+  const resolvedPositionTypes = Array.isArray(positionTypes) && positionTypes.length ? positionTypes : ['TECHNICIAN', 'LEAD', 'CHAMPION', 'SPECIALIST', 'SUPERVISOR', 'MANAGER'];
+%>
+
+<div class="uf-page">
+  <div class="uf-page-header">
+    <h2>Create New User</h2>
+    <p>Fill in the required account fields. All other sections are optional and can be completed later.</p>
+  </div>
+
+  <% if (error) { %>
+    <div class="uf-alert">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="8" cy="8" r="7" stroke="#f87171" stroke-width="1.5"/>
+        <path d="M8 5v3.5M8 10.5v.5" stroke="#f87171" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <%= error %>
+    </div>
+  <% } %>
+
+  <form method="POST" action="/admin/users">
+
+    <!-- hidden mirrors -->
+    <input type="hidden" id="sync_rosterBuilding" name="rosterBuilding" value="" />
+    <input type="hidden" id="sync_rosterShift"    name="rosterShift"    value="" />
+    <input type="hidden" id="sync_domainProfile"  name="domainUsernameProfile" value="" />
+
+    <!-- ── ACCOUNT (open) ───────────────────────────────────────── -->
+    <details class="uf-section" open>
+      <summary>
+        <span class="uf-section-title">
+          Account
+          <span class="uf-badge">Required</span>
+        </span>
+        <svg class="uf-section-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </summary>
+      <div class="uf-section-body">
+        <div class="uf-grid uf-grid-2">
+          <div class="uf-field">
+            <label for="n_name">Full Name</label>
+            <input type="text" id="n_name" name="name" required />
+          </div>
+          <div class="uf-field">
+            <label for="n_username">Username</label>
+            <input type="text" id="n_username" name="username" required />
+          </div>
+          <div class="uf-field">
+            <label for="n_email">Email</label>
+            <input type="email" id="n_email" name="email" required />
+          </div>
+          <div class="uf-field">
+            <label for="n_phone">Phone</label>
+            <input type="text" id="n_phone" name="phone" />
+          </div>
+          <div class="uf-field">
+            <label for="n_role">Role</label>
+            <select id="n_role" name="role" required>
+              <% (roles || []).forEach(r => { %>
+                <option value="<%= r %>"><%= r %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="uf-field">
+            <label for="n_password">Password</label>
+            <div class="uf-pw-wrap">
+              <input type="password" id="n_password" name="password" required />
+              <button type="button" class="uf-pw-toggle" aria-label="Show/hide password" data-target="n_password">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" class="icon-eye">
+                  <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                  <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/>
+                </svg>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" class="icon-eye-off" style="display:none;">
+                  <path d="M2 2l12 12M6.5 6.6A2 2 0 0010 9.5M4.2 4.3C2.7 5.4 1 8 1 8s2.5 5 7 5c1.4 0 2.7-.4 3.8-1M7 3.1C7.3 3 7.7 3 8 3c4.5 0 7 5 7 5s-.7 1.4-1.9 2.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ── ACCOUNT STATUS ───────────────────────────────────────── -->
+    <details class="uf-section">
+      <summary>
+        <span class="uf-section-title">Account Status</span>
+        <svg class="uf-section-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </summary>
+      <div class="uf-section-body">
+        <p style="margin: 0 0 0.875rem; font-size: 0.8125rem; color: #9ca3af;">
+          Set employment state and whether the user can log in. Active users default to enabled.
+        </p>
+        <div class="uf-grid uf-grid-2">
+          <div class="uf-field">
+            <label for="employmentStatus">Employment Status</label>
+            <select id="employmentStatus" name="employmentStatus">
+              <% (employmentStatuses || ['ACTIVE', 'RESIGNED', 'TERMINATED']).forEach(function (status) { %>
+                <option value="<%= status %>" <%= status === 'ACTIVE' ? 'selected' : '' %>><%= status %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="uf-field">
+            <label for="isEnabled">Login Access</label>
+            <select id="isEnabled" name="isEnabled">
+              <option value="true" selected>Enabled</option>
+              <option value="false">Disabled</option>
+            </select>
+          </div>
+          <div class="uf-field">
+            <label for="offboardedAt">Offboarded Date</label>
+            <input type="date" id="offboardedAt" name="offboardedAt" disabled />
+          </div>
+          <div class="uf-field">
+            <label for="offboardReason">Offboard Reason</label>
+            <input type="text" id="offboardReason" name="offboardReason" placeholder="Reason for resignation or termination" disabled />
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ── IDENTITY & PLACEMENT ─────────────────────────────────── -->
+    <details class="uf-section">
+      <summary>
+        <span class="uf-section-title">Identity &amp; Placement</span>
+        <svg class="uf-section-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </summary>
+      <div class="uf-section-body">
+        <div class="uf-grid uf-grid-2">
+          <div class="uf-field">
+            <label for="n_empId">Employee ID</label>
+            <input type="text" id="n_empId" name="employeeId" />
+          </div>
+          <div class="uf-field">
+            <label for="n_posType">Position Type</label>
+            <select id="n_posType" name="positionType">
+              <option value="">(Select)</option>
+              <% resolvedPositionTypes.forEach(function (pt) { %>
+                <option value="<%= pt %>"><%= pt %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="uf-field">
+            <label for="n_domainUser">Domain Username</label>
+            <input type="text" id="n_domainUser" name="rosterDomainUsername" placeholder="e.g. jsmith" />
+            <span class="uf-hint">Primary link to roster and staff alias records.</span>
+          </div>
+          <div class="uf-field" style="align-self: end;"><!-- spacer --></div>
+          <div class="uf-field">
+            <label for="n_startDate">Start Date</label>
+            <input type="date" id="n_startDate" name="startDate" />
+          </div>
+          <div class="uf-field">
+            <label for="n_dob">Date of Birth</label>
+            <input type="date" id="n_dob" name="dateOfBirth" />
+          </div>
+        </div>
+
+        <div class="uf-divider"></div>
+        <div class="uf-sub-label">Building &amp; Shift</div>
+        <div class="uf-grid uf-grid-2">
+          <div class="uf-field">
+            <label for="n_building">Building</label>
+            <% if (hasBuildings) { %>
+              <select id="n_building" name="building">
+                <option value="">(None)</option>
+                <% (buildingOptions || []).forEach(function (b) { %>
+                  <option value="<%= b %>"><%= b %></option>
+                <% }) %>
+              </select>
+            <% } else { %>
+              <input type="text" id="n_building" name="building" placeholder="e.g. B4050" />
+            <% } %>
+          </div>
+          <div class="uf-field">
+            <label for="n_shift">Shift</label>
+            <% if (hasShifts) { %>
+              <select id="n_shift" name="shift">
+                <option value="">(None)</option>
+                <% (shiftOptions || []).forEach(function (sh) { %>
+                  <option value="<%= sh %>"><%= sh %></option>
+                <% }) %>
+              </select>
+            <% } else { %>
+              <input type="text" id="n_shift" name="shift" placeholder="e.g. 1st / 2nd / Weekend" />
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ── VEHICLE & PARKING ────────────────────────────────────── -->
+    <details class="uf-section">
+      <summary>
+        <span class="uf-section-title">Vehicle &amp; Parking</span>
+        <svg class="uf-section-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </summary>
+      <div class="uf-section-body">
+        <div class="uf-grid uf-grid-5">
+          <div class="uf-field"><label for="n_carYear">Car Year</label><input type="text" id="n_carYear" name="carYear" /></div>
+          <div class="uf-field"><label for="n_carMake">Car Make</label><input type="text" id="n_carMake" name="carMake" /></div>
+          <div class="uf-field"><label for="n_carModel">Car Model</label><input type="text" id="n_carModel" name="carModel" /></div>
+          <div class="uf-field"><label for="n_carColor">Car Color</label><input type="text" id="n_carColor" name="carColor" /></div>
+          <div class="uf-field"><label for="n_plate">License Plate</label><input type="text" id="n_plate" name="licensePlate" /></div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ── EDUCATION & CREDENTIALS ──────────────────────────────── -->
+    <details class="uf-section">
+      <summary>
+        <span class="uf-section-title">Education &amp; Credentials</span>
+        <svg class="uf-section-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </summary>
+      <div class="uf-section-body">
+        <div class="uf-grid uf-grid-2">
+          <div class="uf-field"><label for="n_eduLevel">Highest Education Level</label><input type="text" id="n_eduLevel" name="highestEducationLevel" /></div>
+          <div class="uf-field"><label for="n_school">School Name</label><input type="text" id="n_school" name="schoolName" /></div>
+          <div class="uf-field"><label for="n_degree">Degree Name</label><input type="text" id="n_degree" name="degreeName" /></div>
+          <div class="uf-field"><label for="n_fos">Field of Study</label><input type="text" id="n_fos" name="fieldOfStudy" /></div>
+          <div class="uf-field"><label for="n_gradYear">Graduation Year</label><input type="text" id="n_gradYear" name="graduationYear" /></div>
+          <div class="uf-field"><label for="n_certs">Certifications</label><input type="text" id="n_certs" name="certificationsText" /></div>
+        </div>
+      </div>
+    </details>
+
+    <!-- ── PROFILE & SKILLS ─────────────────────────────────────── -->
+    <details class="uf-section">
+      <summary>
+        <span class="uf-section-title">Profile &amp; Skills</span>
+        <svg class="uf-section-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </summary>
+      <div class="uf-section-body">
+        <div class="uf-grid uf-grid-2">
+          <div class="uf-field"><label for="n_aboutMe">About Me</label><textarea id="n_aboutMe" name="aboutMe" rows="4"></textarea></div>
+          <div class="uf-field"><label for="n_strengths">Key Strengths</label><textarea id="n_strengths" name="keyStrengths" rows="4"></textarea></div>
+          <div class="uf-field"><label for="n_devFocus">Development Focus</label><textarea id="n_devFocus" name="developmentFocus" rows="4"></textarea></div>
+          <div class="uf-field"><label for="n_techSkills">Technical Skills</label><textarea id="n_techSkills" name="technicalSkills" rows="4"></textarea></div>
+          <div class="uf-field"><label for="n_softSkills">Soft Skills</label><textarea id="n_softSkills" name="softSkills" rows="4"></textarea></div>
+        </div>
+      </div>
+    </details>
+
+    <div class="uf-actions">
+      <button type="submit" class="btn primary">Create User</button>
+      <a href="/admin/users" class="btn ghost">Cancel</a>
+    </div>
+
+  </form>
+</div>
+
+<script>
+(function () {
+  /* ── Employment status sync ── */
+  const statusEl         = document.getElementById('employmentStatus');
+  const enabledEl        = document.getElementById('isEnabled');
+  const offboardedAtEl   = document.getElementById('offboardedAt');
+  const offboardReasonEl = document.getElementById('offboardReason');
+
+  if (statusEl) {
+    function syncEmploymentUI() {
+      const status   = String(statusEl.value || 'ACTIVE').toUpperCase();
+      const inactive = status === 'RESIGNED' || status === 'TERMINATED';
+      if (enabledEl && status === 'ACTIVE') enabledEl.value = 'true';
+      if (offboardedAtEl)   { offboardedAtEl.disabled   = !inactive; if (!inactive) offboardedAtEl.value   = ''; }
+      if (offboardReasonEl) { offboardReasonEl.disabled = !inactive; if (!inactive) offboardReasonEl.value = ''; }
+    }
+    statusEl.addEventListener('change', syncEmploymentUI);
+    syncEmploymentUI();
+  }
+
+  /* ── Mirror building/shift to roster hidden inputs ── */
+  function mirrorField(sourceId, hiddenId) {
+    const src    = document.getElementById(sourceId);
+    const hidden = document.getElementById(hiddenId);
+    if (!src || !hidden) return;
+    function sync() { hidden.value = src.value; }
+    src.addEventListener('change', sync);
+    sync();
+  }
+  mirrorField('n_building', 'sync_rosterBuilding');
+  mirrorField('n_shift',    'sync_rosterShift');
+
+  /* ── Mirror domain username to profile hidden input ── */
+  const domainInput   = document.getElementById('n_domainUser');
+  const domainMirror  = document.getElementById('sync_domainProfile');
+  if (domainInput && domainMirror) {
+    function syncDomain() { domainMirror.value = domainInput.value.trim(); }
+    domainInput.addEventListener('input', syncDomain);
+    syncDomain();
+  }
+
+  /* ── Password show/hide toggles ── */
+  document.querySelectorAll('.uf-pw-toggle').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var input   = document.getElementById(btn.dataset.target);
+      var eyeOn   = btn.querySelector('.icon-eye');
+      var eyeOff  = btn.querySelector('.icon-eye-off');
+      if (!input) return;
+      var showing = input.type === 'text';
+      input.type  = showing ? 'password' : 'text';
+      if (eyeOn)  eyeOn.style.display  = showing ? ''     : 'none';
+      if (eyeOff) eyeOff.style.display = showing ? 'none' : '';
+    });
+  });
+})();
+</script>
+
+</main>
+</body>
+</html>

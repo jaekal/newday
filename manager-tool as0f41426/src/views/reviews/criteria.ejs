@@ -1,0 +1,773 @@
+<%- include('../layout') %>
+
+<style>
+  .criteria-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    gap: 1rem;
+  }
+
+  @media (max-width: 960px) {
+    .criteria-layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .criteria-card {
+    border-radius: 0.75rem;
+    border: 1px solid rgba(148, 163, 184, 0.5);
+    background: radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), rgba(15, 23, 42, 0.98));
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+
+  .criteria-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.4);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    cursor: pointer;
+    background: linear-gradient(90deg, rgba(15, 23, 42, 0.95), rgba(30, 64, 175, 0.75));
+  }
+
+  .criteria-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  .criteria-meta {
+    font-size: 0.75rem;
+    color: rgb(148, 163, 184);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .criteria-body {
+    padding: 0.75rem 1rem 0.85rem 1rem;
+  }
+
+  .criteria-section-title {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: rgb(148, 163, 184);
+    margin-bottom: 0.25rem;
+  }
+
+  .criteria-definition {
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .criteria-subblock {
+    margin-top: 0.4rem;
+    padding-top: 0.35rem;
+    border-top: 1px dashed rgba(148, 163, 184, 0.4);
+  }
+
+  .criteria-subtitle {
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 0.1rem;
+  }
+
+  .criteria-list {
+    font-size: 0.85rem;
+    margin: 0.15rem 0 0.2rem 0;
+    padding-left: 1.1rem;
+  }
+
+  .criteria-list li {
+    margin-bottom: 0.15rem;
+  }
+
+  .bucket-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.8rem;
+    color: rgb(148, 163, 184);
+  }
+
+  .bucket-pill-sm {
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.6);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .toggle-icon {
+    font-size: 1rem;
+    margin-left: 0.5rem;
+    opacity: 0.7;
+  }
+
+  .legend-card {
+    border-radius: 0.75rem;
+    border: 1px solid rgba(148, 163, 184, 0.5);
+    padding: 0.75rem 1rem 0.9rem 1rem;
+    background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.15), rgba(15, 23, 42, 0.98));
+    margin-bottom: 0.75rem;
+  }
+
+  .legend-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.35rem 0.75rem;
+    margin-top: 0.4rem;
+  }
+
+  .legend-item {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.5rem;
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(148, 163, 184, 0.5);
+  }
+
+  .legend-label {
+    font-weight: 600;
+    margin-right: 0.25rem;
+  }
+</style>
+
+<section class="page-header">
+  <div>
+    <h2>Review Criteria Guide</h2>
+    <p class="muted">
+      Reference for each bucket, criteria definition, and key test themes used in monthly reviews.
+    </p>
+  </div>
+  <div class="inline-form">
+    <a href="/reviews/new" class="btn ghost">Go to New Review</a>
+  </div>
+</section>
+
+<section class="criteria-layout">
+  <!-- LEFT: Criteria by Category -->
+  <div>
+    <!-- PEOPLE FIRST -->
+    <div class="card" style="margin-bottom:0.75rem;">
+      <h3>People First</h3>
+      <p class="muted">
+        Attitude, engagement, and professionalism — how the person shows up for the team every day.
+      </p>
+    </div>
+
+    <!-- Positive Attitude -->
+    <article class="criteria-card" data-criteria="positiveAttitude">
+      <header class="criteria-header">
+        <div>
+          <div class="criteria-title">Positive Attitude</div>
+          <div class="bucket-label">
+            <span class="bucket-pill-sm">People First</span>
+            <span>Workday &amp; Key Test Theme: Engagement</span>
+          </div>
+        </div>
+        <div class="criteria-meta">
+          <span class="toggle-icon"></span>
+        </div>
+      </header>
+      <div class="criteria-body">
+        <div class="criteria-section-title">Definition</div>
+        <p class="criteria-definition">
+          Workday: You exhibit a “can do” attitude and enjoy your work. You recognize team members who go above and beyond the call of duty and
+          address disruptive behavior when necessary. You focus on what’s best for the company, the team, then individual achievement.
+        </p>
+
+        <div class="criteria-subblock">
+          <div class="criteria-subtitle">Key Test Theme – Engagement</div>
+          <ul class="criteria-list">
+            <li>Active involvement in day-to-day business.</li>
+            <li>Participate and engage in attended meetings.</li>
+            <li>Contribute to team communication.</li>
+          </ul>
+        </div>
+
+        <div class="criteria-subblock">
+          <div class="criteria-subtitle">Key Test Themes</div>
+          <ul class="criteria-list">
+            <li>Engagement and interest in work.</li>
+            <li>Attitude towards work and responsibilities.</li>
+            <li>Ability to communicate disagreements or dissatisfaction professionally.</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <!-- Proactive -->
+    <article class="criteria-card" data-criteria="proactive">
+      <header class="criteria-header">
+        <div>
+          <div class="criteria-title">Proactive</div>
+          <div class="bucket-label">
+            <span class="bucket-pill-sm">People First</span>
+            <span>Bias for Action</span>
+          </div>
+        </div>
+      </header>
+      <div class="criteria-body">
+        <div class="criteria-section-title">Definition</div>
+        <p class="criteria-definition">
+          Workday: You anticipate needs, find opportunities for improvement and take quick action to positively impact efficiency and our work
+          environment. You have a bias for action and are not complacent.
+        </p>
+
+        <div class="criteria-subblock">
+          <div class="criteria-subtitle">Key Test Themes</div>
+          <ul class="criteria-list">
+            <li>Being proactive in helping the team achieve tasks and goals.</li>
+            <li>Providing ideas or potential solutions to help the team.</li>
+            <li>Being receptive to new ideas, processes, and approaches.</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <!-- Integrity -->
+    <article class="criteria-card" data-criteria="integrity">
+      <header class="criteria-header">
+        <div>
+          <div class="criteria-title">Integrity</div>
+          <div class="bucket-label">
+            <span class="bucket-pill-sm">People First</span>
+            <span>Key Test Theme: Integrity &amp; People First</span>
+          </div>
+        </div>
+      </header>
+      <div class="criteria-body">
+        <div class="criteria-section-title">Definition</div>
+        <p class="criteria-definition">
+          Workday: You act with integrity and authenticity while interacting with, guiding, and supporting others. You do what you say you will do,
+          on time, and with high quality.
+        </p>
+
+        <div class="criteria-subblock">
+          <div class="criteria-subtitle">Key Test Theme – Integrity &amp; People First</div>
+          <p class="criteria-definition">Follow company policy and manage conflicts appropriately.</p>
+          <ul class="criteria-list">
+            <li>Comply with production policy (no food, no personal headset, no hat, no sitting, etc.).</li>
+            <li>Comply with ZT IP policy (mobile devices, photos, and data protection).</li>
+            <li>Avoid arguments or accusations; share information constructively with colleagues.</li>
+          </ul>
+        </div>
+
+        <div class="criteria-subblock">
+          <div class="criteria-subtitle">Key Test Themes</div>
+          <ul class="criteria-list">
+            <li>Ability to share constructive opinions and feedback openly and professionally.</li>
+            <li>Following company policies and floor expectations.</li>
+            <li>Adhering to trained work expectations: ESD, 6S, SOPs, quality alerts.</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <!-- OWNERSHIP MENTALITY -->
+    <div class="card" style="margin-top:1.25rem; margin-bottom:0.75rem;">
+      <h3>Ownership Mentality</h3>
+      <p class="muted">
+        Accountability, problem solving, and efficient use of time and resources.
+      </p>
+    </div>
+
+    <!-- Accountability -->
+    <article class="criteria-card" data-criteria="accountability2">
+      <header class="criteria-header">
+        <div>
+          <div class="criteria-title">Accountability</div>
+          <div class="bucket-label">
+            <span class="bucket-pill-sm">Ownership Mentality</span>
+            <span>Key Test Theme: Reliability &amp; Ownership</span>
+          </div>
+        </div>
+      </header>
+      <div class="criteria-body">
+        <div class="criteria-section-title">Definition</div>
+        <p class="criteria-definition">
+          Workday: You hold yourself and your teammates accountable for a high standard of performance, meet deadlines, and deliver what is expected
+          from you in your role. You understand what is needed for success and support achieving outcomes, even outside your immediate area.
+        </p>
+
+        <div class="criteria-subblock">
+          <div class="criteria-subtitle">Key Test Theme – Reliability &amp; Ownership Mentality</div>
+          <ul class="criteria-list">
+            <li>Avoid excuses for not meeting job expectations.</li>
+            <li>Do not leave work incomplete at shift end; follow up or communicate blockers.</li>
+            <li>Avoid frequently losing IDs/time cards and clock in correctly.</li>
+            <li>Adapt to process changes and new expectations.</li>
+            <li>Provide reasonable occasional support across areas (assembly, inspection, etc.).</li>
+            <li>Care for company assets and avoid frequent damage or unnecessary disposal.</li>
+          </ul>
+        </div>
+
+        <div class="criteria-subblock">
+          <div class="criteria-subtitle">Key Test Themes</div>
+          <ul class="criteria-list">
+            <li>Dependable and reliable in completing tasks.</li>
+            <li>Accountable for time, effort, and attendance at work.</li>
+            <li>Owns commitments and follows through.</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <!-- Problem Solving -->
+    <article class="criteria-card" data-criteria="problemSolving">
+      <header class="criteria-header">
+        <div>
+          <div class="criteria-title">Problem Solving</div>
+          <div class="bucket-label">
+            <span class="bucket-pill-sm">Ownership Mentality</span>
+            <span>Key Test Theme: Problem Solving / Decision Making</span>
+          </div>
+        </div>
+      </header>
+      <div class="criteria-body">
+        <div class="criteria-section-title">Definition</div>
+        <p class="criteria-definition">
+          Workday: You use your creativity and experience to balance cost effectiveness and scalability when solving problems, and you escalate
+          issues quickly when necessary.
+        </p>
+
+        <div class="criteria-subblock">
+          <div class="criteria-subtitle">Key Test Theme – Problem Solving / Decision Making</div>
+          <ul class="criteria-list">
+            <li>Understands steps to address roadblocks.</li>
+            <li>Checks in repair with correct information and tags filled out accurately.</li>
+            <li>Provides process or work improvement ideas where appropriate.</li>
+          </ul>
+        </div>
+
+        <div class="criteria-subblock">
+          <div class="criteria-subtitle">Key Test Themes</div>
+          <ul class="criteria-list">
+            <li>Ability to address day-to-day work problems.</li>
+            <li>Ability to escalate problems appropriately.</li>
+            <li>Ability to identify solutions to work blockers.</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <!-- Efficiency -->
+    <article class="criteria-card" data-criteria="efficiency">
+      <header class="criteria-header">
+        <div>
+          <div class="criteria-title">Efficiency</div>
+          <div class="bucket-label">
+            <span class="bucket-pill-sm">Ownership Mentality</span>
+            <span>Key Test Theme: Problem Solving, Work Habits, Quantity of Work</span>
+          </div>
+        </div>
+      </header>
+      <div class="criteria-body">
+        <div class="criteria-section-title">Definition</div>
+        <p class="criteria-definition">
+          Workday: You care about how and why we do things and challenge the status quo. You look for opportunities to remove waste
+          (unnecessary processes, meetings, or emails) and make the work more efficient.
+        </p>
+
+        <div class="criteria-subblock">
+          <div class="criteria-subtitle">Key Test Theme – Work Habits &amp; Quantity of Work</div>
+          <ul class="criteria-list">
+            <li>Make effective decisions that support shipment priority, quality, and time to market.</li>
+            <li>Keep work carts, toolboxes, and trackers organized.</li>
+            <li>Actively communicate during low workload and choose effective approaches to use downtime.</li>
+          </ul>
+        </div>
+
+        <div class="criteria-subblock">
+          <div class="criteria-subtitle">Key Test Themes</div>
+          <ul class="criteria-list">
+            <li>Makes effective decisions to complete tasks.</li>
+            <li>Manages downtime effectively.</li>
+            <li>Maintains strong work habits that support efficiency (trackers, tools, 6S).</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <!-- QUALITY -->
+    <div class="card" style="margin-top:1.25rem; margin-bottom:0.75rem;">
+      <h3>Quality</h3>
+      <p class="muted">
+        Volume and quality of output, communication around issues, and continuous learning.
+      </p>
+    </div>
+
+    <!-- Results -->
+    <article class="criteria-card" data-criteria="resultsOrientation">
+      <header class="criteria-header">
+        <div>
+          <div class="criteria-title">Results</div>
+          <div class="bucket-label">
+            <span class="bucket-pill-sm">Quality</span>
+            <span>Key Test Theme: Quantity of Work</span>
+          </div>
+        </div>
+      </header>
+      <div class="criteria-body">
+        <div class="criteria-section-title">Definition</div>
+        <p class="criteria-definition">
+          Workday: You deliver high quality results in your area of ownership. You work with your manager to balance quality deliverables
+          with overall business value.
+        </p>
+
+        <div class="criteria-subblock">
+          <div class="criteria-subtitle">Key Examples</div>
+          <ul class="criteria-list">
+            <li>Attends to the expected number of racks or workload consistently.</li>
+            <li>Addresses test interruptions promptly and escalates when appropriate.</li>
+            <li>Takes effective repair actions and meets expected repair output.</li>
+          </ul>
+        </div>
+
+        <div class="criteria-subblock">
+          <div class="criteria-subtitle">Key Test Themes</div>
+          <ul class="criteria-list">
+            <li>Quantity of workload that can be effectively managed.</li>
+            <li>Contribution to the success of the team and business goals.</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <!-- Communication -->
+    <article class="criteria-card" data-criteria="communication">
+      <header class="criteria-header">
+        <div>
+          <div class="criteria-title">Communication</div>
+          <div class="bucket-label">
+            <span class="bucket-pill-sm">Quality</span>
+            <span>Key Test Theme: Communication</span>
+          </div>
+        </div>
+      </header>
+      <div class="criteria-body">
+        <div class="criteria-section-title">Definition</div>
+        <p class="criteria-definition">
+          Workday: You proactively identify and communicate areas that do not meet quality standards, even outside your own area.
+          You are open to feedback from others.
+        </p>
+
+        <div class="criteria-subblock">
+          <div class="criteria-subtitle">Key Examples</div>
+          <ul class="criteria-list">
+            <li>Summarizes daily test progress and communicates test delays.</li>
+            <li>Escalates observations of non-compliance on the team.</li>
+            <li>Communicates attendance and time off in a timely way.</li>
+          </ul>
+        </div>
+
+        <div class="criteria-subblock">
+          <div class="criteria-subtitle">Key Test Themes</div>
+          <ul class="criteria-list">
+            <li>Consistent communication on work blockers/inhibitors.</li>
+            <li>Open and receptive to feedback from peers and management.</li>
+            <li>Willing to provide appropriate feedback to others.</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <!-- Continuous Improvement -->
+    <article class="criteria-card" data-criteria="continuousImprovement">
+      <header class="criteria-header">
+        <div>
+          <div class="criteria-title">Continuous Improvement</div>
+          <div class="bucket-label">
+            <span class="bucket-pill-sm">Quality</span>
+            <span>Key Test Theme: Knowledge of Work</span>
+          </div>
+        </div>
+      </header>
+      <div class="criteria-body">
+        <div class="criteria-section-title">Definition</div>
+        <p class="criteria-definition">
+          Workday: You know the critical details that are important to your role and seek opportunities for self-development and continuous improvement.
+        </p>
+
+        <div class="criteria-subblock">
+          <div class="criteria-subtitle">Key Examples (Test, Process, Products)</div>
+          <ul class="criteria-list">
+            <li>Understands test failure symptoms and checks in repair with correct symptom.</li>
+            <li>Retains trained knowledge instead of repeatedly asking the same questions.</li>
+            <li>Executes business processes correctly (check-in, MES status, rerun steps).</li>
+            <li>Grows product coverage and can handle more complex SKUs or configurations.</li>
+          </ul>
+        </div>
+
+        <div class="criteria-subblock">
+          <div class="criteria-subtitle">Key Test Themes</div>
+          <ul class="criteria-list">
+            <li>Continuously growing knowledge and adapting to changes.</li>
+            <li>Expanding product, process, and business process knowledge.</li>
+            <li>Improving work skills: trackers, troubleshooting, tools, etc.</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <!-- PARTNERSHIP -->
+    <div class="card" style="margin-top:1.25rem; margin-bottom:0.75rem;">
+      <h3>Partnership</h3>
+      <p class="muted">
+        How the person collaborates, supports the team, and builds trust with others.
+      </p>
+    </div>
+
+    <!-- Teamwork -->
+    <article class="criteria-card" data-criteria="teamwork2">
+      <header class="criteria-header">
+        <div>
+          <div class="criteria-title">Teamwork</div>
+          <div class="bucket-label">
+            <span class="bucket-pill-sm">Partnership</span>
+            <span>Key Test Theme: Teamwork &amp; Partnership</span>
+          </div>
+        </div>
+      </header>
+      <div class="criteria-body">
+        <div class="criteria-section-title">Definition</div>
+        <p class="criteria-definition">
+          Workday: You help others be successful. You share your knowledge and offer help where needed. You understand our “same boat”
+          philosophy — for ZT to be successful, the entire team must be successful.
+        </p>
+
+        <div class="criteria-subblock">
+          <div class="criteria-subtitle">Key Examples</div>
+          <ul class="criteria-list">
+            <li>Willingness to offer training or share knowledge to help colleagues.</li>
+            <li>Openly shares process information to keep the team aligned.</li>
+          </ul>
+        </div>
+
+        <div class="criteria-subblock">
+          <div class="criteria-subtitle">Key Test Themes</div>
+          <ul class="criteria-list">
+            <li>Openly sharing knowledge and opinions when collaborating.</li>
+            <li>Willingness to assist others when asked.</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <!-- Collaboration -->
+    <article class="criteria-card" data-criteria="collaboration">
+      <header class="criteria-header">
+        <div>
+          <div class="criteria-title">Collaboration</div>
+          <div class="bucket-label">
+            <span class="bucket-pill-sm">Partnership</span>
+            <span>Key Test Theme: People First &amp; Teamwork</span>
+          </div>
+        </div>
+      </header>
+      <div class="criteria-body">
+        <div class="criteria-section-title">Definition</div>
+        <p class="criteria-definition">
+          Workday: You communicate openly and respect ideas and perspectives from team members with different backgrounds.
+          You realize collaboration does not always mean consensus. You focus on what is best for internal/external customers,
+          considering alternatives and being proactive.
+        </p>
+
+        <div class="criteria-subblock">
+          <div class="criteria-subtitle">Key Examples</div>
+          <ul class="criteria-list">
+            <li>Avoids stereotyping or bias; works well with diverse colleagues.</li>
+            <li>Communicates without being rude, arrogant, or harassing.</li>
+            <li>Avoids spreading rumors or misinformation about coworkers.</li>
+            <li>Works effectively as part of a team, trusts others, and contributes in group projects.</li>
+          </ul>
+        </div>
+
+        <div class="criteria-subblock">
+          <div class="criteria-subtitle">Key Test Themes</div>
+          <ul class="criteria-list">
+            <li>Respecting colleagues and valuing diversity.</li>
+            <li>Effectively collaborating via Teams, in-person, meetings, and email.</li>
+            <li>Proactively working with others, not in isolation.</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <!-- Build Trust -->
+    <article class="criteria-card" data-criteria="buildTrust">
+      <header class="criteria-header">
+        <div>
+          <div class="criteria-title">Build Trust</div>
+          <div class="bucket-label">
+            <span class="bucket-pill-sm">Partnership</span>
+            <span>Trust &amp; Reliability</span>
+          </div>
+        </div>
+      </header>
+      <div class="criteria-body">
+        <div class="criteria-section-title">Definition</div>
+        <p class="criteria-definition">
+          Workday: Approach others with respect and strive for win-win outcomes. Commit to building long-term relationships and
+          deliver on your commitments.
+        </p>
+
+        <div class="criteria-subblock">
+          <div class="criteria-subtitle">Key Test Themes</div>
+          <ul class="criteria-list">
+            <li>Sustains accountability, reliability, and integrity over time.</li>
+            <li>Can perform independently without constant supervision.</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <!-- LEADING PEOPLE -->
+    <div class="card" style="margin-top:1.25rem; margin-bottom:0.75rem;">
+      <h3>Leading People</h3>
+      <p class="muted">
+        For Leads, Supervisors, and Managers — how they make decisions, enable the team, and manage talent.
+      </p>
+    </div>
+
+    <!-- Decision Making with Risk -->
+    <article class="criteria-card" data-criteria="decisionMakingWithRisk">
+      <header class="criteria-header">
+        <div>
+          <div class="criteria-title">Decision Making with Risk</div>
+          <div class="bucket-label">
+            <span class="bucket-pill-sm">Leading People</span>
+          </div>
+        </div>
+        <div class="criteria-meta">
+          Lead / Supervisor / Manager
+          <span class="toggle-icon">−</span>
+        </div>
+      </header>
+      <div class="criteria-body">
+        <div class="criteria-section-title">Definition</div>
+        <p class="criteria-definition">
+          Workday: Leverage your experience and information available to make fast decisions, even with less than 100% of the data.
+          Take measured risks, get things done, and inspire others to do the same.
+        </p>
+      </div>
+    </article>
+
+    <!-- Enable the Team -->
+    <article class="criteria-card" data-criteria="enableTheTeam">
+      <header class="criteria-header">
+        <div>
+          <div class="criteria-title">Enable the Team</div>
+          <div class="bucket-label">
+            <span class="bucket-pill-sm">Leading People</span>
+          </div>
+        </div>
+        <div class="criteria-meta">
+          Lead / Supervisor / Manager
+          <span class="toggle-icon">−</span>
+        </div>
+      </header>
+      <div class="criteria-body">
+        <div class="criteria-section-title">Definition</div>
+        <p class="criteria-definition">
+          Workday: You build trust with your team. You provide clear direction and guidance when delegating and empowering others.
+          You lead by example with a “player-coach” approach.
+        </p>
+      </div>
+    </article>
+
+    <!-- Hire / Develop / Manage Effectively -->
+    <article class="criteria-card" data-criteria="hireDevelopManage">
+      <header class="criteria-header">
+        <div>
+          <div class="criteria-title">Hire / Develop / Manage Effectively</div>
+          <div class="bucket-label">
+            <span class="bucket-pill-sm">Leading People</span>
+          </div>
+        </div>
+        <div class="criteria-meta">
+          Manager-Focused
+          <span class="toggle-icon">−</span>
+        </div>
+      </header>
+      <div class="criteria-body">
+        <div class="criteria-section-title">Definition</div>
+        <p class="criteria-definition">
+          Workday: As a manager, you are the decision leader in hiring, building, and retaining a high-performance team.
+          You screen effectively to hire the best talent, guide and develop individuals, recognize high performers, and
+          address those who do not perform to expectations.
+        </p>
+      </div>
+    </article>
+  </div>
+
+  <!-- RIGHT: Scoring Legend / How to Use -->
+  <div>
+    <section class="legend-card">
+      <h3>Score Legend (1–5)</h3>
+      <p class="muted">
+        Use these guidelines when choosing a score for each criterion.
+      </p>
+
+      <div class="legend-grid">
+        <div class="legend-item">
+          <span class="legend-label">1.0 – 2.4</span>
+          <span>Needs Focus – frequent gaps, expectations often not met.</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-label">2.5 – 3.4</span>
+          <span>Developing – sometimes meets expectations, clear growth needed.</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-label">3.5 – 4.4</span>
+          <span>Strong – consistently meets expectations with solid impact.</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-label">4.5 – 5.0</span>
+          <span>Role Model – exceptional, sets the bar for others.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>How to Use This Page</h3>
+      <ul class="criteria-list">
+        <li>Use the definitions to align your mental model before scoring.</li>
+        <li>Use the “Key Test Themes” bullets as a checklist while reviewing a technician’s behavior.</li>
+        <li>For leads and supervisors, also apply the “Leading People” section where appropriate.</li>
+        <li>Stay consistent month to month by referring back to the same language and themes.</li>
+      </ul>
+      <p class="muted" style="margin-top:0.5rem;">
+        Tip: keep this page open side-by-side with the New Review form for calibration during 1:1s.
+      </p>
+    </section>
+  </div>
+</section>
+
+<script>
+  (function () {
+    // Simple accordion: clicking header toggles the criteria body
+    const cards = document.querySelectorAll('.criteria-card');
+    cards.forEach((card) => {
+      const header = card.querySelector('.criteria-header');
+      const body = card.querySelector('.criteria-body');
+      const icon = card.querySelector('.toggle-icon');
+
+      if (!header || !body) return;
+
+      header.addEventListener('click', () => {
+        const isHidden = body.style.display === 'none';
+        body.style.display = isHidden ? '' : 'none';
+        if (icon) {
+          icon.textContent = isHidden ? '−' : '+';
+        }
+      });
+    });
+  })();
+</script>
+
+</main>
+</body>
+</html>

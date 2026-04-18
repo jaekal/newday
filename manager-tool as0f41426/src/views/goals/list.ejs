@@ -1,0 +1,892 @@
+<%- include('../layout') %>
+
+<%
+  function safeDateObj(value) {
+    try {
+      if (!value) return null;
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return null;
+      return d;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function safeDateTime(value) {
+    try {
+      if (!value) return '';
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return '';
+      return d.toLocaleString();
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function dueMonthKey(goal) {
+    const source = goal?.dueDate || null;
+    const d = safeDateObj(source);
+    if (!d) return 'no-due-date';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    return `${y}-${m}`;
+  }
+
+  function dueMonthLabel(key) {
+    if (key === 'no-due-date') return 'No Due Date';
+    try {
+      const [year, month] = String(key).split('-').map(Number);
+      const d = new Date(year, (month || 1) - 1, 1);
+      return d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+    } catch (e) {
+      return key;
+    }
+  }
+
+  const _goals = Array.isArray(goals) ? goals : [];
+
+  const groupedMap = {};
+  _goals.forEach((g) => {
+    const key = dueMonthKey(g);
+    if (!groupedMap[key]) groupedMap[key] = [];
+    groupedMap[key].push(g);
+  });
+
+  const monthGroups = Object.keys(groupedMap)
+    .sort((a, b) => {
+      if (a === 'no-due-date' && b === 'no-due-date') return 0;
+      if (a === 'no-due-date') return 1;
+      if (b === 'no-due-date') return -1;
+      return a.localeCompare(b);
+    })
+    .map((key, idx) => ({
+      key,
+      label: dueMonthLabel(key),
+      goals: groupedMap[key],
+      openByDefault: idx === 0,
+    }));
+%>
+
+<style>
+  .goals-topbar {
+    display:flex;
+    justify-content:space-between;
+    gap:1rem;
+    flex-wrap:wrap;
+    align-items:flex-start;
+  }
+
+  .goals-tabs {
+    display:flex;
+    gap:0.5rem;
+    flex-wrap:wrap;
+    margin-top:0.5rem;
+  }
+
+  .goals-tab {
+    border:1px solid rgba(255,255,255,0.10);
+    background:rgba(15,23,42,0.55);
+    color:rgba(229,231,235,0.95);
+    border-radius:999px;
+    padding:0.35rem 0.65rem;
+    cursor:pointer;
+    font-size:0.85rem;
+  }
+
+  .goals-tab.active {
+    outline:2px solid rgba(59,130,246,0.45);
+    background:rgba(59,130,246,0.15);
+  }
+
+  /* Collapsible filters bar */
+  .goals-filters-card {
+    margin-bottom: 0.75rem;
+  }
+
+  .goals-filters-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .goals-filters-toggle {
+    cursor: pointer;
+    user-select: none;
+    margin: 0;
+  }
+
+  .goals-filters-panel {
+    display: none;
+    margin-top: 0.85rem;
+  }
+
+  .goals-filters-panel.open {
+    display: block;
+  }
+
+  .goals-filters-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-end;
+  }
+
+  .goals-filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 180px;
+    flex: 1 1 190px;
+  }
+
+  .goals-filter-field.grow {
+    flex: 2 1 280px;
+    min-width: 260px;
+  }
+
+  .goals-filter-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-left: auto;
+  }
+
+  @media (max-width: 900px) {
+    .goals-filter-actions {
+      margin-left: 0;
+      width: 100%;
+      justify-content: flex-end;
+    }
+  }
+
+  .goal-group {
+    border:1px solid rgba(255,255,255,0.06);
+    border-radius:18px;
+    overflow:hidden;
+    background:rgba(2,6,23,0.22);
+    margin-top:1rem;
+  }
+
+  .goal-group:first-of-type {
+    margin-top:0;
+  }
+
+  .goal-group-toggle {
+    width:100%;
+    border:0;
+    background:linear-gradient(180deg, rgba(30,41,59,0.82), rgba(15,23,42,0.82));
+    color:inherit;
+    padding:1rem 1.1rem;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:1rem;
+    cursor:pointer;
+    text-align:left;
+  }
+
+  .goal-group-toggle:hover {
+    background:linear-gradient(180deg, rgba(38,52,75,0.9), rgba(15,23,42,0.88));
+  }
+
+  .goal-group-left {
+    display:flex;
+    flex-direction:column;
+    gap:0.25rem;
+  }
+
+  .goal-group-title {
+    font-weight:700;
+    font-size:1rem;
+  }
+
+  .goal-group-meta {
+    color:rgba(148,163,184,0.95);
+    font-size:0.82rem;
+  }
+
+  .goal-group-caret {
+    font-size:1rem;
+    transition:transform .2s ease;
+    opacity:.9;
+  }
+
+  .goal-group.open .goal-group-caret {
+    transform:rotate(180deg);
+  }
+
+  .goal-group-body {
+    display:none;
+    padding:0.9rem;
+    border-top:1px solid rgba(255,255,255,0.06);
+  }
+
+  .goal-group.open .goal-group-body {
+    display:block;
+  }
+
+  .goals-grid {
+    display:grid;
+    grid-template-columns: repeat(3, minmax(260px, 1fr));
+    gap:0.75rem;
+  }
+
+  @media (max-width: 1400px) {
+    .goals-grid { grid-template-columns: repeat(2, minmax(260px, 1fr)); }
+  }
+
+  @media (max-width: 720px) {
+    .goals-grid { grid-template-columns: 1fr; }
+  }
+
+  .goal-card {
+    border:1px solid rgba(255,255,255,0.08);
+    background:rgba(17,24,39,0.55);
+    border-radius:14px;
+    padding:0.85rem;
+    position:relative;
+    overflow:hidden;
+  }
+
+  .goal-card:hover {
+    outline:2px solid rgba(59,130,246,0.25);
+  }
+
+  .goal-title {
+    font-size:1.05rem;
+    margin:0;
+    line-height:1.25;
+  }
+
+  .goal-meta-row {
+    display:flex;
+    justify-content:space-between;
+    gap:0.75rem;
+    flex-wrap:wrap;
+    margin-top:0.35rem;
+    align-items:center;
+  }
+
+  .goal-desc {
+    margin-top:0.5rem;
+    color:rgba(156,163,175,0.95);
+    font-size:0.9rem;
+    line-height:1.35;
+  }
+
+  .goal-progress-wrap {
+    margin-top:0.6rem;
+    display:flex;
+    justify-content:space-between;
+    gap:0.75rem;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+
+  .bar {
+    height:8px;
+    border-radius:999px;
+    background:rgba(255,255,255,0.08);
+    overflow:hidden;
+    flex:1 1 180px;
+    min-width:180px;
+  }
+
+  .bar > div {
+    height:8px;
+    width:0%;
+    background:rgba(59,130,246,0.85);
+  }
+
+  .goal-actions {
+    display:flex;
+    gap:0.75rem;
+    flex-wrap:wrap;
+    margin-top:0.85rem;
+    justify-content:space-between;
+    align-items:flex-end;
+  }
+
+  .chip-danger { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.25); }
+  .chip-warn { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.25); }
+
+  .quick-form select,
+  .quick-form input {
+    border: 1px solid rgba(255,255,255,0.10);
+    background: rgba(15,23,42,0.55);
+    color: rgba(229,231,235,0.95);
+    border-radius: 10px;
+    padding: 0.35rem 0.5rem;
+    outline: none;
+  }
+
+  .quick-form select:focus,
+  .quick-form input:focus {
+    outline: 2px solid rgba(59,130,246,0.35);
+  }
+
+  .status-badge.status-warn { background: rgba(245,158,11,0.14); border:1px solid rgba(245,158,11,0.28); }
+  .status-badge.status-muted { background: rgba(148,163,184,0.10); border:1px solid rgba(148,163,184,0.20); color: rgba(203,213,225,0.95); }
+
+  .goal-detail-list {
+    display:flex;
+    gap:0.35rem;
+    flex-wrap:wrap;
+    margin-top:0.5rem;
+  }
+
+  .goal-checkin-preview {
+    margin-top:0.65rem;
+    padding:0.65rem;
+    border-radius:12px;
+    border:1px solid rgba(255,255,255,0.06);
+    background:rgba(15,23,42,0.42);
+  }
+</style>
+
+<section class="page-header">
+  <div class="goals-topbar">
+    <div>
+      <h2>Goals</h2>
+      <p class="muted">
+        A clean view of targets, due dates, risk, and now a visible timeline of momentum.
+      </p>
+
+      <div class="goals-tabs" role="tablist" aria-label="Goal views">
+        <button type="button" class="goals-tab active" data-tab="OPEN">Open</button>
+        <button type="button" class="goals-tab" data-tab="AT_RISK">At Risk</button>
+        <button type="button" class="goals-tab" data-tab="DONE">Completed</button>
+        <button type="button" class="goals-tab" data-tab="ON_HOLD">On Hold</button>
+        <button type="button" class="goals-tab" data-tab="ALL">All</button>
+
+        <span class="chip muted small" id="goalsCountChip" style="margin-left:0.25rem;">
+          Showing: <strong>—</strong>
+        </span>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+      <a href="/goals/new" class="btn ghost">+ Create Goal</a>
+
+      <form
+        method="POST"
+        action="/goals/import"
+        enctype="multipart/form-data"
+        style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;"
+      >
+        <label class="btn ghost" style="margin:0;">
+          <span>Import CSV/XLSX</span>
+          <input
+            type="file"
+            name="file"
+            accept=".csv,.xlsx,.xls"
+            style="display:none;"
+            onchange="this.form.submit();"
+          />
+        </label>
+      </form>
+    </div>
+  </div>
+</section>
+
+<% if (importError) { %>
+  <pre class="alert alert-error" style="white-space:pre-wrap;"><%= importError %></pre>
+<% } %>
+
+<% if (importSummary) { %>
+  <pre class="alert alert-info" style="white-space:pre-wrap;"><%= importSummary %></pre>
+<% } %>
+
+<section class="card goals-filters-card">
+  <div class="goals-filters-head">
+    <div>
+      <h3 class="goals-filters-toggle" id="goalFiltersToggle">
+        Filters <span class="muted small">(<span id="goalFiltersStateLabel">collapsed</span>)</span>
+      </h3>
+      <p class="muted small" style="margin:0.35rem 0 0 0;">
+        Search title, description, owner, KPI, and priority. Narrow by status, owner, due window, or progress.
+      </p>
+    </div>
+
+    <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+      <button type="button" class="btn ghost btn-sm" id="goalFiltersOpenBtn">Open filters</button>
+      <button type="button" class="btn ghost btn-sm" id="clearGoalFilters">Reset</button>
+    </div>
+  </div>
+
+  <div class="goals-filters-panel" id="goalFiltersPanel">
+    <div class="goals-filters-form">
+      <div class="goals-filter-field grow">
+        <label class="muted small" for="goalSearch">Search</label>
+        <input id="goalSearch" type="text" placeholder="Search goals..." />
+      </div>
+
+      <div class="goals-filter-field">
+        <label class="muted small" for="goalStatus">Status</label>
+        <select id="goalStatus">
+          <option value="">All</option>
+          <option value="OPEN">OPEN</option>
+          <option value="IN_PROGRESS">IN PROGRESS</option>
+          <option value="DONE">DONE</option>
+          <option value="ON_HOLD">ON HOLD</option>
+        </select>
+      </div>
+
+      <div class="goals-filter-field">
+        <label class="muted small" for="goalOwner">Owner</label>
+        <select id="goalOwner">
+          <option value="">All owners</option>
+          <% 
+            const ownerNameSet = new Set();
+            _goals.forEach(g => { if (g.Owner && g.Owner.name) ownerNameSet.add(g.Owner.name); });
+            const ownerNames = Array.from(ownerNameSet).sort((a,b)=>a.localeCompare(b));
+            ownerNames.forEach(name => { 
+          %>
+            <option value="<%= name %>"><%= name %></option>
+          <% }); %>
+        </select>
+      </div>
+
+      <div class="goals-filter-field">
+        <label class="muted small" for="goalDue">Due window</label>
+        <select id="goalDue">
+          <option value="">Any</option>
+          <option value="OVERDUE">Overdue</option>
+          <option value="DUE_7">Due in 7 days</option>
+          <option value="DUE_30">Due in 30 days</option>
+          <option value="NO_DUE">No due date</option>
+        </select>
+      </div>
+
+      <div class="goals-filter-field">
+        <label class="muted small" for="goalHealth">Health</label>
+        <select id="goalHealth">
+          <option value="">All</option>
+          <option value="OK">On Track</option>
+          <option value="WARN">Watch / At Risk</option>
+          <option value="RISK">Overdue</option>
+          <option value="HOLD">On Hold</option>
+        </select>
+      </div>
+
+      <div class="goals-filter-field">
+        <label class="muted small" for="goalMinProgress">Progress at least</label>
+        <input id="goalMinProgress" type="number" min="0" max="100" value="0" />
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="section-header">
+    <div>
+      <h3>Goals Board</h3>
+      <p class="muted small">
+        Grouped by due month. Nearest due month opens first. Each goal now carries its latest check-in echo.
+      </p>
+    </div>
+  </div>
+
+  <% if (!_goals.length) { %>
+    <p class="muted">No goals found.</p>
+  <% } else { %>
+    <div id="goalGroupsWrap">
+      <% monthGroups.forEach(function(group) { %>
+        <section class="goal-group <%= group.openByDefault ? 'open' : '' %>" data-goal-group>
+          <button
+            type="button"
+            class="goal-group-toggle"
+            data-goal-group-toggle
+            aria-expanded="<%= group.openByDefault ? 'true' : 'false' %>"
+          >
+            <div class="goal-group-left">
+              <div class="goal-group-title"><%= group.label %></div>
+              <div class="goal-group-meta">
+                <%= group.goals.length %> goal<%= group.goals.length === 1 ? '' : 's' %>
+                <%= group.openByDefault ? ' • Nearest due month previewed' : '' %>
+              </div>
+            </div>
+            <div class="goal-group-caret">▾</div>
+          </button>
+
+          <div class="goal-group-body" data-goal-group-body>
+            <div class="goals-grid">
+              <% group.goals.forEach(function(g) {
+                const meta = g.meta || {};
+                const ownerName = (g.Owner && g.Owner.name) ? g.Owner.name : 'N/A';
+                const title = g.title || '';
+                const desc = g.description || '';
+                const progress = (meta.progressNum != null) ? meta.progressNum : (g.progress || 0);
+                const dueISO = meta.dueISO || (g.dueDate || '');
+                const daysLeft = (meta.daysLeft != null) ? meta.daysLeft : null;
+
+                const statusUpper = String(meta.status || g.status || 'OPEN').toUpperCase();
+                let tabBucket = statusUpper;
+                if (statusUpper === 'IN_PROGRESS') tabBucket = 'OPEN';
+                if (statusUpper === 'OPEN') tabBucket = 'OPEN';
+
+                const isAtRisk = (meta.healthKey === 'WARN' || meta.healthKey === 'RISK');
+                const searchBlob = (
+                  title + ' ' +
+                  desc + ' ' +
+                  ownerName + ' ' +
+                  statusUpper + ' ' +
+                  (g.category || '') + ' ' +
+                  (g.priority || '') + ' ' +
+                  (g.measure || '') + ' ' +
+                  ((g.latestCheckIn && g.latestCheckIn.note) || '')
+                ).toLowerCase();
+              %>
+                <div
+                  class="goal-card"
+                  data-title="<%= title %>"
+                  data-owner="<%= ownerName %>"
+                  data-status="<%= statusUpper %>"
+                  data-tab="<%= tabBucket %>"
+                  data-health="<%= meta.healthKey || 'OK' %>"
+                  data-atrisk="<%= isAtRisk ? '1' : '0' %>"
+                  data-daysleft="<%= daysLeft != null ? daysLeft : '' %>"
+                  data-progress="<%= progress %>"
+                  data-search="<%= searchBlob %>"
+                >
+                  <div style="display:flex; justify-content:space-between; gap:0.75rem; flex-wrap:wrap; align-items:flex-start;">
+                    <div style="min-width:200px; flex:1 1 260px;">
+                      <h4 class="goal-title"><%= title %></h4>
+                      <div class="muted small" style="margin-top:0.15rem;">
+                        Owner: <strong><%= ownerName %></strong>
+                      </div>
+                    </div>
+
+                    <div style="display:flex; gap:0.35rem; flex-wrap:wrap; justify-content:flex-end;">
+                      <span class="<%= meta.statusClass || 'status-badge status-open' %>"><%= meta.statusLabel || statusUpper.replace('_',' ') %></span>
+                      <span class="<%= meta.healthClass || 'status-badge status-done' %>"><%= meta.healthLabel || 'On Track' %></span>
+                    </div>
+                  </div>
+
+                  <div class="goal-detail-list">
+                    <span class="<%= meta.dueClass || 'chip muted small' %>">
+                      <%= meta.dueText || 'No due date' %>
+                    </span>
+
+                    <% if (dueISO) { %>
+                      <span class="chip muted small">Due: <strong><%= dueISO %></strong></span>
+                    <% } %>
+
+                    <span class="<%= meta.priorityClass || 'chip muted small' %>">
+                      <%= meta.priorityLabel || 'No Priority' %>
+                    </span>
+
+                    <span class="chip muted small">
+                      <%= meta.categoryLabel || 'Uncategorized' %>
+                    </span>
+                  </div>
+
+                  <div class="goal-meta-row">
+                    <div class="chip muted small">
+                      Progress: <strong><%= progress %>%</strong>
+                    </div>
+
+                    <% if (g.measure) { %>
+                      <div class="chip muted small">
+                        KPI: <strong><%= g.measure %></strong>
+                      </div>
+                    <% } %>
+                  </div>
+
+                  <% if (desc && desc.trim().length) { %>
+                    <div class="goal-desc">
+                      <%= desc.length > 140 ? (desc.substring(0, 140) + '…') : desc %>
+                    </div>
+                  <% } else { %>
+                    <div class="goal-desc" style="opacity:0.75;">No description provided.</div>
+                  <% } %>
+
+                  <% if (g.latestCheckIn) { %>
+                    <div class="goal-checkin-preview">
+                      <div class="muted small">
+                        Last check-in:
+                        <strong><%= safeDateTime(g.latestCheckIn.createdAt) %></strong>
+                        <% if (g.latestCheckIn.Author && g.latestCheckIn.Author.name) { %>
+                          by <strong><%= g.latestCheckIn.Author.name %></strong>
+                        <% } %>
+                      </div>
+                      <% if (g.latestCheckIn.note) { %>
+                        <div class="muted small" style="margin-top:0.3rem;">
+                          <%= g.latestCheckIn.note.length > 120 ? (g.latestCheckIn.note.substring(0, 120) + '…') : g.latestCheckIn.note %>
+                        </div>
+                      <% } %>
+                    </div>
+                  <% } %>
+
+                  <div class="goal-progress-wrap">
+                    <div class="bar" aria-label="Progress bar">
+                      <div style="width:<%= Math.max(0, Math.min(100, progress)) %>%;"></div>
+                    </div>
+                    <div class="muted small">
+                      <% if (daysLeft == null) { %>
+                        Timeline: —
+                      <% } else if (daysLeft < 0) { %>
+                        Timeline: <strong><%= Math.abs(daysLeft) %>d overdue</strong>
+                      <% } else { %>
+                        Timeline: <strong><%= daysLeft %>d left</strong>
+                      <% } %>
+                    </div>
+                  </div>
+
+                  <div class="goal-actions">
+                    <form
+                      method="POST"
+                      action="/goals/<%= g.id %>/quick-update"
+                      class="quick-form"
+                      style="display:flex; gap:0.4rem; flex-wrap:wrap; align-items:flex-end; justify-content:flex-start;"
+                    >
+                      <div style="display:flex; flex-direction:column; gap:0.2rem;">
+                        <label class="muted small" style="line-height:1;">Status</label>
+                        <select name="status" style="min-width:140px;">
+                          <option value="OPEN" <%= (g.status === 'OPEN') ? 'selected' : '' %>>OPEN</option>
+                          <option value="IN_PROGRESS" <%= (g.status === 'IN_PROGRESS') ? 'selected' : '' %>>IN PROGRESS</option>
+                          <option value="DONE" <%= (g.status === 'DONE') ? 'selected' : '' %>>DONE</option>
+                          <option value="ON_HOLD" <%= (g.status === 'ON_HOLD') ? 'selected' : '' %>>ON HOLD</option>
+                        </select>
+                      </div>
+
+                      <div style="display:flex; flex-direction:column; gap:0.2rem;">
+                        <label class="muted small" style="line-height:1;">Progress</label>
+                        <input
+                          type="number"
+                          name="progress"
+                          min="0"
+                          max="100"
+                          value="<%= (g.meta && g.meta.progressNum != null) ? g.meta.progressNum : (g.progress || 0) %>"
+                          style="width:92px;"
+                        />
+                      </div>
+
+                      <button type="submit" class="btn primary btn-sm" title="Save quick update">
+                        Save
+                      </button>
+                    </form>
+
+                    <div style="display:flex; gap:0.35rem; flex-wrap:wrap; justify-content:flex-end;">
+                      <a href="/goals/<%= g.id %>" class="btn ghost btn-sm">View</a>
+                      <a href="/goals/<%= g.id %>/edit" class="btn ghost btn-sm">Edit</a>
+
+                      <form method="POST" action="/goals/<%= g.id %>/delete" style="display:inline;"
+                            onsubmit="return confirm('Delete this goal?');">
+                        <button type="submit" class="btn danger btn-sm">Delete</button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          </div>
+        </section>
+      <% }) %>
+    </div>
+  <% } %>
+</section>
+
+<script>
+  (function () {
+    const tabs = Array.from(document.querySelectorAll('.goals-tab'));
+    const countChip = document.getElementById('goalsCountChip');
+
+    const elSearch = document.getElementById('goalSearch');
+    const elStatus = document.getElementById('goalStatus');
+    const elOwner = document.getElementById('goalOwner');
+    const elDue = document.getElementById('goalDue');
+    const elHealth = document.getElementById('goalHealth');
+    const elMinProg = document.getElementById('goalMinProgress');
+    const btnReset = document.getElementById('clearGoalFilters');
+
+    const goalFiltersPanel = document.getElementById('goalFiltersPanel');
+    const goalFiltersToggle = document.getElementById('goalFiltersToggle');
+    const goalFiltersOpenBtn = document.getElementById('goalFiltersOpenBtn');
+    const goalFiltersStateLabel = document.getElementById('goalFiltersStateLabel');
+
+    const cards = Array.from(document.querySelectorAll('.goal-card'));
+    const groups = Array.from(document.querySelectorAll('[data-goal-group]'));
+    let activeTab = 'OPEN';
+
+    function setGoalFiltersOpen(open) {
+      if (!goalFiltersPanel) return;
+      goalFiltersPanel.classList.toggle('open', open);
+      if (goalFiltersStateLabel) {
+        goalFiltersStateLabel.textContent = open ? 'open' : 'collapsed';
+      }
+      if (goalFiltersOpenBtn) {
+        goalFiltersOpenBtn.textContent = open ? 'Close filters' : 'Open filters';
+      }
+    }
+
+    function setGroupVisibility() {
+      groups.forEach((group) => {
+        const visibleCards = Array.from(group.querySelectorAll('.goal-card')).filter((card) => card.style.display !== 'none');
+        group.style.display = visibleCards.length ? '' : 'none';
+      });
+    }
+
+    function passesDueFilter(card) {
+      const mode = (elDue && elDue.value) ? elDue.value : '';
+      const raw = card.getAttribute('data-daysleft');
+      const hasDue = raw !== null && raw !== undefined && String(raw).trim() !== '';
+      const daysLeft = hasDue ? Number(raw) : null;
+
+      if (!mode) return true;
+      if (mode === 'NO_DUE') return !hasDue;
+      if (!hasDue) return false;
+      if (mode === 'OVERDUE') return daysLeft < 0;
+      if (mode === 'DUE_7') return daysLeft >= 0 && daysLeft <= 7;
+      if (mode === 'DUE_30') return daysLeft >= 0 && daysLeft <= 30;
+
+      return true;
+    }
+
+    function applyFilters() {
+      const q = (elSearch && elSearch.value) ? elSearch.value.trim().toLowerCase() : '';
+      const status = (elStatus && elStatus.value) ? elStatus.value : '';
+      const owner = (elOwner && elOwner.value) ? elOwner.value : '';
+      const health = (elHealth && elHealth.value) ? elHealth.value : '';
+      const minProg = elMinProg ? Number(elMinProg.value || 0) : 0;
+
+      let shown = 0;
+
+      cards.forEach((card) => {
+        const cardStatus = (card.getAttribute('data-status') || '').toUpperCase();
+        const cardOwner = (card.getAttribute('data-owner') || '');
+        const cardHealth = (card.getAttribute('data-health') || '').toUpperCase();
+        const cardProg = Number(card.getAttribute('data-progress') || 0);
+        const cardSearch = (card.getAttribute('data-search') || '');
+
+        let tabPass = true;
+        if (activeTab === 'ALL') tabPass = true;
+        else if (activeTab === 'AT_RISK') tabPass = (card.getAttribute('data-atrisk') === '1');
+        else tabPass = ((card.getAttribute('data-tab') || '').toUpperCase() === activeTab);
+
+        if (!tabPass) {
+          card.style.display = 'none';
+          return;
+        }
+
+        if (q && !cardSearch.includes(q)) {
+          card.style.display = 'none';
+          return;
+        }
+
+        if (status) {
+          const s = status.toUpperCase();
+          if (cardStatus !== s) {
+            card.style.display = 'none';
+            return;
+          }
+        }
+
+        if (owner && cardOwner !== owner) {
+          card.style.display = 'none';
+          return;
+        }
+
+        if (!passesDueFilter(card)) {
+          card.style.display = 'none';
+          return;
+        }
+
+        if (health) {
+          const h = health.toUpperCase();
+          if (h === 'WARN') {
+            if (!(cardHealth === 'WARN' || cardHealth === 'RISK')) {
+              card.style.display = 'none';
+              return;
+            }
+          } else if (cardHealth !== h) {
+            card.style.display = 'none';
+            return;
+          }
+        }
+
+        if (Number.isFinite(minProg) && cardProg < minProg) {
+          card.style.display = 'none';
+          return;
+        }
+
+        card.style.display = '';
+        shown++;
+      });
+
+      setGroupVisibility();
+
+      if (countChip) {
+        countChip.innerHTML = 'Showing: <strong>' + shown + '</strong>';
+      }
+    }
+
+    function setActiveTab(tabKey) {
+      activeTab = tabKey;
+      tabs.forEach(t => t.classList.remove('active'));
+      const btn = tabs.find(t => (t.getAttribute('data-tab') || '') === tabKey);
+      if (btn) btn.classList.add('active');
+      applyFilters();
+    }
+
+    tabs.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tabKey = btn.getAttribute('data-tab') || 'OPEN';
+        setActiveTab(tabKey);
+      });
+    });
+
+    [elSearch, elStatus, elOwner, elDue, elHealth, elMinProg].forEach(el => {
+      if (!el) return;
+      el.addEventListener('input', applyFilters);
+      el.addEventListener('change', applyFilters);
+      el.addEventListener('focus', () => setGoalFiltersOpen(true));
+    });
+
+    if (btnReset) {
+      btnReset.addEventListener('click', () => {
+        if (elSearch) elSearch.value = '';
+        if (elStatus) elStatus.value = '';
+        if (elOwner) elOwner.value = '';
+        if (elDue) elDue.value = '';
+        if (elHealth) elHealth.value = '';
+        if (elMinProg) elMinProg.value = 0;
+        setActiveTab('OPEN');
+      });
+    }
+
+    setGoalFiltersOpen(false);
+
+    if (goalFiltersToggle) {
+      goalFiltersToggle.addEventListener('click', () => {
+        setGoalFiltersOpen(!goalFiltersPanel.classList.contains('open'));
+      });
+    }
+
+    if (goalFiltersOpenBtn) {
+      goalFiltersOpenBtn.addEventListener('click', () => {
+        setGoalFiltersOpen(!goalFiltersPanel.classList.contains('open'));
+      });
+    }
+
+    document.querySelectorAll('[data-goal-group]').forEach((group) => {
+      const btn = group.querySelector('[data-goal-group-toggle]');
+      if (!btn) return;
+
+      btn.addEventListener('click', () => {
+        const isOpen = group.classList.contains('open');
+        group.classList.toggle('open', !isOpen);
+        btn.setAttribute('aria-expanded', !isOpen ? 'true' : 'false');
+      });
+    });
+
+    setActiveTab('OPEN');
+  })();
+</script>
+
+</main>
+</body>
+</html>

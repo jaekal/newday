@@ -1,0 +1,32 @@
+<%- include('../layout') %>
+
+<section class="page-header">
+  <div>
+    <h2>Staff Import Summary</h2>
+    <p class="muted">
+      Result of the last staff import operation.
+    </p>
+  </div>
+  <div>
+    <a href="/staff" class="btn ghost">Back to Staff Roster</a>
+  </div>
+</section>
+
+<div class="card">
+  <p><strong>Created:</strong> <%= created %></p>
+  <p><strong>Updated:</strong> <%= updated %></p>
+  <p><strong>Failed:</strong> <%= failed %></p>
+
+  <% if (errorDetails && errorDetails.length > 0) { %>
+    <h3 style="margin-top:1rem;">Errors / Warnings</h3>
+    <ul>
+      <% errorDetails.forEach(function(msg) { %>
+        <li><%= msg %></li>
+      <% }) %>
+    </ul>
+  <% } %>
+</div>
+
+</main>
+</body>
+</html>

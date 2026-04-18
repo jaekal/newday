@@ -1,0 +1,497 @@
+<!-- src/views/roster/index.ejs -->
+<%- include('../layout') %>
+
+<style>
+  .roster-page { display:flex; flex-direction:column; gap:1rem; }
+  .roster-header { display:flex; justify-content:space-between; align-items:flex-end; gap:1rem; flex-wrap:wrap; }
+  .roster-header h2 { margin-bottom:0.2rem; }
+  .roster-header p { margin:0; max-width:860px; }
+  .roster-header-actions { display:flex; gap:0.6rem; align-items:center; flex-wrap:wrap; }
+
+  .roster-toolbar-card,
+  .roster-table-card { overflow:hidden; }
+
+  .roster-toolbar-card {
+    padding:0.9rem 1rem;
+    position:sticky;
+    top:0.75rem;
+    z-index:15;
+    backdrop-filter:blur(8px);
+  }
+
+  .roster-filter-row { display:flex; flex-wrap:wrap; gap:0.75rem; align-items:end; }
+  .roster-filter-group { display:flex; flex-direction:column; gap:0.28rem; min-width:145px; flex:0 0 auto; }
+  .roster-filter-group.search { min-width:260px; flex:1 1 340px; }
+  .roster-filter-group label { font-size:0.78rem; line-height:1; color:rgba(156,163,175,0.96); margin:0; }
+  .roster-filter-group input,
+  .roster-filter-group select { height:36px; min-height:36px; padding:0.42rem 0.65rem; font-size:0.92rem; }
+
+  .roster-filter-actions { display:flex; gap:0.5rem; align-items:center; margin-left:auto; flex-wrap:wrap; }
+  .roster-filter-actions .btn {
+    height:36px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    white-space:nowrap;
+    padding:0 0.95rem;
+  }
+
+  .roster-active-filters {
+    display:flex;
+    justify-content:space-between;
+    gap:1rem;
+    align-items:flex-start;
+    flex-wrap:wrap;
+    margin-top:0.75rem;
+    padding-top:0.75rem;
+    border-top:1px solid rgba(255,255,255,0.08);
+  }
+
+  .roster-chip-row { display:flex; gap:0.45rem; flex-wrap:wrap; align-items:center; }
+
+  .chip {
+    display:inline-flex;
+    align-items:center;
+    gap:0.35rem;
+    padding:0.2rem 0.55rem;
+    border-radius:999px;
+    border:1px solid rgba(255,255,255,0.10);
+    background:rgba(15,23,42,0.45);
+    color:rgba(229,231,235,0.95);
+    font-size:0.79rem;
+    line-height:1.15;
+    white-space:nowrap;
+  }
+
+  .chip.muted { opacity:0.86; }
+
+  .roster-summary-inline {
+    color:rgba(209,213,219,0.92);
+    font-size:0.9rem;
+    white-space:nowrap;
+  }
+
+  .roster-table-topbar {
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:1rem;
+    padding:0.75rem 0.9rem;
+    border-bottom:1px solid rgba(75,85,99,0.35);
+    flex-wrap:wrap;
+    background:rgba(17,24,39,0.45);
+  }
+
+  .roster-table-title { display:flex; flex-direction:column; gap:0.15rem; }
+  .roster-table-title h3 { margin:0; font-size:0.98rem; }
+  .roster-table-title p { margin:0; color:rgba(156,163,175,0.95); font-size:0.84rem; }
+
+  .roster-table-card { padding:0; overflow-x:auto; }
+  .roster-table {
+    width:100%;
+    border-collapse:collapse;
+    min-width:1200px;
+    table-layout:fixed;
+  }
+
+  .roster-table thead {
+    background:rgba(31,41,55,0.96);
+    color:#e5e7eb;
+    position:sticky;
+    top:0;
+    z-index:10;
+  }
+
+  .roster-table th,
+  .roster-table td {
+    padding:0.62rem 0.65rem;
+    text-align:left;
+    border-top:1px solid rgba(75,85,99,0.32);
+    vertical-align:middle;
+    font-size:0.9rem;
+  }
+
+  .roster-row:nth-child(even) { background-color:rgba(17,24,39,0.42); }
+  .roster-row:hover { background-color:rgba(59,130,246,0.18); }
+
+  .roster-name-cell { display:flex; flex-direction:column; gap:0.14rem; min-width:0; }
+  .roster-name-main { font-weight:600; color:#f9fafb; min-width:0; overflow-wrap:anywhere; word-break:break-word; }
+  .roster-subtext { font-size:0.78rem; color:rgba(156,163,175,0.96); min-width:0; overflow-wrap:anywhere; word-break:break-word; }
+  .roster-domain {
+    font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size:0.84rem;
+    color:#dbeafe;
+    overflow-wrap:anywhere;
+    word-break:break-word;
+  }
+
+  .badge {
+    display:inline-flex;
+    align-items:center;
+    gap:0.3rem;
+    padding:0.18rem 0.48rem;
+    font-size:0.74rem;
+    line-height:1.1;
+    white-space:nowrap;
+    border:1px solid rgba(255,255,255,0.08);
+  }
+
+  .badge.placement { border-radius:14px; background:rgba(34,197,94,0.12); color:#dcfce7; white-space:normal; }
+  .badge.linked { border-radius:999px; border:1px dashed rgba(34,197,94,0.55); color:#dcfce7; }
+  .badge.unlinked { border-radius:999px; border:1px dashed rgba(156,163,175,0.55); color:#d1d5db; }
+
+  .roster-notes { color:rgba(209,213,219,0.92); font-size:0.82rem; overflow-wrap:anywhere; word-break:break-word; }
+
+  .roster-actions { display:flex; gap:0.35rem; flex-wrap:nowrap; align-items:center; }
+  .roster-actions .btn {
+    white-space:nowrap;
+    min-width:62px;
+    height:30px;
+    padding:0 0.7rem;
+    border-radius:0.55rem;
+    font-weight:600;
+  }
+
+  .roster-empty { padding:1.2rem; text-align:center; color:rgba(156,163,175,0.96); }
+
+  .roster-bulk-actions {
+    display:flex;
+    justify-content:space-between;
+    gap:0.75rem;
+    margin-top:0.75rem;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+
+  .roster-pagination { display:flex; gap:0.45rem; flex-wrap:wrap; align-items:center; }
+  .cell-wrap { min-width:0; overflow-wrap:anywhere; word-break:break-word; }
+
+  @media (max-width:1400px) {
+    .roster-filter-actions { margin-left:0; }
+    .roster-table { min-width:1080px; }
+  }
+
+  @media (max-width:780px) {
+    .roster-filter-group,
+    .roster-filter-group.search { min-width:100%; flex:1 1 100%; }
+    .roster-filter-actions,
+    .roster-header-actions { width:100%; justify-content:flex-start; }
+    .roster-active-filters { flex-direction:column; align-items:stretch; }
+    .roster-summary-inline { white-space:normal; }
+    .roster-table { min-width:980px; }
+  }
+</style>
+
+<%
+  const currentUser = typeof user !== 'undefined' ? user : null;
+  const isAdminUser = !!(currentUser && currentUser.role === 'ADMIN');
+
+  const f = (typeof filters !== 'undefined' && filters) ? filters : {};
+  const pg = (typeof pagination !== 'undefined' && pagination) ? pagination : {};
+  const rowsSafe = Array.isArray(rows) ? rows : [];
+
+  const pageSizeValue = String(pg.pageSize || '25');
+  const activeFilterCount =
+    ((f.q && String(f.q).trim()) ? 1 : 0) +
+    ((f.building && String(f.building).trim()) ? 1 : 0) +
+    ((f.shift && String(f.shift).trim()) ? 1 : 0) +
+    ((f.linkStatus && String(f.linkStatus).trim()) ? 1 : 0);
+
+  const queryForPage = function(pageNumber) {
+    const params = new URLSearchParams({
+      q: f.q || '',
+      building: f.building || '',
+      shift: f.shift || '',
+      linkStatus: f.linkStatus || '',
+      sortBy: f.sortBy || 'domainUsername',
+      sortDir: f.sortDir || 'ASC',
+      pageSize: pg.showAll ? 'all' : String(pg.pageSize || '25'),
+      page: String(pageNumber || 1),
+    });
+    return params.toString();
+  };
+
+  const exportQuery = new URLSearchParams({
+    q: f.q || '',
+    building: f.building || '',
+    shift: f.shift || '',
+    linkStatus: f.linkStatus || '',
+    sortBy: f.sortBy || 'domainUsername',
+    sortDir: f.sortDir || 'ASC',
+  }).toString();
+%>
+
+<section class="roster-page">
+  <section class="page-header roster-header">
+    <div>
+      <h2>Roster Mapping</h2>
+      <p class="muted">
+        Identity mapping for domain usernames, employee IDs, and roster-linked staff details used across imports and admin workflows.
+      </p>
+    </div>
+
+    <div class="roster-header-actions">
+      <a href="/roster/import" class="btn primary">Import / Update Roster</a>
+      <a href="/roster/export.csv?<%= exportQuery %>" class="btn ghost">Export CSV</a>
+
+      <% if (isAdminUser) { %>
+        <a href="/roster/duplicates" class="btn ghost">Preview Duplicates</a>
+        <form method="POST" action="/roster/dedupe" style="display:inline;">
+          <button class="btn ghost" type="submit" title="Remove duplicates by employeeId">
+            Remove Duplicates
+          </button>
+        </form>
+      <% } %>
+
+      <a href="/imports" class="btn ghost">Back to Imports</a>
+    </div>
+  </section>
+
+  <div class="card roster-toolbar-card">
+    <form method="GET" action="/roster">
+      <div class="roster-filter-row">
+        <div class="roster-filter-group search">
+          <label for="q">Search</label>
+          <input
+            id="q"
+            type="text"
+            name="q"
+            value="<%= f.q || '' %>"
+            placeholder="domain, employee ID, name, email..."
+          />
+        </div>
+
+        <div class="roster-filter-group">
+          <label for="building">Building</label>
+          <select id="building" name="building">
+            <option value="">All</option>
+            <% (f.buildingOptions || []).forEach(function (b) { %>
+              <option value="<%= b %>" <%= f.building === b ? 'selected' : '' %>><%= b %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="roster-filter-group">
+          <label for="shift">Shift</label>
+          <select id="shift" name="shift">
+            <option value="">All</option>
+            <% (f.shiftOptions || []).forEach(function (s) { %>
+              <option value="<%= s %>" <%= f.shift === s ? 'selected' : '' %>><%= s %></option>
+            <% }) %>
+          </select>
+        </div>
+
+        <div class="roster-filter-group">
+          <label for="linkStatus">Link Status</label>
+          <select id="linkStatus" name="linkStatus">
+            <option value="">All</option>
+            <option value="LINKED" <%= f.linkStatus === 'LINKED' ? 'selected' : '' %>>Linked</option>
+            <option value="UNLINKED" <%= f.linkStatus === 'UNLINKED' ? 'selected' : '' %>>Unlinked</option>
+          </select>
+        </div>
+
+        <div class="roster-filter-group">
+          <label for="sortBy">Sort</label>
+          <select id="sortBy" name="sortBy">
+            <option value="domainUsername" <%= f.sortBy === 'domainUsername' ? 'selected' : '' %>>Domain Username</option>
+            <option value="employeeId" <%= f.sortBy === 'employeeId' ? 'selected' : '' %>>Employee ID</option>
+            <option value="fullName" <%= f.sortBy === 'fullName' ? 'selected' : '' %>>Roster Name</option>
+            <option value="email" <%= f.sortBy === 'email' ? 'selected' : '' %>>Email</option>
+            <option value="building" <%= f.sortBy === 'building' ? 'selected' : '' %>>Building</option>
+            <option value="shift" <%= f.sortBy === 'shift' ? 'selected' : '' %>>Shift</option>
+            <option value="linkedUserName" <%= f.sortBy === 'linkedUserName' ? 'selected' : '' %>>Linked User</option>
+          </select>
+        </div>
+
+        <div class="roster-filter-group">
+          <label for="sortDir">Direction</label>
+          <select id="sortDir" name="sortDir">
+            <option value="ASC" <%= f.sortDir === 'ASC' ? 'selected' : '' %>>Asc</option>
+            <option value="DESC" <%= f.sortDir === 'DESC' ? 'selected' : '' %>>Desc</option>
+          </select>
+        </div>
+
+        <div class="roster-filter-group">
+          <label for="pageSize">Rows</label>
+          <select id="pageSize" name="pageSize">
+            <option value="10"  <%= pageSizeValue === '10' ? 'selected' : '' %>>10</option>
+            <option value="25"  <%= pageSizeValue === '25' ? 'selected' : '' %>>25</option>
+            <option value="50"  <%= pageSizeValue === '50' ? 'selected' : '' %>>50</option>
+            <option value="100" <%= pageSizeValue === '100' ? 'selected' : '' %>>100</option>
+            <option value="all" <%= pg.showAll ? 'selected' : '' %>>All</option>
+          </select>
+        </div>
+
+        <input type="hidden" name="page" value="1" />
+
+        <div class="roster-filter-actions">
+          <button class="btn primary" type="submit">Apply</button>
+          <a class="btn ghost" href="/roster">Reset</a>
+        </div>
+      </div>
+
+      <div class="roster-active-filters">
+        <div class="roster-chip-row">
+          <% if (f.q) { %><span class="chip">🔎 <strong>Search</strong>: <%= f.q %></span><% } %>
+          <% if (f.building) { %><span class="chip">🏢 <strong>Building</strong>: <%= f.building %></span><% } %>
+          <% if (f.shift) { %><span class="chip">🕒 <strong>Shift</strong>: <%= f.shift %></span><% } %>
+          <% if (f.linkStatus) { %><span class="chip">🔗 <strong>Link</strong>: <%= f.linkStatus %></span><% } %>
+          <% if (activeFilterCount === 0) { %><span class="chip muted">Showing all roster entries</span><% } %>
+        </div>
+
+        <div class="roster-summary-inline">
+          <% if (pg.showAll) { %>
+            Showing all <strong><%= pg.totalRows || rowsSafe.length %></strong> roster entr<%= ((pg.totalRows || rowsSafe.length) === 1) ? 'y' : 'ies' %>
+          <% } else { %>
+            Showing <strong><%= pg.from || 0 %></strong> to <strong><%= pg.to || 0 %></strong> of <strong><%= pg.totalRows || 0 %></strong>
+          <% } %>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <form method="POST" action="/roster/delete">
+    <div class="card roster-table-card">
+      <div class="roster-table-topbar">
+        <div class="roster-table-title">
+          <h3>Roster Directory</h3>
+          <p>Mapped roster entries with linked-user visibility.</p>
+        </div>
+      </div>
+
+      <table class="roster-table" cellpadding="0" cellspacing="0">
+        <thead>
+          <tr>
+            <% if (isAdminUser) { %>
+              <th style="text-align:center;"><input type="checkbox" id="selectAll" title="Select all" /></th>
+            <% } %>
+            <th>Domain Username</th>
+            <th>Employee ID</th>
+            <th>Roster Name</th>
+            <th>Email</th>
+            <th>Placement</th>
+            <th>Linked User</th>
+            <th>Notes</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (!rowsSafe.length) { %>
+            <tr>
+              <td colspan="<%= isAdminUser ? 9 : 8 %>" class="roster-empty">No roster mappings found.</td>
+            </tr>
+          <% } else { %>
+            <% rowsSafe.forEach(function (r) {
+              const placementText = (r.building || r.shift)
+                ? [r.building || 'Unassigned', r.shift || 'No Shift'].join(' • ')
+                : 'Unassigned';
+            %>
+              <tr class="roster-row">
+                <% if (isAdminUser) { %>
+                  <td style="text-align:center;">
+                    <input type="checkbox" name="ids" value="<%= r.id %>" class="rowBox" />
+                  </td>
+                <% } %>
+
+                <td class="cell-wrap">
+                  <div class="roster-name-cell">
+                    <span class="roster-domain"><%= r.domainUsername || '—' %></span>
+                    <span class="roster-subtext">Primary identity key</span>
+                  </div>
+                </td>
+
+                <td><%= r.employeeId || '—' %></td>
+                <td class="cell-wrap"><span class="roster-name-main"><%= r.fullName || '—' %></span></td>
+                <td class="cell-wrap"><span class="roster-subtext"><%= r.email || '—' %></span></td>
+                <td class="cell-wrap"><span class="badge placement"><%= placementText %></span></td>
+
+                <td class="cell-wrap">
+                  <% if (r.isLinkedToUser) { %>
+                    <div class="roster-name-cell">
+                      <span class="badge linked">Linked</span>
+                      <span class="roster-subtext">
+                        <%= r.linkedUserName || 'User' %><% if (r.linkedUsername) { %> • <%= r.linkedUsername %><% } %>
+                      </span>
+                      <% if (r.linkedEmployeeId) { %>
+                        <span class="roster-subtext">Employee ID: <%= r.linkedEmployeeId %></span>
+                      <% } %>
+                    </div>
+                  <% } else { %>
+                    <span class="badge unlinked">Unlinked</span>
+                  <% } %>
+                </td>
+
+                <td class="cell-wrap"><span class="roster-notes"><%= r.notes || '—' %></span></td>
+
+                <td>
+                  <div class="roster-actions">
+                    <a href="/roster/<%= r.id %>/edit" class="btn small ghost">Edit</a>
+                  </div>
+                </td>
+              </tr>
+            <% }) %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="roster-bulk-actions">
+      <div class="muted">
+        <% if (pg.showAll) { %>
+          Showing all <strong><%= pg.totalRows || rowsSafe.length %></strong> entries.
+        <% } else { %>
+          Page <strong><%= pg.page || 1 %></strong> of <strong><%= pg.totalPages || 1 %></strong>.
+        <% } %>
+      </div>
+
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+        <% if (!pg.showAll && (pg.totalPages || 0) > 1) { %>
+          <div class="roster-pagination">
+            <% if ((pg.page || 1) > 1) { %>
+              <a href="/roster?<%= queryForPage(1) %>" class="btn small ghost">First</a>
+              <a href="/roster?<%= queryForPage((pg.page || 1) - 1) %>" class="btn small ghost">Previous</a>
+            <% } %>
+
+            <% if ((pg.page || 1) < (pg.totalPages || 1)) { %>
+              <a href="/roster?<%= queryForPage((pg.page || 1) + 1) %>" class="btn small ghost">Next</a>
+              <a href="/roster?<%= queryForPage(pg.totalPages || 1) %>" class="btn small ghost">Last</a>
+            <% } %>
+          </div>
+        <% } %>
+
+        <% if (isAdminUser) { %>
+          <button
+            type="submit"
+            class="btn danger"
+            onclick="return confirm('Delete selected roster entries? This cannot be undone.');"
+          >
+            Delete Selected
+          </button>
+        <% } %>
+      </div>
+    </div>
+  </form>
+</section>
+
+<script>
+  (function () {
+    const selectAll = document.getElementById('selectAll');
+    if (!selectAll) return;
+
+    const boxes = () => Array.from(document.querySelectorAll('.rowBox'));
+
+    selectAll.addEventListener('change', () => {
+      boxes().forEach((b) => {
+        b.checked = selectAll.checked;
+      });
+    });
+
+    document.addEventListener('change', (e) => {
+      if (!e.target.classList.contains('rowBox')) return;
+      const all = boxes();
+      const checked = all.filter((b) => b.checked).length;
+      selectAll.checked = checked === all.length && all.length > 0;
+      selectAll.indeterminate = checked > 0 && checked < all.length;
+    });
+  })();
+</script>

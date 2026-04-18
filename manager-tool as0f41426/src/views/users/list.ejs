@@ -1,0 +1,872 @@
+<!-- src/views/users/list.ejs -->
+<%- include('../layout') %>
+
+<style>
+  .users-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .users-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .users-header h2 {
+    margin-bottom: 0.2rem;
+  }
+
+  .users-header p {
+    margin: 0;
+    max-width: 860px;
+  }
+
+  .users-header-actions {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .users-toolbar-card,
+  .users-table-card {
+    overflow: hidden;
+  }
+
+  .users-toolbar-card {
+    padding: 0.9rem 1rem;
+    position: sticky;
+    top: 0.75rem;
+    z-index: 15;
+    backdrop-filter: blur(8px);
+  }
+
+  .users-filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: end;
+  }
+
+  .users-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.28rem;
+    min-width: 125px;
+    flex: 0 0 auto;
+  }
+
+  .users-filter-group.search {
+    min-width: 260px;
+    flex: 1 1 320px;
+  }
+
+  .users-filter-group label {
+    font-size: 0.78rem;
+    line-height: 1;
+    color: rgba(156, 163, 175, 0.96);
+    margin: 0;
+  }
+
+  .users-filter-group input,
+  .users-filter-group select {
+    height: 36px;
+    min-height: 36px;
+    padding: 0.42rem 0.65rem;
+    font-size: 0.92rem;
+  }
+
+  .users-filter-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-left: auto;
+    flex-wrap: wrap;
+  }
+
+  .users-filter-actions .btn {
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    padding: 0 0.95rem;
+  }
+
+  .users-active-filters {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .users-chip-row {
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.10);
+    background: rgba(15,23,42,0.45);
+    color: rgba(229,231,235,0.95);
+    font-size: 0.79rem;
+    line-height: 1.15;
+    white-space: nowrap;
+  }
+
+  .chip.muted {
+    opacity: 0.86;
+  }
+
+  .users-summary-inline {
+    color: rgba(209,213,219,0.92);
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+
+  .users-table-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 0.9rem;
+    border-bottom: 1px solid rgba(75,85,99,0.35);
+    flex-wrap: wrap;
+    background: rgba(17,24,39,0.45);
+  }
+
+  .users-table-title {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .users-table-title h3 {
+    margin: 0;
+    font-size: 0.98rem;
+  }
+
+  .users-table-title p {
+    margin: 0;
+    color: rgba(156,163,175,0.95);
+    font-size: 0.84rem;
+  }
+
+  .users-table-legend {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .role-badge,
+  .placement-badge,
+  .domain-badge,
+  .health-badge,
+  .access-badge,
+  .scope-badge,
+  .employment-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.18rem 0.48rem;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    line-height: 1.1;
+    border: 1px solid rgba(255,255,255,0.08);
+    white-space: nowrap;
+  }
+
+  .role-badge {
+    background: rgba(37, 99, 235, 0.14);
+    color: #dbeafe;
+  }
+
+  .placement-badge {
+    background: rgba(34, 197, 94, 0.12);
+    color: #dcfce7;
+    white-space: normal;
+  }
+
+  .employment-badge.active {
+    background: rgba(34, 197, 94, 0.14);
+    color: #dcfce7;
+  }
+
+  .employment-badge.resigned {
+    background: rgba(245, 158, 11, 0.16);
+    color: #fde68a;
+  }
+
+  .employment-badge.terminated {
+    background: rgba(239, 68, 68, 0.16);
+    color: #fecaca;
+  }
+
+  .domain-badge.linked {
+    background: rgba(34, 197, 94, 0.12);
+    color: #dcfce7;
+  }
+
+  .domain-badge.missing {
+    background: rgba(245, 158, 11, 0.16);
+    color: #fde68a;
+  }
+
+  .health-badge.good {
+    background: rgba(34, 197, 94, 0.14);
+    color: #dcfce7;
+  }
+
+  .health-badge.warn {
+    background: rgba(245, 158, 11, 0.16);
+    color: #fde68a;
+  }
+
+  .health-badge.bad {
+    background: rgba(239, 68, 68, 0.16);
+    color: #fecaca;
+  }
+
+  .access-badge.allowed {
+    background: rgba(34, 197, 94, 0.12);
+    color: #dcfce7;
+  }
+
+  .access-badge.blocked {
+    background: rgba(107, 114, 128, 0.18);
+    color: #d1d5db;
+  }
+
+  .scope-badge {
+    background: rgba(59, 130, 246, 0.14);
+    color: #dbeafe;
+  }
+
+  .users-table-card {
+    padding: 0;
+    overflow-x: auto;
+  }
+
+  .users-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 980px;
+    table-layout: fixed;
+  }
+
+  .users-table thead {
+    background: rgba(31,41,55,0.96);
+    color: #e5e7eb;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .users-table th,
+  .users-table td {
+    padding: 0.62rem 0.65rem;
+    text-align: left;
+    border-top: 1px solid rgba(75,85,99,0.32);
+    vertical-align: middle;
+    font-size: 0.9rem;
+  }
+
+  .users-table th:nth-child(1) { width: 18%; }
+  .users-table th:nth-child(2) { width: 12%; }
+  .users-table th:nth-child(3) { width: 18%; }
+  .users-table th:nth-child(4) { width: 16%; }
+  .users-table th:nth-child(5) { width: 22%; }
+  .users-table th:nth-child(6) { width: 14%; }
+
+  .user-table-row:nth-child(even) {
+    background-color: rgba(17, 24, 39, 0.42);
+  }
+
+  .user-table-row:hover {
+    background-color: rgba(59, 130, 246, 0.18);
+  }
+
+  .user-table-row.is-current {
+    background-color: rgba(59, 130, 246, 0.16);
+  }
+
+  .user-table-row.no-access {
+    opacity: 0.9;
+  }
+
+  .user-table-row.is-resigned {
+    background-color: rgba(245, 158, 11, 0.10);
+  }
+
+  .user-table-row.is-terminated {
+    background-color: rgba(239, 68, 68, 0.10);
+  }
+
+  .users-name-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.14rem;
+    min-width: 0;
+  }
+
+  .users-name-main {
+    font-weight: 600;
+    color: #f9fafb;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .users-subtext {
+    font-size: 0.78rem;
+    color: rgba(156,163,175,0.96);
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .users-status-stack {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    align-items: center;
+  }
+
+  .users-actions {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  .users-actions .btn {
+    white-space: nowrap;
+    min-width: 68px;
+    height: 30px;
+    padding: 0 0.7rem;
+    border-radius: 0.55rem;
+    font-weight: 600;
+  }
+
+  .users-actions .btn.ghost {
+    border-color: rgba(59, 130, 246, 0.4);
+  }
+
+  .users-actions .btn.danger {
+    box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.22);
+  }
+
+  .users-actions form {
+    display: inline-flex;
+    margin: 0;
+  }
+
+  .users-empty {
+    padding: 1.2rem;
+    text-align: center;
+    color: rgba(156,163,175,0.96);
+  }
+
+  .users-pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.85rem 1rem;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    border-top: 1px solid rgba(75,85,99,0.35);
+  }
+
+  .users-pagination-controls {
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+  }
+
+  .users-mini-note {
+    color: rgba(156,163,175,0.92);
+    font-size: 0.82rem;
+  }
+
+  .cell-wrap {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  @media (max-width: 1400px) {
+    .users-filter-actions {
+      margin-left: 0;
+    }
+
+    .users-table {
+      min-width: 900px;
+    }
+  }
+
+  @media (max-width: 780px) {
+    .users-filter-group,
+    .users-filter-group.search {
+      min-width: 100%;
+      flex: 1 1 100%;
+    }
+
+    .users-filter-actions {
+      width: 100%;
+      justify-content: flex-start;
+    }
+
+    .users-header-actions {
+      width: 100%;
+      justify-content: flex-start;
+    }
+
+    .users-active-filters {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .users-summary-inline {
+      white-space: normal;
+    }
+
+    .users-table {
+      min-width: 860px;
+    }
+  }
+</style>
+
+<%
+  const pg = pagination || {};
+  const pageSizeValue = String(pg.pageSize || '25');
+  const f = filters || {};
+
+  const effectiveRole = (f.role != null && String(f.role).trim() !== '') ? String(f.role) : '';
+  const effectiveStatus = (f.status != null && String(f.status).trim() !== '') ? String(f.status) : 'ACTIVE';
+  const effectiveBuilding = (f.building != null && String(f.building).trim() !== '') ? String(f.building) : '';
+  const effectiveShift = (f.shift != null && String(f.shift).trim() !== '') ? String(f.shift) : '';
+  const effectiveSortBy = f.sortBy || 'name';
+  const effectiveSortDir = f.sortDir || 'ASC';
+  const showInactive = !!f.showInactive;
+
+  const activeFilterCount =
+    (f.q ? 1 : 0) +
+    (effectiveRole ? 1 : 0) +
+    (showInactive ? 0 : 1) +
+    (effectiveBuilding ? 1 : 0) +
+    (effectiveShift ? 1 : 0);
+
+  function accountHealthMeta(u) {
+    let missing = 0;
+    if (!u.username) missing++;
+    if (!u.email) missing++;
+    if (!u.domainDisplay) missing++;
+    if (!u.profileBuilding) missing++;
+    if (!u.profileShift) missing++;
+
+    if (missing === 0) return { label: 'Complete', cls: 'good' };
+    if (missing <= 2) return { label: 'Needs Review', cls: 'warn' };
+    return { label: 'Incomplete', cls: 'bad' };
+  }
+%>
+
+<section class="users-page">
+  <section class="page-header users-header">
+    <div>
+      <h2>User Management</h2>
+      <p class="muted">
+        Manage account access, role assignments, placement mapping, and linked user records.
+      </p>
+    </div>
+
+    <div class="users-header-actions">
+      <% if (isAdmin) { %>
+        <a href="/admin/users/new" class="btn primary">Create User</a>
+        <a href="/admin/users/import" class="btn ghost">Import</a>
+        <a href="/admin/users/import/template.csv" class="btn ghost">Template</a>
+      <% } %>
+    </div>
+  </section>
+
+  <% if (importError) { %>
+    <p style="color:red; white-space:pre-line;"><%= importError %></p>
+  <% } %>
+
+  <% if (importSummary) { %>
+    <p style="color:limegreen; white-space:pre-line;"><%= importSummary %></p>
+  <% } %>
+
+  <form method="GET" action="/admin/users" class="card users-toolbar-card">
+    <div class="users-filter-row">
+      <div class="users-filter-group search">
+        <label for="q">Search</label>
+        <input
+          id="q"
+          type="text"
+          name="q"
+          placeholder="Name, username, email, domain..."
+          value="<%= filters && filters.q ? filters.q : '' %>"
+        />
+      </div>
+
+      <div class="users-filter-group">
+        <label for="role">Role</label>
+        <select id="role" name="role">
+          <option value="">All roles</option>
+          <% (roles || []).forEach(function (r) { %>
+            <option value="<%= r %>" <%= effectiveRole === r ? 'selected' : '' %>><%= r %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="users-filter-group">
+        <label for="status">Employment</label>
+        <select id="status" name="status">
+          <option value="ACTIVE" <%= effectiveStatus === 'ACTIVE' ? 'selected' : '' %>>Active</option>
+          <option value="RESIGNED" <%= effectiveStatus === 'RESIGNED' ? 'selected' : '' %>>Resigned</option>
+          <option value="TERMINATED" <%= effectiveStatus === 'TERMINATED' ? 'selected' : '' %>>Terminated</option>
+        </select>
+      </div>
+
+      <div class="users-filter-group">
+        <label for="showInactive">View Mode</label>
+        <select id="showInactive" name="showInactive">
+          <option value="false" <%= !showInactive ? 'selected' : '' %>>Filtered Status</option>
+          <option value="true" <%= showInactive ? 'selected' : '' %>>Show All Statuses</option>
+        </select>
+      </div>
+
+      <div class="users-filter-group">
+        <label for="building">Building</label>
+        <select id="building" name="building">
+          <option value="">All</option>
+          <% (buildingOptions || []).forEach(function (b) { %>
+            <option value="<%= b %>" <%= effectiveBuilding === b ? 'selected' : '' %>><%= b %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="users-filter-group">
+        <label for="shift">Shift</label>
+        <select id="shift" name="shift" <%= isManager ? 'disabled' : '' %>>
+          <option value="">All</option>
+          <% (shiftOptions || []).forEach(function (sh) { %>
+            <option value="<%= sh %>" <%= effectiveShift === sh ? 'selected' : '' %>><%= sh %></option>
+          <% }) %>
+        </select>
+        <% if (isManager) { %>
+          <input type="hidden" name="shift" value="<%= managerShift || '' %>" />
+        <% } %>
+      </div>
+
+      <div class="users-filter-group">
+        <label for="sortBy">Sort</label>
+        <select id="sortBy" name="sortBy">
+          <option value="name" <%= effectiveSortBy === 'name' ? 'selected' : '' %>>Name</option>
+          <option value="username" <%= effectiveSortBy === 'username' ? 'selected' : '' %>>Username</option>
+          <option value="email" <%= effectiveSortBy === 'email' ? 'selected' : '' %>>Email</option>
+          <option value="role" <%= effectiveSortBy === 'role' ? 'selected' : '' %>>Role</option>
+          <option value="employmentStatus" <%= effectiveSortBy === 'employmentStatus' ? 'selected' : '' %>>Employment</option>
+          <option value="createdAt" <%= effectiveSortBy === 'createdAt' ? 'selected' : '' %>>Created Date</option>
+          <option value="profileBuilding" <%= effectiveSortBy === 'profileBuilding' ? 'selected' : '' %>>Building</option>
+          <option value="profileShift" <%= effectiveSortBy === 'profileShift' ? 'selected' : '' %>>Shift</option>
+        </select>
+      </div>
+
+      <div class="users-filter-group">
+        <label for="sortDir">Direction</label>
+        <select id="sortDir" name="sortDir">
+          <option value="ASC" <%= effectiveSortDir === 'ASC' ? 'selected' : '' %>>Asc</option>
+          <option value="DESC" <%= effectiveSortDir === 'DESC' ? 'selected' : '' %>>Desc</option>
+        </select>
+      </div>
+
+      <div class="users-filter-group">
+        <label for="pageSize">Rows</label>
+        <select id="pageSize" name="pageSize">
+          <option value="10"  <%= pageSizeValue === '10'  ? 'selected' : '' %>>10</option>
+          <option value="25"  <%= pageSizeValue === '25'  ? 'selected' : '' %>>25</option>
+          <option value="50"  <%= pageSizeValue === '50'  ? 'selected' : '' %>>50</option>
+          <option value="100" <%= pageSizeValue === '100' ? 'selected' : '' %>>100</option>
+          <option value="all" <%= pg.showAll ? 'selected' : '' %>>All</option>
+        </select>
+      </div>
+
+      <input type="hidden" name="page" value="1" />
+
+      <div class="users-filter-actions">
+        <button type="submit" class="btn primary">Apply</button>
+        <a href="/admin/users" class="btn ghost">Reset</a>
+      </div>
+    </div>
+
+    <div class="users-active-filters">
+      <div class="users-chip-row">
+        <% if (f.q) { %>
+          <span class="chip">🔎 <strong>Search</strong>: <%= f.q %></span>
+        <% } %>
+        <% if (effectiveRole) { %>
+          <span class="chip">🧩 <strong>Role</strong>: <%= effectiveRole %></span>
+        <% } %>
+        <% if (!showInactive && effectiveStatus) { %>
+          <span class="chip">📌 <strong>Status</strong>: <%= effectiveStatus %></span>
+        <% } %>
+        <% if (showInactive) { %>
+          <span class="chip">🗂️ <strong>View</strong>: All Statuses</span>
+        <% } %>
+        <% if (effectiveBuilding) { %>
+          <span class="chip">🏢 <strong>Building</strong>: <%= effectiveBuilding %></span>
+        <% } %>
+        <% if (effectiveShift) { %>
+          <span class="chip">🕒 <strong>Shift</strong>: <%= effectiveShift %></span>
+        <% } %>
+
+        <% if (isManager) { %>
+          <% if (managerShift) { %>
+            <span class="scope-badge">Manager Scope: <%= managerShift %></span>
+          <% } %>
+          <% if (managerBuildings && managerBuildings.length) { %>
+            <span class="scope-badge">Buildings: <%= managerBuildings.join(', ') %></span>
+          <% } %>
+        <% } %>
+
+        <% if (activeFilterCount === 0 && !isManager) { %>
+          <span class="chip muted">Showing all visible users</span>
+        <% } %>
+      </div>
+
+      <div class="users-summary-inline">
+        <% if (pg.showAll) { %>
+          Showing all <strong><%= pg.totalUsers || (users || []).length %></strong> user(s)
+        <% } else if (pagination) { %>
+          Showing <strong><%= pg.from %></strong> to <strong><%= pg.to %></strong>
+          of <strong><%= pg.totalUsers %></strong>
+        <% } else { %>
+          Showing <strong><%= (users || []).length %></strong> user(s)
+        <% } %>
+      </div>
+    </div>
+  </form>
+
+  <div class="card users-table-card">
+    <div class="users-table-topbar">
+      <div class="users-table-title">
+        <h3>Account Directory</h3>
+        <p>Focused for account administration, permissions, and linked placement review.</p>
+      </div>
+
+      <div class="users-table-legend">
+        <span class="employment-badge active">Active</span>
+        <span class="employment-badge resigned">Resigned</span>
+        <span class="employment-badge terminated">Terminated</span>
+      </div>
+    </div>
+
+    <table class="users-table" cellpadding="0" cellspacing="0">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Role</th>
+          <th>Account</th>
+          <th>Placement</th>
+          <th>Employment</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <% if (!users || users.length === 0) { %>
+          <tr>
+            <td colspan="6" class="users-empty">
+              No users found with the selected filters.
+            </td>
+          </tr>
+        <% } else { %>
+          <% for (let i = 0; i < users.length; i++) {
+               const u = users[i];
+               const isCurrent = currentUser && currentUser.id === u.id;
+               const canEdit = !!u._canEdit;
+               const domainSource = u.domainSource || 'User';
+               const effBuilding = u.profileBuilding || '';
+               const effShift = u.profileShift || '';
+               const placementText = (effBuilding || effShift)
+                 ? [effBuilding || 'Unassigned', effShift || 'No Shift'].join(' • ')
+                 : 'Unassigned';
+               const health = accountHealthMeta(u);
+               const hasRoster = !!u.RosterEntry;
+               const statusValue = String(u.employmentStatus || 'ACTIVE').toUpperCase();
+               const statusClass = statusValue.toLowerCase();
+          %>
+            <tr class="user-table-row<%= isCurrent ? ' is-current' : '' %><%= !canEdit ? ' no-access' : '' %><%= statusValue === 'RESIGNED' ? ' is-resigned' : '' %><%= statusValue === 'TERMINATED' ? ' is-terminated' : '' %>">
+              <td>
+                <div class="users-name-cell">
+                  <span class="users-name-main">
+                    <%= u.name || 'Unnamed User' %>
+                    <% if (isCurrent) { %>
+                      <span class="chip">You</span>
+                    <% } %>
+                  </span>
+                  <span class="users-subtext"><%= u.phone || 'No phone listed' %></span>
+                </div>
+              </td>
+
+              <td>
+                <span class="role-badge"><%= u.role %></span>
+              </td>
+
+              <td class="cell-wrap">
+                <div class="users-name-cell">
+                  <span class="users-name-main"><%= u.username || 'No username' %></span>
+                  <span class="users-subtext"><%= u.email || 'No email' %></span>
+                </div>
+              </td>
+
+              <td class="cell-wrap">
+                <span class="placement-badge"><%= placementText %></span>
+              </td>
+
+              <td class="cell-wrap">
+                <div class="users-status-stack" title="Source: <%= domainSource %>">
+                  <span class="employment-badge <%= statusClass %>"><%= statusValue %></span>
+                  <span class="domain-badge <%= hasRoster ? 'linked' : 'missing' %>">
+                    <%= hasRoster ? 'Roster Linked' : 'Missing Roster' %>
+                  </span>
+                  <span class="health-badge <%= health.cls %>"><%= health.label %></span>
+                  <span class="access-badge <%= canEdit ? 'allowed' : 'blocked' %>">
+                    <%= canEdit ? 'Editable' : 'No Access' %>
+                  </span>
+                </div>
+              </td>
+
+              <td>
+                <div class="users-actions">
+                  <% if (!canEdit) { %>
+                    <span class="chip muted">Restricted</span>
+                  <% } else { %>
+                    <a href="/admin/users/<%= u.id %>/edit" class="btn small ghost">Edit</a>
+                  <% } %>
+
+                  <% if (isAdmin && currentUser && currentUser.id !== u.id) { %>
+                    <form method="POST" action="/admin/users/<%= u.id %>/delete">
+                      <button
+                        type="submit"
+                        class="btn danger small"
+                        onclick="return confirm('Delete this user?')"
+                      >
+                        Delete
+                      </button>
+                    </form>
+                  <% } %>
+                </div>
+              </td>
+            </tr>
+          <% } %>
+        <% } %>
+      </tbody>
+    </table>
+
+    <% if (pagination) { %>
+      <div class="users-pagination">
+        <div>
+          <div class="muted">
+            <% if (pagination.showAll) { %>
+              Showing all <strong><%= pagination.totalUsers %></strong> user(s).
+            <% } else { %>
+              Showing <strong><%= pagination.from %></strong>–<strong><%= pagination.to %></strong>
+              of <strong><%= pagination.totalUsers %></strong> user(s).
+              Page <strong><%= pagination.page %></strong> of <strong><%= pagination.totalPages %></strong>.
+            <% } %>
+          </div>
+          <% if (pagination.showAll && (pagination.totalUsers || 0) > 100) { %>
+            <div class="users-mini-note">Large result set loaded. Use filters for faster browsing.</div>
+          <% } %>
+        </div>
+
+        <% if (!pagination.showAll && pagination.totalPages > 1) { %>
+          <div class="users-pagination-controls">
+            <% if (pagination.page > 1) { %>
+              <form method="GET" action="/admin/users" style="display:inline;">
+                <input type="hidden" name="q" value="<%= f.q || '' %>" />
+                <input type="hidden" name="role" value="<%= effectiveRole || '' %>" />
+                <input type="hidden" name="status" value="<%= effectiveStatus || 'ACTIVE' %>" />
+                <input type="hidden" name="showInactive" value="<%= showInactive ? 'true' : 'false' %>" />
+                <input type="hidden" name="building" value="<%= effectiveBuilding || '' %>" />
+                <input type="hidden" name="shift" value="<%= effectiveShift || '' %>" />
+                <input type="hidden" name="sortBy" value="<%= effectiveSortBy %>" />
+                <input type="hidden" name="sortDir" value="<%= effectiveSortDir %>" />
+                <input type="hidden" name="pageSize" value="<%= pagination.pageSize %>" />
+                <input type="hidden" name="page" value="1" />
+                <button type="submit" class="btn small ghost">First</button>
+              </form>
+
+              <form method="GET" action="/admin/users" style="display:inline;">
+                <input type="hidden" name="q" value="<%= f.q || '' %>" />
+                <input type="hidden" name="role" value="<%= effectiveRole || '' %>" />
+                <input type="hidden" name="status" value="<%= effectiveStatus || 'ACTIVE' %>" />
+                <input type="hidden" name="showInactive" value="<%= showInactive ? 'true' : 'false' %>" />
+                <input type="hidden" name="building" value="<%= effectiveBuilding || '' %>" />
+                <input type="hidden" name="shift" value="<%= effectiveShift || '' %>" />
+                <input type="hidden" name="sortBy" value="<%= effectiveSortBy %>" />
+                <input type="hidden" name="sortDir" value="<%= effectiveSortDir %>" />
+                <input type="hidden" name="pageSize" value="<%= pagination.pageSize %>" />
+                <input type="hidden" name="page" value="<%= pagination.page - 1 %>" />
+                <button type="submit" class="btn small ghost">Previous</button>
+              </form>
+            <% } %>
+
+            <% if (pagination.page < pagination.totalPages) { %>
+              <form method="GET" action="/admin/users" style="display:inline;">
+                <input type="hidden" name="q" value="<%= f.q || '' %>" />
+                <input type="hidden" name="role" value="<%= effectiveRole || '' %>" />
+                <input type="hidden" name="status" value="<%= effectiveStatus || 'ACTIVE' %>" />
+                <input type="hidden" name="showInactive" value="<%= showInactive ? 'true' : 'false' %>" />
+                <input type="hidden" name="building" value="<%= effectiveBuilding || '' %>" />
+                <input type="hidden" name="shift" value="<%= effectiveShift || '' %>" />
+                <input type="hidden" name="sortBy" value="<%= effectiveSortBy %>" />
+                <input type="hidden" name="sortDir" value="<%= effectiveSortDir %>" />
+                <input type="hidden" name="pageSize" value="<%= pagination.pageSize %>" />
+                <input type="hidden" name="page" value="<%= pagination.page + 1 %>" />
+                <button type="submit" class="btn small ghost">Next</button>
+              </form>
+
+              <form method="GET" action="/admin/users" style="display:inline;">
+                <input type="hidden" name="q" value="<%= f.q || '' %>" />
+                <input type="hidden" name="role" value="<%= effectiveRole || '' %>" />
+                <input type="hidden" name="status" value="<%= effectiveStatus || 'ACTIVE' %>" />
+                <input type="hidden" name="showInactive" value="<%= showInactive ? 'true' : 'false' %>" />
+                <input type="hidden" name="building" value="<%= effectiveBuilding || '' %>" />
+                <input type="hidden" name="shift" value="<%= effectiveShift || '' %>" />
+                <input type="hidden" name="sortBy" value="<%= effectiveSortBy %>" />
+                <input type="hidden" name="sortDir" value="<%= effectiveSortDir %>" />
+                <input type="hidden" name="pageSize" value="<%= pagination.pageSize %>" />
+                <input type="hidden" name="page" value="<%= pagination.totalPages %>" />
+                <button type="submit" class="btn small ghost">Last</button>
+              </form>
+            <% } %>
+          </div>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+</section>

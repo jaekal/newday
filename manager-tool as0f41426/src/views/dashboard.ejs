@@ -1,0 +1,1234 @@
+<!-- views/dashboard.ejs -->
+<%- include('layout') %>
+
+<%
+  const role = typeof currentUserRole !== 'undefined' ? String(currentUserRole).toUpperCase() : 'MANAGER';
+  const mode = typeof dashboardMode !== 'undefined' ? dashboardMode : 'executive';
+
+  const safeMonth = typeof month !== 'undefined' ? month : (new Date().getMonth() + 1);
+  const safeYear = typeof year !== 'undefined' ? year : (new Date().getFullYear());
+
+  const safeReviews = Array.isArray(staffSummaries) ? staffSummaries : [];
+  const safeMissing = Array.isArray(missingStaff) ? missingStaff : [];
+  const safeOpenGoals = Array.isArray(openGoals) ? openGoals : [];
+  const safeTopPerformers = Array.isArray(topPerformers) ? topPerformers : [];
+  const safeLowPerformers = Array.isArray(lowPerformers) ? lowPerformers : [];
+  const safeShiftTrends = Array.isArray(shiftTrends) ? shiftTrends : [];
+  const safeFutureMetrics = Array.isArray(futureMetrics) ? futureMetrics : [];
+
+  const safeReviewsCount = typeof reviewsCount === 'number' ? reviewsCount : 0;
+  const safeTeamAverage = (typeof teamAverage === 'number') ? teamAverage : null;
+
+  const safeStaffRatedCount = (typeof staffRatedCount === 'number') ? staffRatedCount : safeReviews.length;
+  const safeStaffTotalCount = (typeof staffTotalCount === 'number') ? staffTotalCount : (safeReviews.length + safeMissing.length);
+  const safeStaffRatedPercent = (typeof staffRatedPercent === 'number') ? staffRatedPercent : null;
+  const safePendingToRateCount = (typeof pendingToRateCount === 'number') ? pendingToRateCount : safeMissing.length;
+
+  const safeYtd = (typeof ytdCoverage === 'object' && ytdCoverage) ? ytdCoverage : null;
+  const safeAssignment = (typeof assignmentSummary === 'object' && assignmentSummary) ? assignmentSummary : null;
+  const PREVIEW_LIMIT = 5;
+
+  const safeReviewSummaries = Array.isArray(reviewSummaries) ? reviewSummaries : [];
+  const _calBuilding = typeof building !== 'undefined' ? String(building || '').trim() : '';
+
+  function _bucketCalib(key) {
+    const allVals  = safeReviewSummaries.map(function(s){ return s[key]; }).filter(function(v){ return typeof v === 'number' && !isNaN(v); });
+    const bldgVals = _calBuilding
+      ? safeReviewSummaries.filter(function(s){ return s.building === _calBuilding; }).map(function(s){ return s[key]; }).filter(function(v){ return typeof v === 'number' && !isNaN(v); })
+      : allVals;
+    const teamAvg  = allVals.length  ? allVals.reduce(function(a,b){ return a+b; }, 0)  / allVals.length  : null;
+    const bldgAvg  = bldgVals.length ? bldgVals.reduce(function(a,b){ return a+b; }, 0) / bldgVals.length : null;
+    return { teamAvg: teamAvg, bldgAvg: bldgAvg, hasData: allVals.length >= 2 };
+  }
+
+  const _calibData = {
+    overall:     _bucketCalib('avgScore'),
+    people:      _bucketCalib('bucketPeopleAvg'),
+    ownership:   _bucketCalib('bucketOwnershipAvg'),
+    quality:     _bucketCalib('bucketQualityAvg'),
+    partnership: _bucketCalib('bucketPartnershipAvg'),
+  };
+  const _showCalib = _calibData.overall.hasData;
+
+  const isAdmin = role === 'ADMIN';
+  const canManageUsers = ['ADMIN', 'MANAGER'].includes(role);
+  const canManageAssignments = ['ADMIN', 'MANAGER', 'SUPERVISOR'].includes(role);
+  const canSeeExports = ['ADMIN', 'MANAGER', 'SUPERVISOR'].includes(role);
+
+  function preview(arr, limit) {
+    if (!Array.isArray(arr)) return [];
+    return arr.slice(0, limit);
+  }
+
+  function remainderCount(arr, limit) {
+    if (!Array.isArray(arr)) return 0;
+    return Math.max(0, arr.length - limit);
+  }
+
+  function scoreClass(score) {
+    // Thresholds: complete ≥4.2, at-risk ≥3.4, overdue <3.4
+    // Class names map to --status-* tokens defined in :root of styles.css.
+    // To change colours, edit the CSS variables — not this function.
+    if (score == null || isNaN(score)) return 'status-badge';
+    if (score >= 4.2) return 'status-badge status-done';
+    if (score >= 3.4) return 'status-badge status-in-progress';
+    return 'status-badge status-overdue';
+  }
+
+  const pendingPreview = safeAssignment?.pendingAssignment ? preview(safeAssignment.pendingAssignment, PREVIEW_LIMIT) : [];
+  const pendingMoreCount = safeAssignment?.pendingAssignment ? remainderCount(safeAssignment.pendingAssignment, PREVIEW_LIMIT) : 0;
+
+  const byLeadPreview = safeAssignment?.byLead ? preview(safeAssignment.byLead, PREVIEW_LIMIT) : [];
+  const byLeadMoreCount = safeAssignment?.byLead ? remainderCount(safeAssignment.byLead, PREVIEW_LIMIT) : 0;
+
+  const perStaffPreview = safeYtd?.perStaffCoverage ? preview(safeYtd.perStaffCoverage, PREVIEW_LIMIT) : [];
+  const perStaffMoreCount = safeYtd?.perStaffCoverage ? remainderCount(safeYtd.perStaffCoverage, PREVIEW_LIMIT) : 0;
+
+  const goalsPreview = safeOpenGoals ? preview(safeOpenGoals, PREVIEW_LIMIT) : [];
+  const goalsMoreCount = safeOpenGoals ? remainderCount(safeOpenGoals, PREVIEW_LIMIT) : 0;
+
+  const staffSummaryPreview = safeReviews ? preview(safeReviews, PREVIEW_LIMIT) : [];
+  const staffSummaryMoreCount = safeReviews ? remainderCount(safeReviews, PREVIEW_LIMIT) : 0;
+%>
+
+<section class="page-header">
+  <div>
+    <h2>Operations Dashboard</h2>
+
+    <p class="muted">
+      <% if (mode === 'executive') { %>
+        Executive snapshot of review coverage, team performance, assignments, goals, and operational readiness.
+      <% } else { %>
+        Operational snapshot focused on pending actions, review completion, open follow-ups, and team visibility.
+      <% } %>
+    </p>
+  </div>
+
+  <form method="GET" action="/" class="inline-form date-filter">
+    <div class="field-inline">
+      <label>Month</label>
+      <input type="number" name="month" min="1" max="12" value="<%= safeMonth %>" />
+    </div>
+
+    <div class="field-inline">
+      <label>Year</label>
+      <input type="number" name="year" min="2020" max="2100" value="<%= safeYear %>" />
+    </div>
+
+    <% if (canFilterScope) { %>
+      <div class="field-inline">
+        <label>Building</label>
+        <select name="building">
+          <option value="">All</option>
+          <% (buildingOptions || []).forEach(function (b) { %>
+            <option value="<%= b %>" <%= building === b ? 'selected' : '' %>><%= b %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="field-inline">
+        <label>Shift</label>
+        <select name="shift">
+          <option value="">All</option>
+          <% (shiftOptions || []).forEach(function (sh) { %>
+            <option value="<%= sh %>" <%= shift === sh ? 'selected' : '' %>><%= sh %></option>
+          <% }) %>
+        </select>
+      </div>
+    <% } %>
+
+    <button type="submit" class="btn primary">Update</button>
+  </form>
+</section>
+
+<% if (mode === 'executive') { %>
+  <section class="kpi-grid">
+    <div class="card kpi-card">
+      <h3>Reviews Submitted</h3>
+      <p class="kpi-value"><%= safeReviewsCount %></p>
+      <p class="muted">Visible reviews for <strong><%= safeMonth %>/<%= safeYear %></strong>.</p>
+    </div>
+
+    <div class="card kpi-card">
+      <h3>Average Score</h3>
+      <p class="kpi-value">
+        <% if (safeTeamAverage != null && !isNaN(safeTeamAverage)) { %>
+          <%= safeTeamAverage.toFixed(2) %> / 5
+        <% } else { %>
+          N/A
+        <% } %>
+      </p>
+      <p class="muted">Average across visible scored reviews.</p>
+    </div>
+
+    <div class="card kpi-card">
+      <h3>Staff Rated %</h3>
+      <p class="kpi-value">
+        <% if (safeStaffRatedPercent != null && !isNaN(safeStaffRatedPercent)) { %>
+          <%= safeStaffRatedPercent.toFixed(1) %>%
+        <% } else { %>
+          N/A
+        <% } %>
+      </p>
+      <p class="muted"><strong><%= safeStaffRatedCount %></strong> of <strong><%= safeStaffTotalCount %></strong> staff rated.</p>
+    </div>
+
+    <div class="card kpi-card">
+      <h3>Missing Reviews</h3>
+      <p class="kpi-value"><%= safeMissing.length %></p>
+      <p class="muted">Staff in scope without a visible review this month.</p>
+    </div>
+
+    <div class="card kpi-card">
+      <h3>Open Goals</h3>
+      <p class="kpi-value"><%= safeOpenGoals.length %></p>
+      <p class="muted">Outstanding goals across the selected scope.</p>
+    </div>
+
+    <div class="card kpi-card">
+      <h3>Pending Reviews</h3>
+      <p class="kpi-value"><%= safePendingToRateCount %></p>
+      <p class="muted">People still needing monthly review follow-up.</p>
+    </div>
+
+    <div class="card kpi-card">
+      <h3>Top Performers</h3>
+      <p class="kpi-value"><%= safeTopPerformers.length %></p>
+      <p class="muted">Staff currently surfacing at the top of visible scoring.</p>
+    </div>
+
+    <div class="card kpi-card">
+      <h3>Needs Support</h3>
+      <p class="kpi-value"><%= safeLowPerformers.length %></p>
+      <p class="muted">Staff requiring coaching or closer follow-up.</p>
+    </div>
+  </section>
+
+  <%
+    /* ── Calibration helpers ──────────────────────────────────────────── */
+    const _calibBuckets = [
+      { key: 'overall',     label: 'Overall',      staffKey: 'avgScore'            },
+      { key: 'people',      label: 'People First', staffKey: 'bucketPeopleAvg'     },
+      { key: 'ownership',   label: 'Ownership',    staffKey: 'bucketOwnershipAvg'  },
+      { key: 'quality',     label: 'Quality',      staffKey: 'bucketQualityAvg'    },
+      { key: 'partnership', label: 'Partnership',  staffKey: 'bucketPartnershipAvg'},
+    ];
+
+    /* Score → zone class */
+    function _scoreClass(v) {
+      if (v == null) return '';
+      if (v < 2.5)  return 'score-low';
+      if (v < 3.5)  return 'score-mid';
+      return 'score-high';
+    }
+
+    /* Distribution across low / mid / high */
+    function _distFor(staffKey) {
+      const vals = safeReviewSummaries.map(function(s){ return s[staffKey]; }).filter(function(v){ return typeof v === 'number' && !isNaN(v); });
+      return {
+        low:   vals.filter(function(v){ return v < 2.5; }).length,
+        mid:   vals.filter(function(v){ return v >= 2.5 && v < 3.5; }).length,
+        high:  vals.filter(function(v){ return v >= 3.5; }).length,
+        total: vals.length,
+      };
+    }
+
+    /* Per-shift breakdown */
+    const _shiftMap = {};
+    safeReviewSummaries.forEach(function(s) {
+      const sh = s.shift || 'Unknown';
+      if (!_shiftMap[sh]) _shiftMap[sh] = [];
+      _shiftMap[sh].push(s);
+    });
+    const _calibByShift = Object.keys(_shiftMap).sort().map(function(sh) {
+      const staff = _shiftMap[sh];
+      function _shAvg(key) {
+        const v = staff.map(function(s){ return s[key]; }).filter(function(v){ return typeof v === 'number' && !isNaN(v); });
+        return v.length ? v.reduce(function(a,b){ return a+b; }, 0) / v.length : null;
+      }
+      return {
+        shift: sh, count: staff.length,
+        overall: _shAvg('avgScore'), people: _shAvg('bucketPeopleAvg'),
+        ownership: _shAvg('bucketOwnershipAvg'), quality: _shAvg('bucketQualityAvg'),
+        partnership: _shAvg('bucketPartnershipAvg'),
+      };
+    });
+
+    /* Prior-month lookup by bucket key */
+    const _prior = (typeof calibPriorMonth === 'object' && calibPriorMonth) ? calibPriorMonth : null;
+    function _trendFor(key, teamAvg) {
+      if (!_prior || _prior[key] == null || teamAvg == null) return null;
+      const diff = teamAvg - _prior[key];
+      return { diff: diff, cls: diff > 0.05 ? 'up' : diff < -0.05 ? 'down' : 'flat', str: (diff > 0 ? '+' : '') + diff.toFixed(2) };
+    }
+
+    /* Build export CSV URL preserving current filters */
+    const _csvParams = new URLSearchParams();
+    if (typeof building !== 'undefined' && building) _csvParams.set('building', building);
+    if (typeof shift    !== 'undefined' && shift)    _csvParams.set('shift',    shift);
+    if (typeof date     !== 'undefined' && date)     _csvParams.set('date',     date);
+    const _csvUrl = '/calibration.csv' + (_csvParams.toString() ? '?' + _csvParams.toString() : '');
+  %>
+
+  <section class="card calib-card">
+    <div class="calib-header">
+      <div>
+        <h3 class="calib-title">Score Calibration</h3>
+        <p class="calib-sub">My team vs <%= _calBuilding ? ('building ' + _calBuilding) : 'all visible staff' %> — <%= safeMonth %>/<%= safeYear %></p>
+      </div>
+      <div class="calib-actions">
+        <% if (_showCalib) { %>
+          <button class="calib-toggle-btn" id="calib-shift-toggle" type="button">By Shift</button>
+        <% } %>
+        <a href="/calibration" class="calib-toggle-btn">History</a>
+        <% if (_showCalib) { %>
+          <a href="<%= _csvUrl %>" class="calib-toggle-btn" download>Export CSV</a>
+        <% } %>
+        <span class="calib-legend-item calib-legend-team"><span class="calib-legend-dot"></span>My team</span>
+        <% if (_showCalib && _calibData.overall.bldgAvg != null) { %>
+          <span class="calib-legend-item calib-legend-bldg"><span class="calib-legend-dot"></span>Bldg avg</span>
+        <% } %>
+      </div>
+    </div>
+
+    <% if (!_showCalib) { %>
+      <div class="calib-empty">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8M8 16h5M8 8h8"/>
+        </svg>
+        <p>No review data for this period yet.</p>
+        <p>Score calibration will appear once at least 2 reviews are submitted.</p>
+      </div>
+    <% } else { %>
+
+    <div class="calib-rows" id="calib-rows">
+      <% _calibBuckets.forEach(function(b) {
+           const d      = _calibData[b.key];
+           if (!d || d.teamAvg == null) return;
+           const teamPct   = Math.round(((d.teamAvg - 1) / 4) * 100);
+           const bldgPct   = d.bldgAvg != null ? Math.round(((d.bldgAvg - 1) / 4) * 100) : null;
+           const delta     = d.bldgAvg != null ? (d.teamAvg - d.bldgAvg) : null;
+           const deltaClass = delta == null ? '' : delta > 0.05 ? 'delta-pos' : delta < -0.05 ? 'delta-neg' : 'delta-flat';
+           const deltaStr   = delta == null ? '' : (delta > 0 ? '+' : '') + delta.toFixed(2);
+           const fillClass  = _scoreClass(d.teamAvg);
+           const isOutlier  = delta != null && delta < -0.5;
+           const trend      = _trendFor(b.key, d.teamAvg);
+           const dist       = _distFor(b.staffKey);
+
+           /* Staff contributing to this bucket, sorted by score asc */
+           const _bStaff = safeReviewSummaries
+             .filter(function(s){ return s[b.staffKey] != null; })
+             .map(function(s){ return { name: s.staff ? s.staff.name : '?', score: s[b.staffKey], shift: s.shift || '' }; })
+             .sort(function(a,c){ return a.score - c.score; });
+      %>
+      <div class="calib-row-wrap">
+        <div class="calib-row" data-expand="calib-panel-<%= b.key %>" role="button" tabindex="0"
+             title="Click to see individual scores">
+          <div class="calib-row-label">
+            <%= b.label %>
+            <% if (isOutlier) { %><span class="calib-outlier" title="Your team is significantly below building average on this bucket">!</span><% } %>
+          </div>
+          <div class="calib-bar-wrap">
+            <div class="calib-bar-track">
+              <div class="calib-bar-zones" aria-hidden="true">
+                <div class="calib-zone-low"></div>
+                <div class="calib-zone-mid"></div>
+                <div class="calib-zone-high"></div>
+              </div>
+              <div class="calib-bar-fill <%= fillClass %>" style="width:<%= teamPct %>%"></div>
+              <% if (bldgPct != null) { %><div class="calib-bar-marker" style="left:<%= bldgPct %>%"></div><% } %>
+            </div>
+            <div class="calib-row-meta">
+              <span class="calib-val-team"><%= d.teamAvg.toFixed(2) %></span>
+              <% if (d.bldgAvg != null) { %><span class="calib-val-bldg">/ <%= d.bldgAvg.toFixed(2) %></span><% } %>
+              <% if (delta != null) { %><span class="calib-delta <%= deltaClass %>"><%= deltaStr %></span><% } %>
+              <% if (trend) { %><span class="calib-trend <%= trend.cls %>"><%= trend.cls === 'up' ? '↑' : trend.cls === 'down' ? '↓' : '→' %> <%= trend.str %></span><% } %>
+            </div>
+          </div>
+        </div>
+
+        <%/* Distribution dots */%>
+        <% if (dist.total > 0) { %>
+        <div class="calib-dist" aria-label="Score distribution">
+          <% for (var _i = 0; _i < dist.low;  _i++) { %><span class="calib-dist-dot low"  title="Below 2.5"></span><% } %>
+          <% for (var _i = 0; _i < dist.mid;  _i++) { %><span class="calib-dist-dot mid"  title="2.5–3.5"></span><% } %>
+          <% for (var _i = 0; _i < dist.high; _i++) { %><span class="calib-dist-dot high" title="3.5+"></span><% } %>
+          <span class="calib-dist-label"><%= dist.low %> low · <%= dist.mid %> mid · <%= dist.high %> high</span>
+        </div>
+        <% } %>
+
+        <%/* Collapsible staff list */%>
+        <div class="calib-expand-panel" id="calib-panel-<%= b.key %>">
+          <% if (_bStaff.length === 0) { %>
+            <span class="calib-no-data">No individual scores available.</span>
+          <% } else { %>
+            <% _bStaff.forEach(function(st) { %>
+            <div class="calib-staff-row">
+              <span class="calib-staff-name"><a href="/staff?q=<%= encodeURIComponent(st.name) %>"><%= st.name %></a></span>
+              <span class="calib-staff-score <%= _scoreClass(st.score) %>"><%= st.score.toFixed(2) %></span>
+              <span class="calib-staff-shift"><%= st.shift %></span>
+            </div>
+            <% }); %>
+          <% } %>
+        </div>
+      </div>
+      <% }); %>
+    </div>
+
+    <%/* Per-shift breakdown panel */%>
+    <div class="calib-shift-panel" id="calib-shift-panel">
+      <h4 style="margin:0 0 0.6rem; font-size:0.85rem; color:var(--text-secondary);">Breakdown by Shift</h4>
+      <% if (_calibByShift.length === 0) { %>
+        <span class="calib-no-data">No shift data available.</span>
+      <% } else { %>
+      <div class="table-scroll">
+      <table class="calib-shift-table">
+        <thead>
+          <tr>
+            <th>Shift</th><th>Staff</th><th>Overall</th>
+            <th>People</th><th>Ownership</th><th>Quality</th><th>Partnership</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% _calibByShift.forEach(function(sh) { %>
+          <tr>
+            <td><%= sh.shift %></td>
+            <td><%= sh.count %></td>
+            <td class="<%= _scoreClass(sh.overall) %>"><%= sh.overall != null ? sh.overall.toFixed(2) : '—' %></td>
+            <td class="<%= _scoreClass(sh.people) %>"><%= sh.people != null ? sh.people.toFixed(2) : '—' %></td>
+            <td class="<%= _scoreClass(sh.ownership) %>"><%= sh.ownership != null ? sh.ownership.toFixed(2) : '—' %></td>
+            <td class="<%= _scoreClass(sh.quality) %>"><%= sh.quality != null ? sh.quality.toFixed(2) : '—' %></td>
+            <td class="<%= _scoreClass(sh.partnership) %>"><%= sh.partnership != null ? sh.partnership.toFixed(2) : '—' %></td>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+      </div>
+      <% } %>
+    </div>
+
+    <% } /* end _showCalib */ %>
+  </section>
+
+  <script>
+  (function() {
+    /* ── Expand/collapse bucket rows ── */
+    document.querySelectorAll('.calib-row[data-expand]').forEach(function(row) {
+      function toggle() {
+        var panelId = row.getAttribute('data-expand');
+        var panel = document.getElementById(panelId);
+        if (!panel) return;
+        panel.classList.toggle('open');
+        row.classList.toggle('active');
+      }
+      row.addEventListener('click', toggle);
+      row.addEventListener('keydown', function(e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+    });
+
+    /* ── Per-shift toggle ── */
+    var shiftBtn   = document.getElementById('calib-shift-toggle');
+    var shiftPanel = document.getElementById('calib-shift-panel');
+    if (shiftBtn && shiftPanel) {
+      shiftBtn.addEventListener('click', function() {
+        var open = shiftPanel.classList.toggle('open');
+        shiftBtn.classList.toggle('active', open);
+      });
+    }
+
+    /* ── Persist building filter via localStorage ── */
+    var buildingSelect = document.querySelector('select[name="building"]');
+    if (buildingSelect) {
+      var stored = localStorage.getItem('dash-calib-building');
+      if (stored && !buildingSelect.value) buildingSelect.value = stored;
+      buildingSelect.addEventListener('change', function() {
+        localStorage.setItem('dash-calib-building', this.value);
+      });
+    }
+  })();
+  </script>
+
+  <section class="layout-two-column">
+    <div class="card">
+      <div class="section-header">
+        <h3>Top Performers</h3>
+        <a href="/staff" class="btn ghost">View All Staff</a>
+      </div>
+
+      <div class="table-scroll"><table class="compact-table">
+        <thead>
+          <tr>
+            <th>Staff</th>
+            <th>Shift</th>
+            <th style="width:140px;">Avg Score</th>
+            <th style="width:120px;">Reviews</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (!safeTopPerformers.length) { %>
+            <tr><td colspan="4" class="muted">No scored reviews available.</td></tr>
+          <% } %>
+          <% safeTopPerformers.forEach(function (row) { %>
+            <tr>
+              <td><%= row.staff ? row.staff.name : 'N/A' %></td>
+              <td><%= row.shift || '-' %></td>
+              <td>
+                <% if (row.avgScore != null) { %>
+                  <span class="<%= scoreClass(row.avgScore) %>"><%= row.avgScore.toFixed(2) %> / 5</span>
+                <% } else { %>
+                  N/A
+                <% } %>
+              </td>
+              <td><%= row.reviewCount || 0 %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-header">
+        <h3>Needs Support</h3>
+        <a href="/staff" class="btn ghost">Open Profiles</a>
+      </div>
+
+      <div class="table-scroll"><table class="compact-table">
+        <thead>
+          <tr>
+            <th>Staff</th>
+            <th>Shift</th>
+            <th style="width:140px;">Avg Score</th>
+            <th style="width:120px;">Reviews</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (!safeLowPerformers.length) { %>
+            <tr><td colspan="4" class="muted">No scored reviews available.</td></tr>
+          <% } %>
+          <% safeLowPerformers.forEach(function (row) { %>
+            <tr>
+              <td><%= row.staff ? row.staff.name : 'N/A' %></td>
+              <td><%= row.shift || '-' %></td>
+              <td>
+                <% if (row.avgScore != null) { %>
+                  <span class="<%= scoreClass(row.avgScore) %>"><%= row.avgScore.toFixed(2) %> / 5</span>
+                <% } else { %>
+                  N/A
+                <% } %>
+              </td>
+              <td><%= row.reviewCount || 0 %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="layout-two-column">
+    <div class="card">
+      <h3>Shift Trends</h3>
+
+      <div class="table-scroll"><table class="compact-table">
+        <thead>
+          <tr>
+            <th>Shift</th>
+            <th style="width:120px;">Staff</th>
+            <th style="width:120px;">Reviews</th>
+            <th style="width:160px;">Avg Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (!safeShiftTrends.length) { %>
+            <tr><td colspan="4" class="muted">No shift trend data available.</td></tr>
+          <% } %>
+          <% safeShiftTrends.forEach(function (row) { %>
+            <tr>
+              <td><%= row.shift %></td>
+              <td><%= row.staffCount %></td>
+              <td><%= row.reviewsCount %></td>
+              <td>
+                <% if (row.avgScore != null) { %>
+                  <%= row.avgScore.toFixed(2) %> / 5
+                <% } else { %>
+                  N/A
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Operational Metrics Coming Online</h3>
+      <p class="muted" style="margin-top:0;">
+        These cards are structurally ready, but the production-test data pipeline is not yet wired into this dashboard route.
+      </p>
+
+      <div class="kpi-strip" style="flex-wrap:wrap;">
+        <% safeFutureMetrics.forEach(function (m) { %>
+          <div class="kpi-pill">
+            <div class="kpi-pill-label"><%= m.label %></div>
+            <div class="kpi-pill-value">N/A</div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  </section>
+
+  <% if (safeYtd) { %>
+    <section class="layout-two-column">
+      <div class="card">
+        <div class="section-header">
+          <div>
+            <h3>Per-Staff Review Coverage (YTD)</h3>
+            <p class="muted" style="margin:0;">How many months each person has been graded this year.</p>
+          </div>
+          <a href="/staff" class="btn ghost">View All Staff</a>
+        </div>
+
+        <div class="table-scroll"><table class="compact-table">
+          <thead>
+            <tr>
+              <th>Staff</th>
+              <th style="width:140px;">Months Graded</th>
+              <th style="width:140px;">Months Missing</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% perStaffPreview.forEach(function (row) { %>
+              <tr>
+                <td><%= row.staff ? row.staff.name : 'N/A' %></td>
+                <td><%= row.monthsGraded %></td>
+                <td><%= row.monthsMissing %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+
+        <% if (perStaffMoreCount > 0) { %>
+          <div class="more-row">
+            <span class="muted"><%= perStaffMoreCount %> more staff not shown</span>
+            <a href="/staff" class="btn tiny ghost">View all</a>
+          </div>
+        <% } %>
+      </div>
+
+      <div class="card">
+        <h3>Reviews Submitted Per Month (YTD)</h3>
+        <div class="table-scroll"><table class="compact-table">
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th style="width:180px;">Reviews Submitted</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% (safeYtd.reviewsPerMonth || []).forEach(function (m) { %>
+              <tr>
+                <td><%= m.month %></td>
+                <td><%= m.count %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+      </div>
+    </section>
+  <% } %>
+
+<% } else { %>
+  <section class="kpi-grid">
+    <div class="card kpi-card">
+      <h3>Reviews Pending</h3>
+      <p class="kpi-value"><%= safePendingToRateCount %></p>
+      <p class="muted">Team members still missing a review this month.</p>
+    </div>
+
+    <div class="card kpi-card">
+      <h3>Reviews Submitted</h3>
+      <p class="kpi-value"><%= safeReviewsCount %></p>
+      <p class="muted">
+        <% if (role === 'LEAD') { %>
+          Reviews submitted by you this month.
+        <% } else { %>
+          Reviews submitted by you and in-scope leads this month.
+        <% } %>
+      </p>
+    </div>
+
+    <div class="card kpi-card">
+      <h3>Open Goals</h3>
+      <p class="kpi-value"><%= safeOpenGoals.length %></p>
+      <p class="muted">Goals needing attention in your scope.</p>
+    </div>
+
+    <div class="card kpi-card">
+      <h3>Average Score</h3>
+      <p class="kpi-value">
+        <% if (safeTeamAverage != null && !isNaN(safeTeamAverage)) { %>
+          <%= safeTeamAverage.toFixed(2) %> / 5
+        <% } else { %>
+          N/A
+        <% } %>
+      </p>
+      <p class="muted">Current review average for your visible team.</p>
+    </div>
+
+    <div class="card kpi-card">
+      <h3>Missing Reviews</h3>
+      <p class="kpi-value"><%= safeMissing.length %></p>
+      <p class="muted">Review follow-up queue for this period.</p>
+    </div>
+
+    <div class="card kpi-card">
+      <h3>In-Scope Staff</h3>
+      <p class="kpi-value"><%= safeStaffTotalCount %></p>
+      <p class="muted">Visible team size for the selected filters.</p>
+    </div>
+  </section>
+
+  <section class="layout-two-column">
+    <div class="card">
+      <div class="section-header">
+        <h3>Pending Review Follow-Up</h3>
+        <a href="/reviews/new" class="btn ghost">+ New Review</a>
+      </div>
+
+      <% if (!safeMissing.length) { %>
+        <p class="muted">
+          <% if (role === 'LEAD') { %>
+            All assigned staff have a review from you for this month.
+          <% } else { %>
+            All visible staff have at least one review this month.
+          <% } %>
+        </p>
+      <% } else { %>
+        <ul class="tag-list">
+          <% safeMissing.slice(0, PREVIEW_LIMIT).forEach(function (s) { %>
+            <li class="chip">
+              <span><%= s.name %></span>
+              <a href="/reviews/new?staffId=<%= s.id %>" class="chip-action">Add Review</a>
+            </li>
+          <% }) %>
+        </ul>
+
+        <% if (safeMissing.length > PREVIEW_LIMIT) { %>
+          <div class="more-row">
+            <span class="muted"><%= (safeMissing.length - PREVIEW_LIMIT) %> more not shown</span>
+            <a href="/staff" class="btn tiny ghost">View all</a>
+          </div>
+        <% } %>
+      <% } %>
+
+      <hr style="margin:1rem 0; opacity:0.35;" />
+
+      <h4>Operational Metrics Coming Online</h4>
+      <p class="muted" style="margin-top:0;">
+        These are the production-floor metrics that should land next once the test/repair data source is wired up.
+      </p>
+
+      <div class="kpi-strip" style="flex-wrap:wrap;">
+        <% safeFutureMetrics.forEach(function (m) { %>
+          <div class="kpi-pill">
+            <div class="kpi-pill-label"><%= m.label %></div>
+            <div class="kpi-pill-value">N/A</div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-header">
+        <h3>Open Goals Requiring Attention</h3>
+        <a href="/goals" class="btn ghost">View Goals</a>
+      </div>
+
+      <% if (!safeOpenGoals.length) { %>
+        <p class="muted">No open goals found in the current scope.</p>
+      <% } else { %>
+        <div class="table-scroll"><table class="compact-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th style="width:160px;">Status</th>
+              <th style="width:140px;">Due</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% goalsPreview.forEach(function (g) { %>
+              <tr>
+                <td><%= g.title %></td>
+                <td>
+                  <%
+                    var status = (g.status || '').toUpperCase();
+                    var statusClass = 'status-badge';
+                    if (status === 'OPEN')        { statusClass += ' status-open'; }
+                    if (status === 'IN_PROGRESS') { statusClass += ' status-in-progress'; }
+                    if (status === 'DONE')        { statusClass += ' status-done'; }
+                    if (status === 'ON_HOLD')     { statusClass += ' status-pending'; }
+                  %>
+                  <span class="<%= statusClass %>"><%= g.status %></span>
+                </td>
+                <td><%= g.dueDate || '' %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+
+        <% if (goalsMoreCount > 0) { %>
+          <div class="more-row">
+            <span class="muted"><%= goalsMoreCount %> more not shown</span>
+            <a href="/goals" class="btn tiny ghost">View all</a>
+          </div>
+        <% } %>
+      <% } %>
+    </div>
+  </section>
+<% } %>
+
+<section class="layout-two-column">
+  <div class="card">
+    <% if (role === 'ADMIN' || role === 'SENIOR_MANAGER' || role === 'MANAGER') { %>
+      <h3>Coverage Pulse</h3>
+      <p class="muted" style="margin:0 0 0.1rem;">Review health for <%= safeMonth %>/<%= safeYear %>.</p>
+      <div class="dash-status-list">
+        <div class="dash-status-row <%= safeStaffRatedPercent != null && safeStaffRatedPercent >= 80 ? 'good' : safeStaffRatedPercent != null && safeStaffRatedPercent >= 50 ? 'warn' : 'alert' %>">
+          <span class="dash-status-label">Coverage</span>
+          <span class="dash-status-value"><%= safeStaffRatedPercent != null ? safeStaffRatedPercent.toFixed(0) + '%' : 'N/A' %></span>
+        </div>
+        <div class="dash-status-row <%= safeStaffRatedCount === safeStaffTotalCount ? 'good' : 'warn' %>">
+          <span class="dash-status-label">Rated</span>
+          <span class="dash-status-value"><%= safeStaffRatedCount %> / <%= safeStaffTotalCount %></span>
+        </div>
+        <div class="dash-status-row <%= safePendingToRateCount === 0 ? 'good' : safePendingToRateCount <= 3 ? 'warn' : 'alert' %>">
+          <span class="dash-status-label">Pending Reviews</span>
+          <span class="dash-status-value"><%= safePendingToRateCount %></span>
+        </div>
+        <div class="dash-status-row">
+          <span class="dash-status-label">Open Goals</span>
+          <span class="dash-status-value"><%= safeOpenGoals.length %></span>
+        </div>
+        <div class="dash-status-row <%= safeTopPerformers.length > 0 ? 'good' : '' %>">
+          <span class="dash-status-label">Top Performers</span>
+          <span class="dash-status-value"><%= safeTopPerformers.length %></span>
+        </div>
+        <div class="dash-status-row <%= safeLowPerformers.length > 0 ? 'alert' : 'good' %>">
+          <span class="dash-status-label">Needs Support</span>
+          <span class="dash-status-value"><%= safeLowPerformers.length %></span>
+        </div>
+      </div>
+    <% } else if (role === 'SUPERVISOR') { %>
+      <h3>Team Status</h3>
+      <p class="muted" style="margin:0 0 0.1rem;">Your team snapshot for <%= safeMonth %>/<%= safeYear %>.</p>
+      <div class="dash-status-list">
+        <div class="dash-status-row <%= safeReviewsCount > 0 ? 'good' : 'warn' %>">
+          <span class="dash-status-label">Reviews Submitted</span>
+          <span class="dash-status-value"><%= safeReviewsCount %></span>
+        </div>
+        <div class="dash-status-row <%= safeMissing.length === 0 ? 'good' : safeMissing.length <= 3 ? 'warn' : 'alert' %>">
+          <span class="dash-status-label">Missing Reviews</span>
+          <span class="dash-status-value"><%= safeMissing.length %></span>
+        </div>
+        <div class="dash-status-row">
+          <span class="dash-status-label">In-Scope Staff</span>
+          <span class="dash-status-value"><%= safeStaffTotalCount %></span>
+        </div>
+        <div class="dash-status-row <%= safeTeamAverage != null && safeTeamAverage >= 4.2 ? 'good' : safeTeamAverage != null && safeTeamAverage >= 3.4 ? 'warn' : 'alert' %>">
+          <span class="dash-status-label">Team Avg Score</span>
+          <span class="dash-status-value"><%= safeTeamAverage != null ? safeTeamAverage.toFixed(2) : 'N/A' %></span>
+        </div>
+        <div class="dash-status-row">
+          <span class="dash-status-label">Open Goals</span>
+          <span class="dash-status-value"><%= safeOpenGoals.length %></span>
+        </div>
+      </div>
+    <% } else { %>
+      <h3>My Queue</h3>
+      <p class="muted" style="margin:0 0 0.1rem;">Your action items for <%= safeMonth %>/<%= safeYear %>.</p>
+      <div class="dash-status-list">
+        <div class="dash-status-row <%= safeReviewsCount > 0 ? 'good' : 'warn' %>">
+          <span class="dash-status-label">Reviews Submitted</span>
+          <span class="dash-status-value"><%= safeReviewsCount %></span>
+        </div>
+        <div class="dash-status-row <%= safeMissing.length === 0 ? 'good' : safeMissing.length <= 2 ? 'warn' : 'alert' %>">
+          <span class="dash-status-label">Still Need Reviews</span>
+          <span class="dash-status-value"><%= safeMissing.length %></span>
+        </div>
+        <div class="dash-status-row">
+          <span class="dash-status-label">Assigned Staff</span>
+          <span class="dash-status-value"><%= safeStaffTotalCount %></span>
+        </div>
+        <div class="dash-status-row <%= safeOpenGoals.length === 0 ? 'good' : 'warn' %>">
+          <span class="dash-status-label">Open Goals</span>
+          <span class="dash-status-value"><%= safeOpenGoals.length %></span>
+        </div>
+      </div>
+    <% } %>
+  </div>
+
+  <div class="card">
+    <h3>Quick Actions</h3>
+    <div class="quick-actions-vertical">
+      <a href="/reviews/new" class="btn primary">+ New Monthly Review</a>
+      <a href="/staff" class="btn ghost">View Staff</a>
+      <a href="/calendar" class="btn ghost">View Calendar</a>
+      <a href="/goals/new" class="btn ghost">+ New Goal</a>
+      <a href="/incidents/new" class="btn ghost">+ Log Incident</a>
+      <a href="/meetings/new" class="btn ghost">+ Schedule 1:1</a>
+      <% if (canSeeExports) { %>
+        <a href="/exports" class="btn ghost">Export Data (CSV)</a>
+        <a href="/imports" class="btn ghost">Imports</a>
+      <% } %>
+      <% if (canManageAssignments) { %>
+        <a href="/assignments" class="btn ghost">Review Assignments</a>
+      <% } %>
+      <% if (canManageUsers) { %>
+        <a href="/admin/users" class="btn ghost">User Management</a>
+      <% } %>
+      <% if (isAdmin) { %>
+        <a href="/admin/audit" class="btn ghost">Audit Center</a>
+      <% } %>
+    </div>
+  </div>
+</section>
+
+<% if ((role === 'MANAGER' || role === 'SENIOR_MANAGER' || role === 'ADMIN' || role === 'SUPERVISOR') && safeAssignment) { %>
+  <section class="layout-two-column">
+    <div class="card card-accent">
+      <div class="section-header">
+        <div>
+          <h3>Assignments Coverage</h3>
+          <p class="muted" style="margin:0;">Snapshot of assignment health for the selected scope.</p>
+        </div>
+        <a href="/assignments" class="btn ghost">Manage</a>
+      </div>
+
+      <div class="kpi-strip">
+        <div class="kpi-pill">
+          <div class="kpi-pill-label">Assigned</div>
+          <div class="kpi-pill-value"><%= safeAssignment.assignedCount %></div>
+        </div>
+
+        <div class="kpi-pill kpi-pill-warn">
+          <div class="kpi-pill-label">Pending</div>
+          <div class="kpi-pill-value"><%= safeAssignment.pendingCount %></div>
+        </div>
+      </div>
+
+      <div class="subgrid">
+        <div class="subcard">
+          <div class="subcard-title">Pending to be Assigned (Top <%= PREVIEW_LIMIT %>)</div>
+
+          <% if (!safeAssignment.pendingAssignment || !safeAssignment.pendingAssignment.length) { %>
+            <p class="muted" style="margin:0;">No staff pending assignment in this scope.</p>
+          <% } else { %>
+            <ul class="compact-list">
+              <% pendingPreview.forEach(function (s) { %>
+                <li class="compact-row">
+                  <span class="compact-name"><%= s.name %></span>
+                  <a class="btn tiny ghost" href="/assignments?staffId=<%= s.id %>">Assign</a>
+                </li>
+              <% }) %>
+            </ul>
+
+            <% if (pendingMoreCount > 0) { %>
+              <div class="more-row">
+                <span class="muted"><%= pendingMoreCount %> more not shown</span>
+                <a href="/assignments" class="btn tiny ghost">View all</a>
+              </div>
+            <% } %>
+          <% } %>
+        </div>
+
+        <div class="subcard">
+          <div class="subcard-title">Assigned to Leads (Top <%= PREVIEW_LIMIT %>)</div>
+
+          <% if (!safeAssignment.byLead || !safeAssignment.byLead.length) { %>
+            <p class="muted" style="margin:0;">No active assignments found.</p>
+          <% } else { %>
+            <div class="table-scroll"><table class="compact-table">
+              <thead>
+                <tr>
+                  <th>Lead</th>
+                  <th style="width:120px;">Assigned</th>
+                  <th style="width:120px;">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% byLeadPreview.forEach(function (row) { %>
+                  <tr>
+                    <td><%= row.reviewer ? row.reviewer.name : 'N/A' %></td>
+                    <td><%= (row.staff || []).filter(Boolean).length %></td>
+                    <td>
+                      <a class="btn tiny ghost" href="/assignments?reviewerId=<%= row.reviewer ? row.reviewer.id : '' %>">View</a>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+      </div>
+
+            <% if (byLeadMoreCount > 0) { %>
+              <div class="more-row">
+                <span class="muted"><%= byLeadMoreCount %> more leads not shown</span>
+                <a href="/assignments" class="btn tiny ghost">View all</a>
+              </div>
+            <% } %>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <% if (role === 'ADMIN' || role === 'SENIOR_MANAGER' || role === 'MANAGER') { %>
+        <h3>Assignment Health</h3>
+        <p class="muted" style="margin:0 0 0.1rem;">Quick read on lead assignment coverage.</p>
+        <div class="dash-status-list">
+          <div class="dash-status-row <%= safeAssignment && safeAssignment.pendingCount === 0 ? 'good' : 'warn' %>">
+            <span class="dash-status-label">Unassigned Staff</span>
+            <span class="dash-status-value"><%= safeAssignment ? safeAssignment.pendingCount : '—' %></span>
+          </div>
+          <div class="dash-status-row good">
+            <span class="dash-status-label">Assigned Staff</span>
+            <span class="dash-status-value"><%= safeAssignment ? safeAssignment.assignedCount : '—' %></span>
+          </div>
+          <div class="dash-status-row">
+            <span class="dash-status-label">Active Leads</span>
+            <span class="dash-status-value"><%= safeAssignment && safeAssignment.byLead ? safeAssignment.byLead.length : '—' %></span>
+          </div>
+        </div>
+      <% } else { %>
+        <h3>Assignment Health</h3>
+        <p class="muted" style="margin:0 0 0.1rem;">Your assignment snapshot.</p>
+        <div class="dash-status-list">
+          <div class="dash-status-row <%= safeAssignment && safeAssignment.pendingCount === 0 ? 'good' : 'warn' %>">
+            <span class="dash-status-label">Pending Assignments</span>
+            <span class="dash-status-value"><%= safeAssignment ? safeAssignment.pendingCount : '—' %></span>
+          </div>
+          <div class="dash-status-row good">
+            <span class="dash-status-label">Assigned</span>
+            <span class="dash-status-value"><%= safeAssignment ? safeAssignment.assignedCount : '—' %></span>
+          </div>
+        </div>
+      <% } %>
+    </div>
+  </section>
+<% } %>
+
+<section class="layout-two-column">
+  <div class="card">
+    <div class="section-header">
+      <h3><%= mode === 'executive' ? 'Team Score Snapshot' : 'Per-Staff Summary' %></h3>
+      <a href="/reviews/new" class="btn ghost">+ New Review</a>
+    </div>
+
+    <div class="table-scroll"><table class="compact-table">
+      <thead>
+        <tr>
+          <th>Staff</th>
+          <th>Shift</th>
+          <th style="width:140px;">Avg Score</th>
+          <th style="width:120px;"># Reviews</th>
+          <th style="width:140px;">Profile</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!safeReviews.length) { %>
+          <tr>
+            <td colspan="5" class="muted">No reviews visible for this period with the current filters.</td>
+          </tr>
+        <% } %>
+        <% staffSummaryPreview.forEach(function (row) { %>
+          <tr>
+            <td><%= row.staff ? row.staff.name : 'N/A' %></td>
+            <td><%= row.shift || '-' %></td>
+            <td>
+              <% if (row.avgScore != null && !isNaN(row.avgScore)) { %>
+                <span class="<%= scoreClass(row.avgScore) %>"><%= row.avgScore.toFixed(2) %> / 5</span>
+              <% } else { %>N/A<% } %>
+            </td>
+            <td><%= row.reviewCount || 0 %></td>
+            <td><% if (row.staff) { %><a href="/staff/<%= row.staff.id %>">View Profile</a><% } %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+      </div>
+
+    <% if (staffSummaryMoreCount > 0) { %>
+      <div class="more-row">
+        <span class="muted"><%= staffSummaryMoreCount %> more staff not shown</span>
+        <a href="/staff" class="btn tiny ghost">View all</a>
+      </div>
+    <% } %>
+  </div>
+
+  <div class="card">
+    <div class="section-header">
+      <h3>Open Goals</h3>
+      <a href="/goals" class="btn ghost">View All</a>
+    </div>
+
+    <% if (!safeOpenGoals.length) { %>
+      <p class="muted">No open goals at the moment.</p>
+    <% } else { %>
+      <div class="table-scroll"><table class="compact-table">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th style="width:160px;">Status</th>
+            <th style="width:130px;">Due</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% goalsPreview.forEach(function (g) { %>
+            <tr>
+              <td><%= g.title %></td>
+              <td>
+                <%
+                  var gStatus = (g.status || '').toUpperCase();
+                  var gClass = 'status-badge';
+                  if (gStatus === 'OPEN')        { gClass += ' status-open'; }
+                  if (gStatus === 'IN_PROGRESS') { gClass += ' status-in-progress'; }
+                  if (gStatus === 'DONE')        { gClass += ' status-done'; }
+                  if (gStatus === 'ON_HOLD')     { gClass += ' status-pending'; }
+                %>
+                <span class="<%= gClass %>"><%= g.status %></span>
+              </td>
+              <td><%= g.dueDate || '' %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+      </div>
+
+      <% if (goalsMoreCount > 0) { %>
+        <div class="more-row">
+          <span class="muted"><%= goalsMoreCount %> more goals not shown</span>
+          <a href="/goals" class="btn tiny ghost">View all</a>
+        </div>
+      <% } %>
+    <% } %>
+  </div>
+</section>
+
+<%
+  const safeHeatMap = (typeof teamHeatMap !== 'undefined' && teamHeatMap && teamHeatMap.staff && teamHeatMap.staff.length > 0) ? teamHeatMap : null;
+%>
+<% if (safeHeatMap) { %>
+<section class="dashboard-section">
+  <div class="section-header">
+    <h2>Team Performance Heat Map <span class="muted small">— <%= month %>/<%= year %></span></h2>
+  </div>
+  <div class="card" style="overflow-x:auto; padding:0.75rem;">
+    <script id="heatMapData" type="application/json">
+      <%- JSON.stringify({ fields: safeHeatMap.labels, staff: safeHeatMap.staff }) %>
+    </script>
+    <canvas id="teamHeatMapCanvas"></canvas>
+    <script>
+    (function() {
+      const data = JSON.parse(document.getElementById('heatMapData').textContent || '{}');
+      const staff = data.staff || [];
+      const fields = data.fields || [];
+      if (!staff.length || !fields.length) return;
+
+      const CELL_W = 36, CELL_H = 28;
+      const LABEL_W = 80, HEADER_H = 64;
+      const canvas = document.getElementById('teamHeatMapCanvas');
+      canvas.width = LABEL_W + fields.length * CELL_W;
+      canvas.height = HEADER_H + staff.length * CELL_H;
+      canvas.style.display = 'block';
+
+      const ctx = canvas.getContext('2d');
+
+      function scoreColor(s) {
+        if (s == null) return '#1f2937';
+        if (s >= 5) return '#059669';
+        if (s >= 4) return '#34d399';
+        if (s >= 3) return '#fbbf24';
+        if (s >= 2) return '#f97316';
+        return '#ef4444';
+      }
+
+      function textColor(s) {
+        return (s == null || s < 2 || s >= 3) ? '#f9fafb' : '#111827';
+      }
+
+      ctx.fillStyle = '#0d1117';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.font = '10px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // Field headers (rotated)
+      fields.forEach(function(label, fi) {
+        const x = LABEL_W + fi * CELL_W + CELL_W / 2;
+        ctx.save();
+        ctx.translate(x, HEADER_H - 4);
+        ctx.rotate(-Math.PI / 2.5);
+        ctx.fillStyle = '#9ca3af';
+        ctx.textAlign = 'left';
+        ctx.fillText(label, 0, 0);
+        ctx.restore();
+      });
+
+      // Rows
+      staff.forEach(function(s, si) {
+        const y = HEADER_H + si * CELL_H;
+
+        // Staff name label
+        ctx.fillStyle = '#d1d5db';
+        ctx.textAlign = 'right';
+        ctx.fillText(s.staffName.slice(0, 10), LABEL_W - 4, y + CELL_H / 2);
+
+        // Score cells
+        s.scores.forEach(function(score, fi) {
+          const x = LABEL_W + fi * CELL_W;
+          ctx.fillStyle = scoreColor(score);
+          ctx.fillRect(x + 1, y + 1, CELL_W - 2, CELL_H - 2);
+          if (score != null) {
+            ctx.fillStyle = textColor(score);
+            ctx.textAlign = 'center';
+            ctx.fillText(score, x + CELL_W / 2, y + CELL_H / 2);
+          }
+        });
+      });
+    })();
+    </script>
+  </div>
+</section>
+<% } %>
+
+<% const safeActivityFeed = (typeof activityFeed !== 'undefined' && Array.isArray(activityFeed)) ? activityFeed : []; %>
+<% if (safeActivityFeed.length > 0) { %>
+<section class="dashboard-section">
+  <div class="section-header">
+    <h2>Recent Activity</h2>
+  </div>
+  <div class="card" style="padding:0;">
+    <ul class="activity-feed-list">
+      <% safeActivityFeed.forEach(function(entry) { %>
+        <li class="activity-feed-item">
+          <span class="activity-feed-actor"><%= entry.actorName %></span>
+          <% if (entry.actionType) { %><span class="activity-feed-action"><%= entry.actionType.replace(/_/g, ' ').toLowerCase() %></span><% } %>
+          <% if (entry.targetName) { %><span class="activity-feed-target"><%= entry.targetName %></span><% } %>
+          <% if (entry.summary) { %><span class="activity-feed-summary muted small"><%= entry.summary %></span><% } %>
+          <span class="activity-feed-time muted small">
+            <%= entry.createdAt ? new Date(entry.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '' %>
+          </span>
+        </li>
+      <% }); %>
+    </ul>
+  </div>
+</section>
+<% } %>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<%- include('../layout') %>
+
+<section class="page-header">
+  <div>
+    <h2>Submitted Reviews</h2>
+    <p class="muted">
+      All submitted monthly reviews visible to your role scope, with filters for reviewer, period, and average rating.
+    </p>
+  </div>
+
+  <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+    <a href="/reviews/new" class="btn ghost">+ New Review</a>
+    <a href="/reviews/my" class="btn ghost">My Reviews</a>
+  </div>
+</section>
+
+<section class="card" style="margin-bottom:1rem;">
+  <form method="GET" action="/reviews/submitted" class="inline-form date-filter" style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:flex-end;">
+    <div class="field-inline">
+      <label for="submitterId">Submitted By</label>
+      <select id="submitterId" name="submitterId">
+        <option value="">All visible reviewers</option>
+        <% (submitterOptions || []).forEach(function (opt) { %>
+          <option value="<%= opt.id %>" <%= String(filters.submitterId || '') === String(opt.id) ? 'selected' : '' %>>
+            <%= opt.name %>
+          </option>
+        <% }) %>
+      </select>
+    </div>
+
+    <div class="field-inline">
+      <label for="month">Month</label>
+      <input id="month" type="number" name="month" min="1" max="12" value="<%= filters.month || '' %>" placeholder="Any" />
+    </div>
+
+    <div class="field-inline">
+      <label for="year">Year</label>
+      <input id="year" type="number" name="year" min="2020" max="2100" value="<%= filters.year || '' %>" placeholder="Any" />
+    </div>
+
+    <div class="field-inline">
+      <label for="minAvg">Min Avg</label>
+      <input id="minAvg" type="number" name="minAvg" min="1" max="5" step="0.01" value="<%= filters.minAvg !== '' ? filters.minAvg : '' %>" placeholder="1.00" />
+    </div>
+
+    <div class="field-inline">
+      <label for="maxAvg">Max Avg</label>
+      <input id="maxAvg" type="number" name="maxAvg" min="1" max="5" step="0.01" value="<%= filters.maxAvg !== '' ? filters.maxAvg : '' %>" placeholder="5.00" />
+    </div>
+
+    <button type="submit" class="btn primary">Apply</button>
+    <a href="/reviews/submitted" class="btn ghost">Reset</a>
+  </form>
+</section>
+
+<section class="kpi-grid">
+  <div class="card kpi-card">
+    <h3>Visible Reviews</h3>
+    <p class="kpi-value"><%= stats.totalReviews %></p>
+    <p class="muted">After scope and filter rules are applied.</p>
+  </div>
+
+  <div class="card kpi-card">
+    <h3>Staff Covered</h3>
+    <p class="kpi-value"><%= stats.uniqueStaffCount %></p>
+    <p class="muted">Unique staff with at least one visible review.</p>
+  </div>
+
+  <div class="card kpi-card">
+    <h3>Review Leads</h3>
+    <p class="kpi-value"><%= stats.uniqueSubmitterCount %></p>
+    <p class="muted">Unique visible submitters in this result set.</p>
+  </div>
+
+  <div class="card kpi-card">
+    <h3>Average Rating</h3>
+    <p class="kpi-value">
+      <% if (stats.averageOfAverages != null) { %>
+        <%= stats.averageOfAverages.toFixed(2) %> / 5
+      <% } else { %>
+        N/A
+      <% } %>
+    </p>
+    <p class="muted">Average of visible review averages.</p>
+  </div>
+</section>
+
+<section class="card">
+  <div class="section-header">
+    <h3>Review Results</h3>
+    <span class="muted"><%= currentRole %> visibility rules applied</span>
+  </div>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Staff</th>
+        <th>Submitted By</th>
+        <th>Period</th>
+        <th>Submission Activity</th>
+        <th>Placement</th>
+        <th>Average</th>
+        <th>Comment</th>
+        <th style="width: 120px;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (!reviews || reviews.length === 0) { %>
+        <tr>
+          <td colspan="8" class="muted">No submitted reviews match the current scope and filters.</td>
+        </tr>
+      <% } else { %>
+        <% reviews.forEach(function (r) { %>
+          <tr>
+            <td>
+              <a href="/staff/<%= r.staffId %>"><%= r.staffName %></a>
+            </td>
+            <td><%= r.submitterName %></td>
+            <td><%= r.periodMonth %>/<%= r.periodYear %></td>
+            <td class="muted">
+              <div>Submitted: <%= r.createdAt ? new Date(r.createdAt).toLocaleString() : 'N/A' %></div>
+              <div>Last Edited: <%= r.updatedAt ? new Date(r.updatedAt).toLocaleString() : 'N/A' %></div>
+            </td>
+            <td class="muted">
+              <%= r.staffBuilding || 'N/A' %>
+              <% if (r.staffShift) { %>
+                / <%= r.staffShift %>
+              <% } %>
+            </td>
+            <td>
+              <% if (r.avgScore != null && !isNaN(r.avgScore)) { %>
+                <%= r.avgScore.toFixed(2) %> / 5
+              <% } else { %>
+                N/A
+              <% } %>
+            </td>
+            <td class="muted">
+              <% if (r.comment && r.comment.trim().length) { %>
+                <%= r.comment.length > 100 ? r.comment.substring(0, 100) + '...' : r.comment %>
+              <% } else { %>
+                -
+              <% } %>
+            </td>
+            <td>
+              <a href="/reviews/<%= r.id %>/edit" class="btn ghost btn-sm">Open</a>
+            </td>
+          </tr>
+        <% }) %>
+      <% } %>
+    </tbody>
+  </table>
+</section>
+
+</main>
+</body>
+</html>

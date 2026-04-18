@@ -1,0 +1,823 @@
+<%- include('../layout') %>
+
+<%
+  const staffName  = staff ? (staff.name || staff.username || 'Team Member') : '';
+  const staffId    = staff ? staff.id : '';
+  const orgName    = currentUser ? (currentUser.name || currentUser.username || '') : '';
+  const viewerRole = currentUser ? String(currentUser.role || '').toUpperCase() : '';
+%>
+
+<style>
+  /* ── Shell ─────────────────────────────────────────────────────────────── */
+  .mtg-shell {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 1.75rem 1.25rem 4rem;
+  }
+
+  /* ── Hero ──────────────────────────────────────────────────────────────── */
+  .mtg-hero {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .mtg-hero-icon {
+    width: 52px; height: 52px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(59,130,246,0.12));
+    border: 1px solid rgba(99,102,241,0.3);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .mtg-hero-meta {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.3rem;
+  }
+  .mtg-hero-meta span { color: var(--text-main); }
+  .mtg-hero h2 {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text-heading);
+    line-height: 1.2;
+  }
+  .mtg-hero-subtitle {
+    margin: 0.25rem 0 0;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+  }
+
+  /* ── Body grid ─────────────────────────────────────────────────────────── */
+  .mtg-body {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 1.5rem;
+    align-items: start;
+  }
+  @media (max-width: 860px) { .mtg-body { grid-template-columns: 1fr; } }
+
+  /* ── Steps ─────────────────────────────────────────────────────────────── */
+  .mtg-steps { display: flex; flex-direction: column; gap: 0; }
+
+  .mtg-step {
+    position: relative;
+    display: flex;
+    gap: 1.1rem;
+    padding-bottom: 2rem;
+  }
+  .mtg-step:last-child { padding-bottom: 0; }
+
+  /* Vertical connector line */
+  .mtg-step-aside {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    width: 32px;
+  }
+  .mtg-step-num {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--bg-elevated);
+    border: 2px solid var(--border-subtle);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    z-index: 1;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+  }
+  .mtg-step.active .mtg-step-num {
+    border-color: rgba(99,102,241,0.7);
+    background: rgba(99,102,241,0.15);
+    color: #a5b4fc;
+  }
+  .mtg-step-line {
+    flex: 1;
+    width: 1px;
+    background: var(--border-subtle);
+    margin-top: 4px;
+    min-height: 20px;
+  }
+  .mtg-step:last-child .mtg-step-line { display: none; }
+
+  .mtg-step-body { flex: 1; min-width: 0; }
+
+  .mtg-step-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    margin-bottom: 0.9rem;
+    margin-top: 0.3rem;
+  }
+  .mtg-step-title {
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+  }
+  .mtg-step.active .mtg-step-title { color: var(--text-main); }
+  .mtg-step-hint {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  /* ── Field helpers ─────────────────────────────────────────────────────── */
+  .mtg-field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  @media (max-width: 540px) { .mtg-field-row { grid-template-columns: 1fr; } }
+  .mtg-field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.75rem; }
+  .mtg-field label { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); }
+  .mtg-field input,
+  .mtg-field select,
+  .mtg-field textarea {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.5rem;
+    color: var(--text-main);
+    font-size: 0.9rem;
+    padding: 0.52rem 0.7rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    font-family: inherit;
+  }
+  .mtg-field input:focus,
+  .mtg-field select:focus,
+  .mtg-field textarea:focus {
+    outline: none;
+    border-color: rgba(99,102,241,0.6);
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+  }
+  .mtg-field textarea { resize: vertical; min-height: 110px; }
+
+  /* ── Duration chips ─────────────────────────────────────────────────────── */
+  .duration-chips { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .dur-chip {
+    padding: 0.35rem 0.9rem;
+    border-radius: 99px;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-elevated);
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .dur-chip:hover { border-color: rgba(99,102,241,0.5); color: var(--text-main); }
+  .dur-chip.active {
+    background: rgba(99,102,241,0.15);
+    border-color: rgba(99,102,241,0.6);
+    color: #a5b4fc;
+  }
+
+  /* ── Focus grid ─────────────────────────────────────────────────────────── */
+  .focus-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.6rem;
+  }
+  .focus-card {
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.75rem;
+    background: var(--bg-elevated);
+    padding: 0.9rem 0.85rem 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .focus-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--fc-color, var(--accent));
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .focus-card:hover { border-color: var(--fc-color, rgba(99,102,241,0.5)); background: var(--bg-surface); }
+  .focus-card:hover::before { opacity: 0.6; }
+  .focus-card.selected {
+    border-color: var(--fc-color, rgba(99,102,241,0.7));
+    background: var(--bg-surface);
+    box-shadow: 0 0 0 2px rgba(99,102,241,0.08);
+  }
+  .focus-card.selected::before { opacity: 1; }
+
+  /* focus color per type */
+  .focus-card[data-focus="performance"] { --fc-color: rgba(99,102,241,0.7); }
+  .focus-card[data-focus="coaching"]    { --fc-color: rgba(59,130,246,0.7);  }
+  .focus-card[data-focus="recognition"] { --fc-color: rgba(34,197,94,0.7);   }
+  .focus-card[data-focus="alignment"]   { --fc-color: rgba(234,179,8,0.7);   }
+  .focus-card[data-focus="concern"]     { --fc-color: rgba(239,68,68,0.7);   }
+
+  .focus-card .fc-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+    margin-bottom: 0.15rem;
+  }
+  .focus-card .fc-label {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-main);
+    line-height: 1.2;
+  }
+  .focus-card .fc-desc {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    line-height: 1.3;
+  }
+
+  /* ── Agenda preview ─────────────────────────────────────────────────────── */
+  .mtg-preview-wrap {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.6rem;
+    padding: 0.75rem 0.85rem;
+    margin-top: -0.25rem;
+    margin-bottom: 0.75rem;
+  }
+  .mtg-preview-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+  }
+  #agenda-preview {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    font-style: italic;
+    line-height: 1.55;
+    white-space: pre-wrap;
+  }
+  #agenda-preview.has-content { color: var(--text-main); font-style: normal; }
+
+  /* ── Actions ────────────────────────────────────────────────────────────── */
+  .mtg-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  /* ── Alert ──────────────────────────────────────────────────────────────── */
+  .alert.error {
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 0.5rem;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.85rem;
+    color: #fca5a5;
+    margin-bottom: 1.25rem;
+  }
+
+  /* ── Sidebar ────────────────────────────────────────────────────────────── */
+  .mtg-sidebar { display: flex; flex-direction: column; gap: 1rem; }
+  .sidebar-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.875rem;
+    padding: 1.1rem 1.15rem;
+  }
+  .sidebar-card h4 {
+    margin: 0 0 0.85rem;
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    display: flex; align-items: center; gap: 0.4rem;
+  }
+
+  /* Tone chips */
+  .tone-row { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .tone-chip {
+    padding: 0.28rem 0.65rem;
+    border-radius: 99px;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-surface);
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tone-chip:hover { border-color: rgba(99,102,241,0.5); color: var(--text-main); }
+  .tone-chip.active {
+    background: rgba(99,102,241,0.15);
+    border-color: rgba(99,102,241,0.6);
+    color: #a5b4fc;
+  }
+
+  /* Prompt library */
+  .prompt-category { margin-bottom: 0.85rem; }
+  .prompt-category-title {
+    font-size: 0.63rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+  }
+  .prompt-btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.5rem;
+    color: var(--text-main);
+    font-size: 0.77rem;
+    padding: 0.5rem 0.65rem;
+    margin-bottom: 0.3rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+    line-height: 1.4;
+  }
+  .prompt-btn:hover {
+    border-color: rgba(99,102,241,0.5);
+    background: rgba(99,102,241,0.06);
+    color: var(--text-heading);
+  }
+
+  /* Prep checklist */
+  .prep-list { list-style: none; padding: 0; margin: 0; }
+  .prep-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    padding: 0.35rem 0;
+    border-bottom: 1px solid var(--border-subtle);
+    line-height: 1.4;
+  }
+  .prep-list li:last-child { border-bottom: none; }
+  .prep-list li .chk {
+    width: 15px; height: 15px; flex-shrink: 0;
+    border: 1.5px solid var(--border-subtle);
+    border-radius: 4px;
+    margin-top: 1px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .prep-list li .chk.done {
+    background: rgba(34,197,94,0.2);
+    border-color: rgba(34,197,94,0.6);
+  }
+  .prep-list li.checked { color: rgba(156,163,175,0.4); text-decoration: line-through; }
+
+  /* Principles */
+  .principles-card {
+    border-color: rgba(99,102,241,0.2);
+    background: rgba(99,102,241,0.04);
+  }
+  .principles-card h4 { color: #a5b4fc; }
+  .principles-item {
+    padding: 0.45rem 0;
+    border-bottom: 1px solid rgba(99,102,241,0.1);
+    font-size: 0.77rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+  .principles-item:last-child { border-bottom: none; }
+  .principles-item-title {
+    font-weight: 700;
+    color: #a5b4fc;
+    font-size: 0.78rem;
+    margin-bottom: 0.1rem;
+  }
+
+  /* hidden inputs */
+  #focus-value, #tone-value { display: none; }
+</style>
+
+<div class="mtg-shell">
+
+  <!-- ── Hero ─────────────────────────────────────────────────────────────── -->
+  <div class="mtg-hero">
+    <div class="mtg-hero-icon">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="8" cy="7" r="3" stroke="#a5b4fc" stroke-width="1.6"/>
+        <circle cx="16" cy="7" r="3" stroke="#a5b4fc" stroke-width="1.6"/>
+        <path d="M2 20c0-3.3 2.7-6 6-6" stroke="#a5b4fc" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M10 20c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="#a5b4fc" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div>
+      <div class="mtg-hero-meta">
+        <% if (orgName) { %><span><%= orgName %></span> &rarr; <% } %>
+        <span><%= staffName || 'Select team member' %></span>
+      </div>
+      <h2>Schedule a 1:1 Meeting</h2>
+      <p class="mtg-hero-subtitle">Work through the steps below to prepare a focused, intentional conversation.</p>
+    </div>
+  </div>
+
+  <!-- ── Body ──────────────────────────────────────────────────────────────── -->
+  <div class="mtg-body">
+
+    <!-- Main form -->
+    <div>
+      <% if (error) { %><div class="alert error"><%= error %></div><% } %>
+
+      <form method="POST" action="/meetings" id="meetingForm">
+        <input type="hidden" name="type"    value="<%= type %>" />
+        <input type="hidden" name="staffId" value="<%= staffId %>" />
+        <input type="hidden" name="focus"   id="focus-value" value="" />
+        <input type="hidden" name="tone"    id="tone-value"  value="supportive" />
+
+        <div class="mtg-steps">
+
+          <!-- ── Step 1 · When ─────────────────────────────────────────────── -->
+          <div class="mtg-step active">
+            <div class="mtg-step-aside">
+              <div class="mtg-step-num">1</div>
+              <div class="mtg-step-line"></div>
+            </div>
+            <div class="mtg-step-body">
+              <div class="mtg-step-header">
+                <span class="mtg-step-title">When</span>
+                <span class="mtg-step-hint">Set the date, time, and length</span>
+              </div>
+
+              <div class="mtg-field-row">
+                <div class="mtg-field">
+                  <label for="date">Date</label>
+                  <input type="date" id="date" name="date" required
+                    value="<%= form && form.date ? form.date : defaultDateStr %>" />
+                </div>
+                <div class="mtg-field">
+                  <label for="time">Start Time</label>
+                  <input type="time" id="time" name="time" required
+                    value="<%= form && form.time ? form.time : defaultTimeStr %>" />
+                </div>
+              </div>
+
+              <div class="mtg-field">
+                <label>Duration</label>
+                <div class="duration-chips" id="durationChips">
+                  <span class="dur-chip" data-min="15">15 min</span>
+                  <span class="dur-chip active" data-min="30">30 min</span>
+                  <span class="dur-chip" data-min="45">45 min</span>
+                  <span class="dur-chip" data-min="60">1 hour</span>
+                </div>
+                <input type="hidden" id="durationMinutes" name="durationMinutes"
+                  value="<%= form && form.durationMinutes ? form.durationMinutes : '30' %>" />
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Step 2 · Focus ────────────────────────────────────────────── -->
+          <div class="mtg-step active">
+            <div class="mtg-step-aside">
+              <div class="mtg-step-num">2</div>
+              <div class="mtg-step-line"></div>
+            </div>
+            <div class="mtg-step-body">
+              <div class="mtg-step-header">
+                <span class="mtg-step-title">Focus</span>
+                <span class="mtg-step-hint">What is this conversation really about?</span>
+              </div>
+
+              <div class="focus-grid" id="focusGrid">
+                <div class="focus-card" data-focus="performance" tabindex="0" role="button">
+                  <span class="fc-icon">📈</span>
+                  <span class="fc-label">Performance</span>
+                  <span class="fc-desc">Metrics, results, growth areas</span>
+                </div>
+                <div class="focus-card" data-focus="coaching" tabindex="0" role="button">
+                  <span class="fc-icon">🧭</span>
+                  <span class="fc-label">Coaching &amp; Growth</span>
+                  <span class="fc-desc">Skills, career path, stretch goals</span>
+                </div>
+                <div class="focus-card" data-focus="recognition" tabindex="0" role="button">
+                  <span class="fc-icon">🏆</span>
+                  <span class="fc-label">Recognition</span>
+                  <span class="fc-desc">Celebrate wins and effort</span>
+                </div>
+                <div class="focus-card" data-focus="alignment" tabindex="0" role="button">
+                  <span class="fc-icon">🔗</span>
+                  <span class="fc-label">Alignment &amp; Feedback</span>
+                  <span class="fc-desc">Expectations, clarity, give &amp; receive</span>
+                </div>
+                <div class="focus-card" data-focus="concern" tabindex="0" role="button">
+                  <span class="fc-icon">⚑</span>
+                  <span class="fc-label">Concern</span>
+                  <span class="fc-desc">Address a specific issue</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Step 3 · Agenda ───────────────────────────────────────────── -->
+          <div class="mtg-step active">
+            <div class="mtg-step-aside">
+              <div class="mtg-step-num">3</div>
+              <div class="mtg-step-line"></div>
+            </div>
+            <div class="mtg-step-body">
+              <div class="mtg-step-header">
+                <span class="mtg-step-title">Agenda &amp; Notes</span>
+                <span class="mtg-step-hint">Use the prompts on the right to get started</span>
+              </div>
+
+              <div class="mtg-field">
+                <label for="notes">What do you want them to walk away feeling, knowing, or doing?</label>
+                <textarea id="notes" name="notes" rows="5"
+                  placeholder="Type your agenda here, or click a prompt on the right to add it…"><%= form && form.notes ? form.notes : '' %></textarea>
+              </div>
+
+              <div class="mtg-preview-wrap">
+                <div class="mtg-preview-label">Preview</div>
+                <div id="agenda-preview">Your notes will appear here as you type…</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Actions ──────────────────────────────────────────────────── -->
+          <div class="mtg-step">
+            <div class="mtg-step-aside">
+              <div class="mtg-step-num" style="background:rgba(34,197,94,0.12); border-color:rgba(34,197,94,0.4); color:rgba(34,197,94,0.9);">✓</div>
+            </div>
+            <div class="mtg-step-body">
+              <div class="mtg-step-header" style="margin-bottom:0;">
+                <span class="mtg-step-title">Confirm &amp; Schedule</span>
+              </div>
+              <div class="mtg-actions" style="border-top:none; padding-top:0.75rem;">
+                <% if (staffId) { %>
+                  <a href="/staff/<%= staffId %>" class="btn ghost">Cancel</a>
+                <% } else { %>
+                  <a href="/meetings" class="btn ghost">Cancel</a>
+                <% } %>
+                <button type="submit" class="btn primary">Schedule Meeting</button>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /mtg-steps -->
+      </form>
+    </div>
+
+    <!-- ── Sidebar ───────────────────────────────────────────────────────── -->
+    <div class="mtg-sidebar">
+
+      <!-- Tone selector -->
+      <div class="sidebar-card">
+        <h4>
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M5.5 9.5c.5 1 3.5 1 4.5 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            <circle cx="6" cy="6.5" r="0.8" fill="currentColor"/>
+            <circle cx="10" cy="6.5" r="0.8" fill="currentColor"/>
+          </svg>
+          Tone of Conversation
+        </h4>
+        <div class="tone-row" id="toneChips">
+          <span class="tone-chip active" data-tone="supportive">Supportive</span>
+          <span class="tone-chip" data-tone="direct">Direct</span>
+          <span class="tone-chip" data-tone="curious">Curious</span>
+          <span class="tone-chip" data-tone="motivating">Motivating</span>
+          <span class="tone-chip" data-tone="candid">Candid</span>
+          <span class="tone-chip" data-tone="collaborative">Collaborative</span>
+        </div>
+      </div>
+
+      <!-- Prompt library -->
+      <div class="sidebar-card">
+        <h4>
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M3 4h10M3 7.5h7M3 11h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          Conversation Prompts
+          <span style="font-size:0.63rem; font-weight:400; color:var(--text-muted); margin-left:auto; text-transform:none; letter-spacing:0;">Click to add</span>
+        </h4>
+        <div id="promptLibrary"></div>
+      </div>
+
+      <!-- Prep checklist -->
+      <div class="sidebar-card">
+        <h4>
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Leader's Pre-Meeting Prep
+        </h4>
+        <ul class="prep-list" id="prepList">
+          <li><div class="chk" onclick="togglePrep(this)"></div><span>Review their last review score or any recent incidents</span></li>
+          <li><div class="chk" onclick="togglePrep(this)"></div><span>Check in on goals or commitments from your last 1:1</span></li>
+          <li><div class="chk" onclick="togglePrep(this)"></div><span>Know what has improved, what's still open, and where support is still needed</span></li>
+          <li><div class="chk" onclick="togglePrep(this)"></div><span>Plan open-ended questions that encourage reflection and ownership</span></li>
+          <li><div class="chk" onclick="togglePrep(this)"></div><span>Identify opportunities for growth, stretch assignments, or increased responsibility</span></li>
+          <li><div class="chk" onclick="togglePrep(this)"></div><span>If a difficult conversation is needed, plan how to address it with clarity and respect</span></li>
+          <li><div class="chk" onclick="togglePrep(this)"></div><span>Eliminate distractions — be fully present for the conversation</span></li>
+          <li><div class="chk" onclick="togglePrep(this)"></div><span>Listen 70%, talk 30% — ask before you advise</span></li>
+        </ul>
+      </div>
+
+      <!-- Guiding principles -->
+      <div class="sidebar-card principles-card">
+        <h4>
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M8 2l1.8 3.6L14 6.5l-3 2.9.7 4.1L8 11.4l-3.7 2.1.7-4.1L2 6.5l4.2-.9L8 2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+          </svg>
+          1:1 Guiding Principles
+        </h4>
+        <ul style="margin:0; padding:0; list-style:none;">
+          <li class="principles-item"><div class="principles-item-title">Be fully present</div>Give full attention and remove distractions.</li>
+          <li class="principles-item"><div class="principles-item-title">Listen to understand</div>Understand their perspective before responding or advising.</li>
+          <li class="principles-item"><div class="principles-item-title">Create a safe space</div>Keep the conversation respectful, calm, and constructive.</li>
+          <li class="principles-item"><div class="principles-item-title">Lead with clarity and purpose</div>Make sure they understand why this conversation matters.</li>
+          <li class="principles-item"><div class="principles-item-title">Balance recognition with accountability</div>Acknowledge progress while also addressing opportunities to improve.</li>
+          <li class="principles-item"><div class="principles-item-title">Focus on development, not just status</div>Use the 1:1 to support growth, not only task updates.</li>
+          <li class="principles-item"><div class="principles-item-title">Use specific examples</div>Ground feedback in clear, observable behaviors and outcomes.</li>
+          <li class="principles-item"><div class="principles-item-title">Ask more than you tell</div>Use thoughtful questions to encourage reflection and engagement.</li>
+        </ul>
+      </div>
+
+    </div><!-- /sidebar -->
+
+  </div><!-- /mtg-body -->
+</div><!-- /mtg-shell -->
+
+<script>
+(function () {
+  const PROMPTS = {
+    performance: {
+      supportive:    ["What part of your work this week felt most meaningful?","Where do you feel you're gaining the most traction?","What would help you do your best work more consistently?","Is there anything getting in the way that I may not be aware of?","How are you feeling about the progress you've made recently?"],
+      direct:        ["Walk me through your numbers — what's driving the gap?","What's the one thing you'd change about your approach to get better results?","What are you committing to by our next check-in?","Here's what I'm observing — tell me your read on it.","What does closing this gap require from you in the next two weeks?"],
+      curious:       ["What patterns do you notice in your strongest days vs. your toughest days?","If you were coaching someone with your current results, what would you tell them?","What do you think is the root cause behind this trend?","What's working well that we should protect or replicate?","What assumption might you be making that's worth questioning?"],
+      motivating:    ["I've seen real improvement — what made that click for you?","You're closer than you think — what would closing the gap feel like?","What would your best possible week look like, and what would make it happen?","What does winning look like for you, and how do we get there together?","What's one thing you could do differently that would have the biggest impact?"],
+      candid:        ["I want to be straight with you — here's what I'm seeing and why it matters.","This is a conversation I'm having because I believe in your potential, not to catch you out.","What feedback have you been avoiding hearing that we should talk about today?","Let's be honest about what's worked, what hasn't, and what needs to change.","I owe you a direct assessment — here it is, and I want your response."],
+      collaborative: ["Let's look at the data together — what do you see?","What can I do differently to set you up for better results?","Let's build a 2-week plan together right now — what do you need to put on it?","Where do you need more support, and how can we make that happen?","Let's agree on two or three actions each of us will take before we meet again."],
+    },
+    coaching: {
+      supportive:    ["What skill do you most want to develop right now, and why does it matter to you?","Where do you want to be in your career 2–3 years from now?","Tell me about a moment recently where you surprised yourself.","What type of work energizes you and feels like your strongest zone?","Is there a responsibility or project you've been curious about taking on?"],
+      direct:        ["Here's a skill gap I want us to close — here's why it matters for your growth.","What's stopping you from getting to the next level? Let's name it.","Let's talk about what it would take to move you into a bigger role.","I'm going to challenge you with something — here's what I need from you in return.","What are you actively doing to develop yourself outside of your day-to-day work?"],
+      curious:       ["What kind of leader or team member do you want to become?","If you could design your ideal role here, what would it look like?","What would you do differently if you had twice as much confidence?","What skills do you feel are underused in your current role?","What kind of problems do you most want to be solving in your career?"],
+      motivating:    ["You've got the raw talent — what would it take to fully unleash it?","Let's talk about where you could be 6 months from now if we focus on this.","I think your ceiling is higher than you realize — let's talk about it.","Growth requires discomfort — where are you willing to push past what's comfortable?","If you stopped playing it safe in one area, what would that look like?"],
+      candid:        ["There's a habit that's limiting your growth — can we talk about it honestly?","I want to give you an honest assessment of where I see your strengths and the gaps you'd need to close to advance.","Great coaching requires honesty. Here's what I'm observing and what I think it's costing you.","I see potential that's not fully channeled yet — here's what I think is holding it back.","Development requires self-awareness. Let's have that honest conversation today."],
+      collaborative: ["Let's co-create a 90-day development plan together.","What resources, exposure, or experiences do you need, and how can I help unlock them?","Let's write down 3 things you want to accomplish professionally in the next 6 months.","How can I open doors for you — introductions, projects, or new exposure?","What would you want me to do more of as your leader to help you grow?"],
+    },
+    recognition: {
+      supportive:    ["I want to take a moment to genuinely recognize something I saw you do this week.","You may not realize the impact your work had on the team — let me tell you.","What does recognition mean to you — how do you like to be appreciated?","I've been meaning to say this — your consistency has not gone unnoticed.","What are you most proud of from the past few weeks?"],
+      direct:        ["You hit the mark and I want to be specific about why it mattered.","This was exactly the standard I expect — and you cleared it with room to spare.","Your contribution directly impacted the team — that's the level I need from you.","I want to be clear: this result was not average. This was excellent.","Here's the specific behavior I saw and exactly why it made a difference."],
+      curious:       ["When you look back on this achievement, what do you think made the difference?","What strengths did you lean on that you might not give yourself enough credit for?","How did this feel different from times when it didn't go as well?","What did you have to push through to get here that others might not have seen?","What would you tell a teammate who was trying to replicate what you did?"],
+      motivating:    ["What you did took courage — I want you to remember that feeling.","This is the version of you I'm investing in. You showed up.","If this is what's possible, where do you want to take it next?","That result is a signal — not a ceiling. What comes next for you?","The team felt that. Your work has a ripple effect you may not fully see."],
+      candid:        ["I don't say this lightly — this was genuinely outstanding work.","I've been watching and I want to be clear: your effort has not gone unnoticed.","I owe you some recognition I should have given sooner — let me correct that now.","I want to be honest — I expected good work from you, and you exceeded it.","You've earned real credibility with this. I want you to own that."],
+      collaborative: ["How do you want to use this momentum going forward?","What would help you have more of these wins?","Let's talk about what you want to build on here.","How can we make sure the rest of the team benefits from what you figured out?","Let's use this as a foundation — what's the next level of challenge you want to take on together?"],
+    },
+    alignment: {
+      supportive:    ["I want to make sure we're on the same page about what success looks like in your role.","I want to share some observations — I'd love your perspective too.","I'd love to hear from you — what feedback do you have for me as your leader?","Is there any ambiguity in your priorities I can help clear up?","How supported do you feel in understanding what's expected of you right now?"],
+      direct:        ["Let me be specific about the expectations I have for this role and how I measure them.","I have specific feedback I want to give you and I want to be direct about it.","There's a gap between what I'm asking for and what I'm seeing — let's close it.","Here's the standard, here's where you are, and here's what I need from you.","I want to make sure you hear this clearly — here's exactly what needs to shift."],
+      curious:       ["How would you describe what success looks like in your role, in your own words?","Before I share my observations, what feedback would you give yourself?","What's a blind spot you suspect you might have?","Where do you feel like you might be spending energy on the wrong things?","What does your ideal working relationship with me look like — and how close are we to that?"],
+      motivating:    ["Clarity is a superpower — once we're aligned, you'll feel the difference.","The reason I'm giving you this feedback is because I believe in where you're headed.","Let's simplify your focus — what are the 2–3 things that would make the biggest difference?","Getting aligned here is going to unlock your next level — let's do it together.","Once we're clear on direction, there's nothing in your way. Let's get there."],
+      candid:        ["I think there's a mismatch in expectations and I want to address it directly.","This is a direct conversation and I need you to hear it as care, not criticism.","Part of my job is to give you clear direction. Here's where I think I've been unclear.","I haven't been as direct as I should have been — let me fix that right now.","Here's the honest picture of where things stand and what I need going forward."],
+      collaborative: ["Let's rewrite your top 3 priorities together so we both own them.","After I share this, I want to hear your reaction — this isn't a one-way download.","How can I communicate direction more clearly to help you feel more confident?","Let's build a shared agreement on expectations that we both commit to.","I want to hear your version of what's working and what isn't before I share mine."],
+    },
+    concern: {
+      supportive:    ["I want to bring something up in a way that's fair to you — I care about getting this right.","Before I share my concern, I want you to know this comes from a place of wanting things to be better.","I need us to talk about something and I want this to feel like a conversation, not a judgment.","I've noticed something I think we should address together — can we talk openly about it?","My intent here is to understand and support, not to put you on the spot."],
+      direct:        ["There's a specific issue I need to address and I want to be clear about what I'm observing.","This is impacting the team and I need it to stop. Here's what I'm seeing.","I'm going to be direct — this needs to be addressed and I want us to do it together.","Here's what I observed, here's the impact, and here's what I need to change.","I'm not going to soften this — it's important enough that you deserve the full picture."],
+      curious:       ["Help me understand what happened from your perspective.","Walk me through what was going on for you when this occurred.","Before I share my concern, I want to understand your experience first.","What do you think contributed to this situation?","Is there something I'm not seeing that I should understand before we go further?"],
+      motivating:    ["I'm raising this because I know you're capable of better and I don't want this to define you.","Every professional has a moment where they get honest feedback that changes them. This is yours.","This isn't about punishment — it's about course-correcting before this becomes something bigger.","I believe you can turn this around — let's talk about what that looks like.","The people who grow fastest are the ones who face these moments head-on. That's the opportunity here."],
+      candid:        ["This is a serious conversation and I want to treat you with the respect of being completely honest.","The impact of this situation is significant and I can't minimize it, but I also won't dramatize it.","You deserve to know exactly where things stand and what needs to change.","I'd be doing you a disservice if I didn't have this conversation with you directly.","Here's the truth of what I'm seeing — and I'm sharing it because I believe in your ability to respond to it."],
+      collaborative: ["What do you think needs to happen to resolve this?","Let's build a plan together that I can stand behind and you can own.","I'm here to help fix this, not just call it out. What do you need from me?","Let's agree on specific next steps that we both commit to and follow up on.","How do you want to handle this, and how can I support you in doing it right?"],
+    },
+  };
+
+  let selectedFocus = null;
+  let selectedTone  = 'supportive';
+
+  /* Duration chips */
+  const durationInput = document.getElementById('durationMinutes');
+  const savedDuration = durationInput ? durationInput.value : '30';
+  document.querySelectorAll('#durationChips .dur-chip').forEach(function (chip) {
+    if (chip.dataset.min === savedDuration) chip.classList.add('active');
+    else chip.classList.remove('active');
+    chip.addEventListener('click', function () {
+      document.querySelectorAll('#durationChips .dur-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      durationInput.value = chip.dataset.min;
+    });
+  });
+
+  /* Focus cards */
+  document.querySelectorAll('#focusGrid .focus-card').forEach(function (card) {
+    function select() {
+      document.querySelectorAll('#focusGrid .focus-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      selectedFocus = card.dataset.focus;
+      document.getElementById('focus-value').value = selectedFocus;
+      renderPrompts();
+    }
+    card.addEventListener('click', select);
+    card.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(); } });
+  });
+
+  /* Tone chips */
+  document.querySelectorAll('#toneChips .tone-chip').forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      document.querySelectorAll('#toneChips .tone-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      selectedTone = chip.dataset.tone;
+      const toneInput = document.getElementById('tone-value');
+      if (toneInput) toneInput.value = selectedTone;
+      renderPrompts();
+    });
+  });
+
+  /* Prompt renderer */
+  function renderPrompts() {
+    const container = document.getElementById('promptLibrary');
+    if (!container) return;
+    if (!selectedFocus) {
+      container.innerHTML = '<p style="font-size:0.77rem;color:var(--text-muted);text-align:center;padding:0.5rem 0;">Select a focus area above to see conversation prompts</p>';
+      return;
+    }
+    const focusPrompts = PROMPTS[selectedFocus] || {};
+    const tonePrompts  = focusPrompts[selectedTone] || [];
+    let html = '';
+    if (tonePrompts.length) {
+      html += '<div class="prompt-category"><div class="prompt-category-title">' + capFirst(selectedTone) + ' prompts</div>';
+      tonePrompts.forEach(function (p) {
+        html += '<button type="button" class="prompt-btn" onclick="appendPrompt(this)">' + escHtml(p) + '</button>';
+      });
+      html += '</div>';
+    }
+    container.innerHTML = html;
+  }
+
+  function capFirst(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  renderPrompts();
+
+  /* Agenda live preview */
+  const notesField = document.getElementById('notes');
+  const preview    = document.getElementById('agenda-preview');
+  function updatePreview() {
+    const val = (notesField.value || '').trim();
+    if (!val) {
+      preview.textContent = 'Your notes will appear here as you type…';
+      preview.classList.remove('has-content');
+    } else {
+      preview.textContent = val;
+      preview.classList.add('has-content');
+    }
+  }
+  if (notesField) {
+    notesField.addEventListener('input', updatePreview);
+    updatePreview();
+  }
+
+  /* Prep checklist */
+  window.togglePrep = function (chkEl) {
+    const li = chkEl.closest('li');
+    chkEl.classList.toggle('done');
+    li.classList.toggle('checked', chkEl.classList.contains('done'));
+  };
+
+  /* Append prompt to notes */
+  window.appendPrompt = function (btn) {
+    const text = btn.textContent.trim();
+    if (!notesField) return;
+    const existing = notesField.value.trim();
+    notesField.value = existing ? existing + '\n• ' + text : '• ' + text;
+    notesField.focus();
+    updatePreview();
+  };
+
+})();
+</script>
+
+</main>
+</body>
+</html>

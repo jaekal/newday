@@ -1,0 +1,901 @@
+<!-- src/views/goals/new.ejs -->
+<%- include('../layout') %>
+
+<%
+  const _ownerGoalStats = ownerGoalStats || {};
+%>
+
+<section class="page-header" style="display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap; align-items:flex-start;">
+  <div>
+    <h2 style="margin-bottom:0.25rem;">Create New Goal</h2>
+    <p class="muted" style="max-width:780px;">
+      Create a clear, measurable target with an owner, due date, and proof of success. This page is built to make strong goals fast, visible, and hard to write vaguely.
+    </p>
+  </div>
+
+  <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+    <a href="/goals" class="btn ghost">Back to Goals</a>
+  </div>
+</section>
+
+<style>
+  .goal-form-grid {
+    display:grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap:1rem;
+    align-items:start;
+  }
+
+  @media (max-width: 980px) {
+    .goal-form-grid { grid-template-columns: 1fr; }
+  }
+
+  .field-row {
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:0.75rem;
+  }
+
+  @media (max-width: 720px) {
+    .field-row { grid-template-columns: 1fr; }
+  }
+
+  .field label {
+    display:block;
+    font-weight:600;
+    margin-bottom:0.35rem;
+  }
+
+  .field .hint {
+    margin-top:0.35rem;
+    font-size:0.85rem;
+    opacity:0.8;
+  }
+
+  .field input,
+  .field textarea,
+  .field select {
+    width:100%;
+    border:1px solid rgba(255,255,255,0.10);
+    background: rgba(15,23,42,0.55);
+    color: rgba(229,231,235,0.95);
+    border-radius: 12px;
+    padding: 0.6rem 0.75rem;
+    outline:none;
+  }
+
+  .field input:focus,
+  .field textarea:focus,
+  .field select:focus {
+    outline: 2px solid rgba(59,130,246,0.35);
+  }
+
+  .char-counter {
+    font-size:0.85rem;
+    opacity:0.8;
+    text-align:right;
+  }
+
+  .smart-list li {
+    margin:0.25rem 0;
+  }
+
+  .goal-preview {
+    border:1px solid rgba(255,255,255,0.08);
+    background:rgba(17,24,39,0.55);
+    border-radius:16px;
+    padding:0.9rem;
+  }
+
+  .goal-preview-title {
+    margin:0;
+    font-size:1.05rem;
+    line-height:1.25;
+  }
+
+  .goal-preview-desc {
+    margin-top:0.5rem;
+    color:rgba(156,163,175,0.95);
+    font-size:0.9rem;
+    line-height:1.35;
+  }
+
+  .preview-row {
+    display:flex;
+    gap:0.4rem;
+    flex-wrap:wrap;
+    margin-top:0.55rem;
+  }
+
+  .step-chip,
+  .template-chip,
+  .date-chip {
+    display:inline-flex;
+    align-items:center;
+    gap:0.35rem;
+    padding:0.28rem 0.6rem;
+    border-radius:999px;
+    border:1px solid rgba(255,255,255,0.10);
+    font-size:0.78rem;
+    background:rgba(15,23,42,0.55);
+    cursor:pointer;
+    color:inherit;
+  }
+
+  .template-chip:hover,
+  .date-chip:hover {
+    outline:2px solid rgba(59,130,246,0.25);
+  }
+
+  .wizard-strip {
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0, 1fr));
+    gap:0.5rem;
+    margin-bottom:1rem;
+  }
+
+  @media (max-width: 720px) {
+    .wizard-strip { grid-template-columns:1fr 1fr; }
+  }
+
+  .wizard-step {
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:12px;
+    padding:0.75rem;
+    background:rgba(15,23,42,0.38);
+  }
+
+  .wizard-step strong {
+    display:block;
+    margin-bottom:0.2rem;
+    font-size:0.9rem;
+  }
+
+  .section-block {
+    margin-top:1rem;
+    padding-top:1rem;
+    border-top:1px solid rgba(255,255,255,0.06);
+  }
+
+  .chip-row {
+    display:flex;
+    gap:0.45rem;
+    flex-wrap:wrap;
+    margin-top:0.5rem;
+  }
+
+  .quality-panel {
+    border:1px solid rgba(255,255,255,0.08);
+    background:rgba(15,23,42,0.4);
+    border-radius:14px;
+    padding:0.85rem;
+  }
+
+  .quality-list {
+    display:flex;
+    flex-direction:column;
+    gap:0.45rem;
+    margin-top:0.5rem;
+  }
+
+  .quality-item {
+    display:flex;
+    align-items:flex-start;
+    gap:0.5rem;
+    font-size:0.88rem;
+  }
+
+  .quality-dot {
+    width:10px;
+    height:10px;
+    border-radius:999px;
+    margin-top:0.25rem;
+    flex:0 0 auto;
+    background:rgba(148,163,184,0.65);
+  }
+
+  .quality-item.ok .quality-dot {
+    background:rgba(34,197,94,0.85);
+  }
+
+  .quality-item.warn .quality-dot {
+    background:rgba(245,158,11,0.9);
+  }
+
+  .owner-context-grid {
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:0.55rem;
+    margin-top:0.75rem;
+  }
+
+  .owner-kpi {
+    border:1px solid rgba(255,255,255,0.08);
+    background:rgba(15,23,42,0.4);
+    border-radius:12px;
+    padding:0.7rem;
+  }
+
+  .owner-kpi strong {
+    display:block;
+    font-size:1.05rem;
+  }
+
+  .draft-note {
+    font-size:0.82rem;
+    color:rgba(148,163,184,0.95);
+    margin-top:0.5rem;
+  }
+</style>
+
+<form method="POST" action="/goals" id="goalCreateForm">
+  <div class="wizard-strip">
+    <div class="wizard-step">
+      <strong>1. Define it</strong>
+      <span class="muted small">Short title, clear purpose.</span>
+    </div>
+    <div class="wizard-step">
+      <strong>2. Measure it</strong>
+      <span class="muted small">KPI and evidence of success.</span>
+    </div>
+    <div class="wizard-step">
+      <strong>3. Assign it</strong>
+      <span class="muted small">Owner, priority, category.</span>
+    </div>
+    <div class="wizard-step">
+      <strong>4. Time-box it</strong>
+      <span class="muted small">Due date and accountability.</span>
+    </div>
+  </div>
+
+  <div class="goal-form-grid">
+    <section class="card" style="padding:1rem;">
+      <div class="section-header" style="margin-bottom:0.75rem;">
+        <div>
+          <h3 style="margin-bottom:0.2rem;">Goal Details</h3>
+          <p class="muted small" style="margin:0;">
+            Start with a strong outcome, then sharpen it into something measurable and coachable.
+          </p>
+        </div>
+      </div>
+
+      <div class="field" style="margin-bottom:0.85rem;">
+        <label>Quick Templates</label>
+        <div class="chip-row">
+          <button type="button" class="template-chip" data-template="TRAINING">Training Goal</button>
+          <button type="button" class="template-chip" data-template="ATTENDANCE">Attendance Goal</button>
+          <button type="button" class="template-chip" data-template="QUALITY">Quality Goal</button>
+          <button type="button" class="template-chip" data-template="CERTIFICATION">Certification Goal</button>
+          <button type="button" class="template-chip" data-template="PROCESS">Process / CI Goal</button>
+        </div>
+      </div>
+
+      <div class="field" style="margin-bottom:0.85rem;">
+        <label for="goalTitle">Title <span class="muted small">(required)</span></label>
+        <input
+          id="goalTitle"
+          type="text"
+          name="title"
+          required
+          placeholder="Example: Complete ESD recertification and achieve 95% pass rate for the month"
+          maxlength="140"
+        />
+        <div class="char-counter" id="titleCounter">0 / 140</div>
+      </div>
+
+      <div class="field-row" style="margin-bottom:0.85rem;">
+        <div class="field">
+          <label for="goalCategory">Category</label>
+          <select id="goalCategory" name="category">
+            <option value="">Select category (optional)</option>
+            <option value="TRAINING">Training</option>
+            <option value="CERTIFICATION">Certification</option>
+            <option value="ATTENDANCE">Attendance</option>
+            <option value="QUALITY">Quality</option>
+            <option value="PERFORMANCE">Performance</option>
+            <option value="DEVELOPMENT">Development</option>
+            <option value="SAFETY">Safety</option>
+            <option value="PROCESS">Process / CI</option>
+          </select>
+          <p class="hint muted small">
+            Categories make the board easier to scan and organize by theme.
+          </p>
+        </div>
+
+        <div class="field">
+          <label for="goalPriority">Priority</label>
+          <select id="goalPriority" name="priority">
+            <option value="">Select priority (optional)</option>
+            <option value="LOW">Low</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="HIGH">High</option>
+          </select>
+          <p class="hint muted small">
+            Use High for compliance, safety, escalations, or near-term deliverables.
+          </p>
+        </div>
+      </div>
+
+      <div class="field" style="margin-bottom:0.85rem;">
+        <label for="goalType">Goal Type</label>
+        <select id="goalType" name="type">
+          <option value="DEVELOPMENT">Development — skill building, learning, growth</option>
+          <option value="PERFORMANCE">Performance — output targets, KPIs, metrics</option>
+          <option value="PROJECT">Project — specific deliverable or initiative</option>
+        </select>
+      </div>
+
+      <div class="field" style="margin-bottom:0.85rem;">
+        <label for="goalDescription">Description</label>
+        <textarea
+          id="goalDescription"
+          name="description"
+          rows="6"
+          placeholder="What does success look like? Include key steps, expected behaviors, or deliverables."
+          maxlength="1200"
+        ></textarea>
+        <div class="char-counter" id="descCounter">0 / 1200</div>
+      </div>
+
+      <div class="section-block">
+        <div class="section-header" style="margin-bottom:0.75rem;">
+          <div>
+            <h3 style="margin-bottom:0.2rem;">Measurement</h3>
+            <p class="muted small" style="margin:0;">
+              This is where a fuzzy goal gets sharpened into something audit-friendly.
+            </p>
+          </div>
+        </div>
+
+        <div class="field-row" style="margin-bottom:0.85rem;">
+          <div class="field">
+            <label for="goalSuccess">Success Criteria</label>
+            <textarea
+              id="goalSuccess"
+              name="successCriteria"
+              rows="4"
+              placeholder="Example: 1) Complete course 2) Demonstrate process in buddy check 3) No repeat misses for 30 days"
+              maxlength="600"
+            ></textarea>
+            <p class="hint muted small">
+              If someone asks “how do we know this is done?”, this field should answer it.
+            </p>
+          </div>
+
+          <div class="field">
+            <label for="goalMeasure">Measure / KPI</label>
+            <input
+              id="goalMeasure"
+              type="text"
+              name="measure"
+              placeholder="Example: ESD pass rate ≥ 95% • Late days ≤ 1"
+              maxlength="180"
+            />
+            <p class="hint muted small">
+              Use percentages, counts, rework reduction, attendance targets, completion counts, or cycle-time improvements.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <div class="section-header" style="margin-bottom:0.75rem;">
+          <div>
+            <h3 style="margin-bottom:0.2rem;">Ownership & Timeline</h3>
+            <p class="muted small" style="margin:0;">
+              Make it obvious who owns this and when it should land.
+            </p>
+          </div>
+        </div>
+
+        <div class="field-row" style="margin-bottom:0.85rem;">
+          <div class="field">
+            <label for="goalOwner">Owner <span class="muted small">(required)</span></label>
+            <select id="goalOwner" name="ownerId" required>
+              <% staff.forEach(s => { %>
+                <option value="<%= s.id %>" <% if (defaultOwnerId && s.id === defaultOwnerId) { %>selected<% } %>>
+                  <%= s.name %>
+                </option>
+              <% }) %>
+            </select>
+            <p class="hint muted small">
+              Accountability should have a name, not a shrug.
+            </p>
+          </div>
+
+          <div class="field">
+            <label for="goalDue">Due Date</label>
+            <input id="goalDue" type="date" name="dueDate" />
+            <div class="chip-row">
+              <button type="button" class="date-chip" data-due-shortcut="7">+7 days</button>
+              <button type="button" class="date-chip" data-due-shortcut="30">+30 days</button>
+              <button type="button" class="date-chip" data-due-shortcut="EOM">End of month</button>
+              <button type="button" class="date-chip" data-due-shortcut="QTR">Quarter end</button>
+              <button type="button" class="date-chip" data-due-shortcut="CLEAR">Clear</button>
+            </div>
+            <p class="hint muted small">
+              Quick-pick the timeline instead of hand-typing every date.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:0.75rem; flex-wrap:wrap; margin-top:1rem;">
+        <div>
+          <p class="muted small" style="margin:0;">
+            New goals start as <strong>OPEN</strong> with <strong>0%</strong> progress.
+          </p>
+          <div class="draft-note" id="draftNote">Draft autosave is on for this form.</div>
+        </div>
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <button type="button" class="btn ghost" id="clearDraftBtn">Clear Draft</button>
+          <a href="/goals" class="btn ghost">Cancel</a>
+          <button type="submit" class="btn primary">Create Goal</button>
+        </div>
+      </div>
+    </section>
+
+    <aside style="display:flex; flex-direction:column; gap:1rem;">
+      <section class="goal-preview">
+        <h3 style="margin:0 0 0.5rem 0;">Live Preview</h3>
+
+        <div class="preview-row">
+          <span class="step-chip" id="previewStatus">OPEN</span>
+          <span class="step-chip" id="previewHealth">On Track</span>
+        </div>
+
+        <h4 class="goal-preview-title" id="previewTitle">Your goal title will appear here</h4>
+
+        <div class="preview-row">
+          <span class="step-chip" id="previewCategory">Uncategorized</span>
+          <span class="step-chip" id="previewPriority">No Priority</span>
+          <span class="step-chip" id="previewDue">No due date</span>
+        </div>
+
+        <div class="goal-preview-desc" id="previewDesc">
+          Add a description to preview how this goal card will read on the board.
+        </div>
+
+        <div class="preview-row">
+          <span class="step-chip" id="previewOwner">Owner: —</span>
+          <span class="step-chip" id="previewMeasure">KPI: —</span>
+        </div>
+      </section>
+
+      <section class="quality-panel">
+        <h3 style="margin:0;">Quality Check</h3>
+        <div class="quality-list">
+          <div class="quality-item warn" id="qualityTitle">
+            <span class="quality-dot"></span>
+            <div>Use a specific, action-oriented title.</div>
+          </div>
+          <div class="quality-item warn" id="qualityMeasure">
+            <span class="quality-dot"></span>
+            <div>Add a measurable KPI or target.</div>
+          </div>
+          <div class="quality-item warn" id="qualitySuccess">
+            <span class="quality-dot"></span>
+            <div>Define what evidence proves completion.</div>
+          </div>
+          <div class="quality-item warn" id="qualityDue">
+            <span class="quality-dot"></span>
+            <div>Add a due date to keep the goal time-bound.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" style="padding:1rem;">
+        <div class="section-header" style="margin-bottom:0.75rem;">
+          <div>
+            <h3 style="margin-bottom:0.2rem;">Owner Context</h3>
+            <p class="muted small" style="margin:0;">
+              See the owner’s current goal load before assigning another ball to juggle.
+            </p>
+          </div>
+        </div>
+
+        <div class="owner-context-grid">
+          <div class="owner-kpi">
+            <span class="muted small">Open</span>
+            <strong id="ownerStatOpen">0</strong>
+          </div>
+          <div class="owner-kpi">
+            <span class="muted small">At Risk</span>
+            <strong id="ownerStatRisk">0</strong>
+          </div>
+          <div class="owner-kpi">
+            <span class="muted small">Overdue</span>
+            <strong id="ownerStatOverdue">0</strong>
+          </div>
+          <div class="owner-kpi">
+            <span class="muted small">Completed</span>
+            <strong id="ownerStatDone">0</strong>
+          </div>
+        </div>
+
+        <p class="muted small" style="margin-top:0.75rem;" id="ownerStatSummary">
+          Select an owner to view current workload.
+        </p>
+      </section>
+
+      <section class="card" style="padding:1rem;">
+        <div class="section-header" style="margin-bottom:0.75rem;">
+          <div>
+            <h3 style="margin-bottom:0.2rem;">SMART Helper</h3>
+            <p class="muted small" style="margin:0;">
+              Use these prompts to keep goals crisp, coachable, and audit-friendly.
+            </p>
+          </div>
+        </div>
+
+        <ul class="smart-list muted small" style="padding-left:1.1rem; margin:0;">
+          <li><strong>Specific:</strong> What exactly needs to happen?</li>
+          <li><strong>Measurable:</strong> What metric proves progress?</li>
+          <li><strong>Achievable:</strong> Do they have the tools and time?</li>
+          <li><strong>Relevant:</strong> How does it connect to performance or compliance?</li>
+          <li><strong>Time-bound:</strong> When should it be completed?</li>
+        </ul>
+      </section>
+
+      <section class="card" style="padding:1rem;">
+        <h4 style="margin:0 0 0.35rem 0;">Examples</h4>
+        <p class="muted small" style="margin:0 0 0.5rem 0;">
+          <strong>Training:</strong> Complete X module and pass quiz ≥ 90% by end of month.
+        </p>
+        <p class="muted small" style="margin:0 0 0.5rem 0;">
+          <strong>Attendance:</strong> Maintain 0 late arrivals for 30 days; notify lead before shift if delayed.
+        </p>
+        <p class="muted small" style="margin:0;">
+          <strong>Quality:</strong> Reduce rework repeats by documenting root cause for each miss.
+        </p>
+      </section>
+    </aside>
+  </div>
+</form>
+
+<script>
+  (function () {
+    const DRAFT_KEY = 'goal-form-draft-v2';
+    const ownerStatsMap = <%- JSON.stringify(_ownerGoalStats) %>;
+
+    const form = document.getElementById('goalCreateForm');
+    const title = document.getElementById('goalTitle');
+    const desc = document.getElementById('goalDescription');
+    const category = document.getElementById('goalCategory');
+    const priority = document.getElementById('goalPriority');
+    const owner = document.getElementById('goalOwner');
+    const due = document.getElementById('goalDue');
+    const measure = document.getElementById('goalMeasure');
+    const success = document.getElementById('goalSuccess');
+
+    const titleCounter = document.getElementById('titleCounter');
+    const descCounter = document.getElementById('descCounter');
+    const draftNote = document.getElementById('draftNote');
+
+    const previewTitle = document.getElementById('previewTitle');
+    const previewDesc = document.getElementById('previewDesc');
+    const previewCategory = document.getElementById('previewCategory');
+    const previewPriority = document.getElementById('previewPriority');
+    const previewDue = document.getElementById('previewDue');
+    const previewOwner = document.getElementById('previewOwner');
+    const previewMeasure = document.getElementById('previewMeasure');
+
+    const qualityTitle = document.getElementById('qualityTitle');
+    const qualityMeasure = document.getElementById('qualityMeasure');
+    const qualitySuccess = document.getElementById('qualitySuccess');
+    const qualityDue = document.getElementById('qualityDue');
+
+    const ownerStatOpen = document.getElementById('ownerStatOpen');
+    const ownerStatRisk = document.getElementById('ownerStatRisk');
+    const ownerStatOverdue = document.getElementById('ownerStatOverdue');
+    const ownerStatDone = document.getElementById('ownerStatDone');
+    const ownerStatSummary = document.getElementById('ownerStatSummary');
+
+    const clearDraftBtn = document.getElementById('clearDraftBtn');
+
+    const templateMap = {
+      TRAINING: {
+        title: 'Complete assigned training and achieve passing score',
+        category: 'TRAINING',
+        priority: 'MEDIUM',
+        description: 'Complete the assigned training module, demonstrate understanding during follow-up, and apply the process correctly during live work.',
+        successCriteria: '1) Complete assigned training module 2) Pass quiz or assessment 3) Demonstrate process correctly during live work',
+        measure: 'Training completion = 100% • Assessment score ≥ 90%',
+      },
+      ATTENDANCE: {
+        title: 'Improve attendance consistency for the next 30 days',
+        category: 'ATTENDANCE',
+        priority: 'HIGH',
+        description: 'Maintain reliable attendance and timely communication for any delays or absences.',
+        successCriteria: '1) Zero unreported absences 2) No more than one late arrival 3) Notify leadership before shift if delayed',
+        measure: 'Late arrivals ≤ 1 • Unreported absences = 0',
+      },
+      QUALITY: {
+        title: 'Reduce repeat quality misses through stronger execution',
+        category: 'QUALITY',
+        priority: 'HIGH',
+        description: 'Improve quality performance by reducing repeat misses, increasing verification discipline, and documenting root cause when issues occur.',
+        successCriteria: '1) Document root cause for each miss 2) Apply corrective actions 3) No repeat miss trend during review window',
+        measure: 'Repeat misses reduced by target % • Escapes = 0',
+      },
+      CERTIFICATION: {
+        title: 'Complete certification requirements by target due date',
+        category: 'CERTIFICATION',
+        priority: 'HIGH',
+        description: 'Finish all required certification steps, complete validation, and meet the standard for approval.',
+        successCriteria: '1) Complete all modules 2) Pass certification checks 3) Receive approval/sign-off',
+        measure: 'Certification completion = 100%',
+      },
+      PROCESS: {
+        title: 'Implement a process improvement with measurable impact',
+        category: 'PROCESS',
+        priority: 'MEDIUM',
+        description: 'Identify a process gap, define the improvement, pilot the change, and document measurable results.',
+        successCriteria: '1) Identify process gap 2) Propose improvement 3) Pilot change 4) Document before/after result',
+        measure: 'Cycle time reduced • Errors reduced • Compliance improved',
+      },
+    };
+
+    function setCounter(el, counterEl, max) {
+      if (!el || !counterEl) return;
+      const len = (el.value || '').length;
+      counterEl.textContent = len + ' / ' + max;
+    }
+
+    function syncPreview() {
+      if (previewTitle) {
+        previewTitle.textContent = (title && title.value.trim()) || 'Your goal title will appear here';
+      }
+
+      if (previewDesc) {
+        previewDesc.textContent = (desc && desc.value.trim())
+          || 'Add a description to preview how this goal card will read on the board.';
+      }
+
+      if (previewCategory) {
+        previewCategory.textContent = (category && category.value) || 'Uncategorized';
+      }
+
+      if (previewPriority) {
+        previewPriority.textContent = (priority && priority.value) ? (priority.value + ' Priority') : 'No Priority';
+      }
+
+      if (previewDue) {
+        previewDue.textContent = (due && due.value) ? ('Due: ' + due.value) : 'No due date';
+      }
+
+      if (previewOwner) {
+        const ownerText = owner && owner.options && owner.selectedIndex >= 0
+          ? owner.options[owner.selectedIndex].text
+          : '—';
+        previewOwner.textContent = 'Owner: ' + ownerText;
+      }
+
+      if (previewMeasure) {
+        previewMeasure.textContent = (measure && measure.value.trim())
+          ? ('KPI: ' + measure.value.trim())
+          : 'KPI: —';
+      }
+    }
+
+    function setQualityState(el, ok, okText, warnText) {
+      if (!el) return;
+      el.classList.remove('ok', 'warn');
+      el.classList.add(ok ? 'ok' : 'warn');
+      const body = el.querySelector('div:last-child');
+      if (body) body.textContent = ok ? okText : warnText;
+    }
+
+    function syncQuality() {
+      const hasStrongTitle = !!(title && title.value.trim().length >= 12);
+      const hasMeasure = !!(measure && measure.value.trim().length >= 5);
+      const hasSuccess = !!(success && success.value.trim().length >= 15);
+      const hasDue = !!(due && due.value);
+
+      setQualityState(
+        qualityTitle,
+        hasStrongTitle,
+        'Title looks specific enough.',
+        'Use a more specific, action-oriented title.'
+      );
+
+      setQualityState(
+        qualityMeasure,
+        hasMeasure,
+        'KPI / measure is defined.',
+        'Add a measurable KPI or target.'
+      );
+
+      setQualityState(
+        qualitySuccess,
+        hasSuccess,
+        'Completion evidence is defined.',
+        'Define what evidence proves completion.'
+      );
+
+      setQualityState(
+        qualityDue,
+        hasDue,
+        'Goal is time-bound.',
+        'Add a due date to keep the goal time-bound.'
+      );
+    }
+
+    function syncOwnerStats() {
+      if (!owner) return;
+      const ownerId = String(owner.value || '');
+      const stats = ownerStatsMap[ownerId] || {
+        totalOpen: 0,
+        atRisk: 0,
+        overdue: 0,
+        done: 0,
+        onHold: 0,
+      };
+
+      if (ownerStatOpen) ownerStatOpen.textContent = String(stats.totalOpen || 0);
+      if (ownerStatRisk) ownerStatRisk.textContent = String(stats.atRisk || 0);
+      if (ownerStatOverdue) ownerStatOverdue.textContent = String(stats.overdue || 0);
+      if (ownerStatDone) ownerStatDone.textContent = String(stats.done || 0);
+
+      if (ownerStatSummary) {
+        const ownerText = owner.options && owner.selectedIndex >= 0
+          ? owner.options[owner.selectedIndex].text
+          : 'this owner';
+
+        ownerStatSummary.textContent =
+          ownerText + ' currently has ' +
+          (stats.totalOpen || 0) + ' open, ' +
+          (stats.atRisk || 0) + ' at risk, and ' +
+          (stats.overdue || 0) + ' overdue goals.';
+      }
+    }
+
+    function saveDraft() {
+      if (!window.localStorage) return;
+      const payload = {
+        title: title ? title.value : '',
+        description: desc ? desc.value : '',
+        category: category ? category.value : '',
+        priority: priority ? priority.value : '',
+        successCriteria: success ? success.value : '',
+        measure: measure ? measure.value : '',
+        ownerId: owner ? owner.value : '',
+        dueDate: due ? due.value : '',
+      };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(payload));
+      if (draftNote) draftNote.textContent = 'Draft autosaved.';
+    }
+
+    function loadDraft() {
+      if (!window.localStorage) return;
+      try {
+        const raw = localStorage.getItem(DRAFT_KEY);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+
+        if (title && !title.value) title.value = data.title || '';
+        if (desc && !desc.value) desc.value = data.description || '';
+        if (category && !category.value) category.value = data.category || '';
+        if (priority && !priority.value) priority.value = data.priority || '';
+        if (success && !success.value) success.value = data.successCriteria || '';
+        if (measure && !measure.value) measure.value = data.measure || '';
+        if (owner && !owner.value && data.ownerId) owner.value = data.ownerId;
+        if (due && !due.value) due.value = data.dueDate || '';
+
+        if (draftNote) draftNote.textContent = 'Saved draft restored.';
+      } catch (e) {
+        console.error('Failed to restore draft:', e);
+      }
+    }
+
+    function clearDraft() {
+      if (!window.localStorage) return;
+      localStorage.removeItem(DRAFT_KEY);
+      if (draftNote) draftNote.textContent = 'Draft cleared.';
+    }
+
+    function formatISODate(dateObj) {
+      const y = dateObj.getFullYear();
+      const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const d = String(dateObj.getDate()).padStart(2, '0');
+      return y + '-' + m + '-' + d;
+    }
+
+    function setDueShortcut(mode) {
+      if (!due) return;
+
+      const now = new Date();
+      const d = new Date(now);
+      d.setHours(0, 0, 0, 0);
+
+      if (mode === '7') {
+        d.setDate(d.getDate() + 7);
+        due.value = formatISODate(d);
+      } else if (mode === '30') {
+        d.setDate(d.getDate() + 30);
+        due.value = formatISODate(d);
+      } else if (mode === 'EOM') {
+        const eom = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+        due.value = formatISODate(eom);
+      } else if (mode === 'QTR') {
+        const quarter = Math.floor(d.getMonth() / 3);
+        const quarterEndMonth = (quarter * 3) + 2;
+        const quarterEnd = new Date(d.getFullYear(), quarterEndMonth + 1, 0);
+        due.value = formatISODate(quarterEnd);
+      } else if (mode === 'CLEAR') {
+        due.value = '';
+      }
+
+      syncAll();
+      saveDraft();
+    }
+
+    function applyTemplate(templateKey) {
+      const t = templateMap[templateKey];
+      if (!t) return;
+
+      if (title) title.value = t.title || '';
+      if (category) category.value = t.category || '';
+      if (priority) priority.value = t.priority || '';
+      if (desc) desc.value = t.description || '';
+      if (success) success.value = t.successCriteria || '';
+      if (measure) measure.value = t.measure || '';
+
+      syncAll();
+      saveDraft();
+    }
+
+    function syncAll() {
+      setCounter(title, titleCounter, 140);
+      setCounter(desc, descCounter, 1200);
+      syncPreview();
+      syncQuality();
+      syncOwnerStats();
+    }
+
+    [title, desc, category, priority, owner, due, measure, success].forEach((el) => {
+      if (!el) return;
+      el.addEventListener('input', () => {
+        syncAll();
+        saveDraft();
+      });
+      el.addEventListener('change', () => {
+        syncAll();
+        saveDraft();
+      });
+    });
+
+    document.querySelectorAll('[data-template]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        applyTemplate(btn.getAttribute('data-template'));
+      });
+    });
+
+    document.querySelectorAll('[data-due-shortcut]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        setDueShortcut(btn.getAttribute('data-due-shortcut'));
+      });
+    });
+
+    if (clearDraftBtn) {
+      clearDraftBtn.addEventListener('click', () => {
+        clearDraft();
+      });
+    }
+
+    if (form) {
+      form.addEventListener('submit', () => {
+        if (window.localStorage) {
+          localStorage.removeItem(DRAFT_KEY);
+        }
+      });
+    }
+
+    loadDraft();
+    syncAll();
+  })();
+</script>
+
+</main>
+</body>
+</html>

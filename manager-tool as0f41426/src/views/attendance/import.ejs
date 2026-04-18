@@ -1,0 +1,76 @@
+<!-- src/views/attendance/import.ejs -->
+<%- include('../layout') %>
+
+<section class="page-header">
+  <div>
+    <h2>Attendance Import – Presence &amp; Punctuality</h2>
+    <p class="muted">
+      Upload attendance exports to feed the Attendance section on staff profiles.
+      Expected columns (case-insensitive):
+      <code>Employee ID</code>, <code>Name</code>, <code>Date</code>, <code>Entry Time</code>.
+    </p>
+  </div>
+  <div>
+    <a href="/staff" class="btn ghost">Back to Staff Roster</a>
+  </div>
+</section>
+
+<div class="card">
+  <% if (attendanceError) { %>
+    <pre class="alert alert-error"><%= attendanceError %></pre>
+  <% } %>
+
+  <% if (attendanceSummary) { %>
+    <pre class="alert alert-success" style="white-space:pre-wrap;"><%= attendanceSummary %></pre>
+  <% } %>
+
+  <form
+    method="POST"
+    action="/attendance/import"
+    enctype="multipart/form-data"
+    style="display:flex; flex-direction:column; gap:1rem; max-width:480px;"
+  >
+    <label>
+      <span>Attendance File (CSV or Excel)</span>
+      <input type="file" name="file" accept=".csv,.xlsx,.xls" required />
+    </label>
+
+    <div class="muted small">
+      <p style="margin-bottom:0.25rem;">The importer will:</p>
+      <ul class="muted small" style="margin-top:0.25rem; padding-left:1.25rem;">
+        <li>
+          Match <strong>Employee ID</strong> to
+          <strong>StaffProfile.employeeId</strong> for staff in your scoped
+          building/shift.
+        </li>
+        <li>
+          Use the staff member’s <strong>shift</strong> to determine the
+          scheduled start time:
+          1st (07:00), 2nd (15:00), 3rd (23:00), Weekend (07:00).
+        </li>
+        <li>
+          Compute <strong>minutesLate</strong> and
+          <strong>punctualityBucket</strong>:
+          <em>ON_TIME</em> (≤ shift start),
+          <em>UNPUNCTUAL</em> (1–7 minutes late),
+          <em>LATE</em> (8+ minutes late).
+        </li>
+        <li>
+          Upsert one record per <em>staff + date</em> (existing records are updated).
+        </li>
+        <li>
+          Auto-create <strong>ABSENT</strong> records for scoped staff who
+          have <em>no</em> row in the file for a given date.
+        </li>
+      </ul>
+    </div>
+
+    <div style="display:flex; gap:0.5rem; justify-content:flex-end; margin-top:0.5rem;">
+      <button type="submit" class="btn primary">Upload &amp; Import</button>
+    </div>
+  </form>
+</div>
+
+</main>
+</body>
+</html>

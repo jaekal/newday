@@ -1,0 +1,136 @@
+<%- include('../layout') %>
+
+<section class="page-header">
+  <div>
+    <h2>My Reviews &amp; Coverage</h2>
+    <p class="muted">
+      Reviews you have submitted, your coverage of the staff roster, and your average score.
+    </p>
+  </div>
+
+  <form method="GET" action="/reviews/my" class="inline-form date-filter">
+    <div class="field-inline">
+      <label>Month</label>
+      <input type="number" name="month" min="1" max="12" value="<%= month %>" />
+    </div>
+    <div class="field-inline">
+      <label>Year</label>
+      <input type="number" name="year" min="2020" max="2100" value="<%= year %>" />
+    </div>
+    <button type="submit" class="btn primary">Update</button>
+  </form>
+</section>
+
+<section class="kpi-grid">
+  <!-- Coverage card -->
+  <div class="card kpi-card">
+    <h3>Coverage</h3>
+    <p class="kpi-value">
+      <%= reviewedCount %> / <%= totalStaffCount %>
+    </p>
+    <p class="muted">
+      <%= totalStaffCount > 0 ? coveragePercent.toFixed(1) : '0.0' %>% of staff reviewed in <%= month %>/<%= year %>
+    </p>
+  </div>
+
+  <!-- Average Score card -->
+  <div class="card kpi-card">
+    <h3>Average Score</h3>
+    <p class="kpi-value">
+      <%
+        // Compute overall average from the avgScore field we attach in the route
+        let overallAvg = null;
+        if (reviews && reviews.length) {
+          let sum = 0;
+          let count = 0;
+          reviews.forEach(function (r) {
+            if (r.avgScore != null && !isNaN(r.avgScore)) {
+              sum += r.avgScore;
+              count++;
+            }
+          });
+          if (count > 0) {
+            overallAvg = sum / count;
+          }
+        }
+      %>
+      <% if (overallAvg != null) { %>
+        <%= overallAvg.toFixed(2) %> / 5
+      <% } else { %>
+        N/A
+      <% } %>
+    </p>
+    <p class="muted">
+      Based on bucketed averages (per review) for this period.
+    </p>
+  </div>
+</section>
+
+<section class="card">
+  <div class="section-header">
+    <h3>My Submitted Reviews</h3>
+    <a href="/reviews/new" class="btn ghost">+ New Review</a>
+  </div>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Staff</th>
+        <th>Period</th>
+        <th>Average</th>
+        <th>Comment</th>
+        <th style="width: 160px;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (!reviews || reviews.length === 0) { %>
+        <tr>
+          <td colspan="5" class="muted">No reviews submitted for this period.</td>
+        </tr>
+      <% } else { %>
+        <% reviews.forEach(function (r) { %>
+          <tr>
+            <td><%= r.Staff ? r.Staff.name : 'N/A' %></td>
+            <td><%= r.periodMonth %>/<%= r.periodYear %></td>
+            <td>
+              <% if (r.avgScore != null && !isNaN(r.avgScore)) { %>
+                <%= r.avgScore.toFixed(2) %> / 5
+              <% } else { %>
+                N/A
+              <% } %>
+            </td>
+            <td class="muted">
+              <% if (r.comment && r.comment.trim().length) { %>
+                <%= r.comment.length > 80 ? r.comment.substring(0, 80) + '…' : r.comment %>
+              <% } else { %>
+                —
+              <% } %>
+            </td>
+            <td>
+              <div style="display:flex; gap:0.25rem; flex-wrap:wrap;">
+                <a href="/reviews/<%= r.id %>/edit" class="btn ghost btn-sm">
+                  Edit
+                </a>
+
+                <form
+                  method="POST"
+                  action="/reviews/<%= r.id %>/delete"
+                  class="inline-form"
+                  onsubmit="return confirm('Delete this review? This cannot be undone.');"
+                >
+                  <button type="submit" class="btn danger btn-sm">
+                    Delete
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        <% }); %>
+      <% } %>
+    </tbody>
+  </table>
+</section>
+
+</main>
+</body>
+</html>

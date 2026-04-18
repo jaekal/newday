@@ -1,0 +1,69 @@
+<%- include('../layout') %>
+
+<section class="page-header">
+  <div>
+    <h2>Review Change Log</h2>
+    <p class="muted">
+      Audit trail of review creation and edits. Visible to managers only.
+    </p>
+  </div>
+</section>
+
+<section class="card">
+  <% if (!changes || changes.length === 0) { %>
+    <p class="muted">No changes recorded yet.</p>
+  <% } else { %>
+    <table>
+      <thead>
+        <tr>
+          <th>When</th>
+          <th>Type</th>
+          <th>Staff</th>
+          <th>Submitter</th>
+          <th>Changed By</th>
+          <th>Period</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% changes.forEach(function (c) { %>
+          <tr>
+            <td><%= c.createdAt.toISOString().slice(0,16).replace('T',' ') %></td>
+            <td><%= c.changeType %></td>
+            <td><%= c.staffName %></td>
+            <td><%= c.submitterName %></td>
+            <td><%= c.changedByName %></td>
+            <td>
+              <% if (c.periodMonth && c.periodYear) { %>
+                <%= c.periodMonth %>/<%= c.periodYear %>
+              <% } else { %>
+                —
+              <% } %>
+            </td>
+            <td>
+              <% if (!c.diff || c.diff.length === 0) { %>
+                <span class="muted"><%= c.description || 'No field-level details' %></span>
+              <% } else { %>
+                <details>
+                  <summary>View changes</summary>
+                  <ul style="margin-top:0.25rem;">
+                    <% c.diff.forEach(function (d) { %>
+                      <li>
+                        <strong><%= d.field %>:</strong>
+                        "<%= d.old %>" → "<%= d.new %>"
+                      </li>
+                    <% }); %>
+                  </ul>
+                </details>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  <% } %>
+</section>
+
+</main>
+</body>
+</html>

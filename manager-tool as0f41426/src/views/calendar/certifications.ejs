@@ -1,0 +1,70 @@
+<%- include('../layout') %>
+
+<div class="page-header" style="padding: 1.5rem 1.5rem 0;">
+  <div>
+    <h1>Certification Expiry</h1>
+    <p class="muted">Computed from training completion date + recertification frequency.</p>
+  </div>
+  <a href="/calendar" class="btn ghost btn-sm">← Calendar</a>
+</div>
+
+<div style="padding: 1rem 1.5rem 2rem;">
+
+  <% if (expired.length) { %>
+    <section class="card" style="margin-bottom:1.25rem; border-color:rgba(239,68,68,0.3);">
+      <h3 style="color:#f87171; margin-bottom:0.75rem;">Expired (<%= expired.length %>)</h3>
+      <%- certTable(expired) %>
+    </section>
+  <% } %>
+
+  <% if (expiring.length) { %>
+    <section class="card" style="margin-bottom:1.25rem; border-color:rgba(245,158,11,0.3);">
+      <h3 style="color:#fcd34d; margin-bottom:0.75rem;">Expiring Within 60 Days (<%= expiring.length %>)</h3>
+      <%- certTable(expiring) %>
+    </section>
+  <% } %>
+
+  <% if (!expired.length && !expiring.length) { %>
+    <p class="muted" style="margin-top:1rem;">No certifications expiring soon.</p>
+  <% } %>
+
+  <% if (current.length) { %>
+    <section class="card">
+      <h3 style="margin-bottom:0.75rem;">Current (<%= current.length %>)</h3>
+      <%- certTable(current) %>
+    </section>
+  <% } %>
+</div>
+
+<%
+function certTable(rows) {
+  if (!rows.length) return '<p class="muted">None.</p>';
+  let html = '<div class="table-scroll"><table class="data-table"><thead><tr>';
+  html += '<th>Staff</th><th>Course</th><th>Completed</th><th>Expires</th><th>Days</th><th>Frequency</th>';
+  html += '</tr></thead><tbody>';
+  rows.forEach(function(r) {
+    const dayLabel = r.daysUntil < 0
+      ? '<span class="chip chip-warn" style="font-size:0.72rem;">' + Math.abs(r.daysUntil) + 'd overdue</span>'
+      : r.daysUntil <= 30
+        ? '<span class="chip chip-warn" style="font-size:0.72rem;">' + r.daysUntil + 'd</span>'
+        : '<span class="chip chip-neutral" style="font-size:0.72rem;">' + r.daysUntil + 'd</span>';
+    const staffLink = r.staffId
+      ? '<a href="/staff/' + r.staffId + '">' + r.staffName + '</a>'
+      : r.staffName;
+    html += '<tr>';
+    html += '<td>' + staffLink + '</td>';
+    html += '<td>' + r.courseName + '</td>';
+    html += '<td>' + (r.completedDate || '—') + '</td>';
+    html += '<td>' + r.expiryDate + '</td>';
+    html += '<td>' + dayLabel + '</td>';
+    html += '<td><span class="muted small">' + (r.certificationFrequency || '—') + '</span></td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  return html;
+}
+%>
+
+</main>
+</body>
+</html>

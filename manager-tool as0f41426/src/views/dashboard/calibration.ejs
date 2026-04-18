@@ -1,0 +1,196 @@
+<!-- src/views/dashboard/calibration.ejs -->
+<%- include('../layout') %>
+
+<%
+  const BUCKETS = [
+    { key: 'overall',     label: 'Overall'      },
+    { key: 'people',      label: 'People First' },
+    { key: 'ownership',   label: 'Ownership'    },
+    { key: 'quality',     label: 'Quality'      },
+    { key: 'partnership', label: 'Partnership'  },
+  ];
+
+  function fmt(v) {
+    return (v != null && !isNaN(v)) ? Number(v).toFixed(2) : null;
+  }
+
+  function barClass(v) {
+    if (v == null) return '';
+    if (v < 2.5)   return 'score-low';
+    if (v < 3.5)   return 'score-mid';
+    return 'score-high';
+  }
+
+  /* Width % — scale 1–5 onto 0–100 */
+  function barWidth(v) {
+    if (v == null) return 0;
+    return Math.round(((v - 1) / 4) * 100);
+  }
+
+  /* Month-over-month delta vs previous row */
+  function delta(curr, prev) {
+    if (curr == null || prev == null) return null;
+    return curr - prev;
+  }
+
+  const safeHistory = Array.isArray(history) ? history : [];
+%>
+
+<style>
+  .calib-hist-page { max-width: 960px; margin: 0 auto; }
+  .calib-hist-back { font-size: 0.82rem; color: var(--text-muted); text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; margin-bottom: 1.25rem; }
+  .calib-hist-back:hover { color: var(--text-primary); }
+  .calib-bucket-section { margin-bottom: 2rem; }
+  .calib-bucket-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin: 0 0 0.5rem;
+  }
+  .score-low  { color: rgba(239,68,68,0.95); }
+  .score-mid  { color: rgba(234,179,8,0.95); }
+  .score-high { color: rgba(34,197,94,0.95); }
+  .calib-hist-delta-up   { color: rgba(34,197,94,0.85);  font-size: 0.72rem; }
+  .calib-hist-delta-down { color: rgba(239,68,68,0.85);  font-size: 0.72rem; }
+  .calib-hist-delta-flat { color: var(--text-muted);      font-size: 0.72rem; }
+  .no-reviews { color: var(--text-muted); font-style: italic; font-size: 0.78rem; }
+</style>
+
+<div class="calib-hist-page">
+  <a href="/" class="calib-hist-back">
+    ← Back to Dashboard
+  </a>
+
+  <div class="page-header" style="margin-bottom:1.5rem;">
+    <h2>Score Calibration History</h2>
+    <p class="muted">12-month trend of your team's review scores by bucket. Based on reviews you submitted.</p>
+  </div>
+
+  <% if (safeHistory.every(function(m){ return m.count === 0; })) { %>
+    <div class="card" style="text-align:center; padding:3rem 1rem;">
+      <p class="muted">No review history found. Submit monthly reviews to see trends here.</p>
+      <a href="/reviews/new" class="btn primary" style="margin-top:1rem;">Submit a Review</a>
+    </div>
+  <% } else { %>
+
+  <%/* ── Combined overview table ────────────────────────────────────────── */%>
+  <section class="card" style="margin-bottom:1.5rem; overflow:hidden;">
+    <h3 style="margin:0 0 1rem;">All Buckets — Monthly Overview</h3>
+    <div class="table-scroll">
+      <table class="calib-history-table">
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th>Reviews</th>
+            <% BUCKETS.forEach(function(b) { %><th><%= b.label %></th><% }); %>
+          </tr>
+        </thead>
+        <tbody>
+          <% safeHistory.forEach(function(m, idx) {
+               const prev = idx > 0 ? safeHistory[idx - 1] : null;
+          %>
+          <tr>
+            <td style="white-space:nowrap; font-weight:500;"><%= m.label %></td>
+            <td>
+              <% if (m.count === 0) { %>
+                <span class="no-reviews">—</span>
+              <% } else { %>
+                <%= m.count %>
+              <% } %>
+            </td>
+            <% BUCKETS.forEach(function(b) {
+                 const v     = m[b.key];
+                 const fv    = fmt(v);
+                 const d     = prev ? delta(v, prev[b.key]) : null;
+                 const dStr  = d != null ? ((d > 0 ? '+' : '') + d.toFixed(2)) : null;
+                 const dCls  = d == null ? '' : d > 0.05 ? 'calib-hist-delta-up' : d < -0.05 ? 'calib-hist-delta-down' : 'calib-hist-delta-flat';
+                 const dIcon = d == null ? '' : d > 0.05 ? '↑' : d < -0.05 ? '↓' : '→';
+            %>
+            <td>
+              <% if (fv == null) { %>
+                <span class="no-reviews">—</span>
+              <% } else { %>
+                <div class="calib-history-bar-wrap">
+                  <div class="calib-history-bar <%= barClass(v) %>" style="width:<%= barWidth(v) * 0.6 %>px; max-width:60px;"></div>
+                  <span class="<%= barClass(v) %>"><%= fv %></span>
+                  <% if (dStr) { %><span class="<%= dCls %>"><%= dIcon %><%= dStr %></span><% } %>
+                </div>
+              <% } %>
+            </td>
+            <% }); %>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <%/* ── Per-bucket sparkline sections ─────────────────────────────────── */%>
+  <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:1rem;">
+    <% BUCKETS.forEach(function(b) {
+         const vals = safeHistory.filter(function(m){ return m[b.key] != null; });
+         const max  = vals.length ? Math.max.apply(null, vals.map(function(m){ return m[b.key]; })) : 5;
+         const min  = vals.length ? Math.min.apply(null, vals.map(function(m){ return m[b.key]; })) : 1;
+         const latest = safeHistory[safeHistory.length - 1];
+         const latestVal = latest ? latest[b.key] : null;
+    %>
+    <div class="card calib-bucket-section">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:0.75rem;">
+        <p class="calib-bucket-title"><%= b.label %></p>
+        <% if (latestVal != null) { %>
+          <span style="font-size:1.3rem; font-weight:700;" class="<%= barClass(latestVal) %>"><%= fmt(latestVal) %></span>
+        <% } else { %>
+          <span class="no-reviews">No data</span>
+        <% } %>
+      </div>
+
+      <%/* Mini bar chart — one bar per month */%>
+      <div style="display:flex; align-items:flex-end; gap:3px; height:48px; margin-bottom:0.5rem;">
+        <% safeHistory.forEach(function(m) {
+             const v = m[b.key];
+             const pct = v != null ? Math.round(((v - 1) / 4) * 100) : 0;
+        %>
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; height:100%;">
+          <div style="flex:1; display:flex; align-items:flex-end; width:100%;">
+            <% if (v != null) { %>
+              <div class="calib-history-bar <%= barClass(v) %>"
+                   style="width:100%; height:<%= pct %>%; min-height:3px; border-radius:3px 3px 0 0;"
+                   title="<%= m.label %>: <%= fmt(v) %>"></div>
+            <% } else { %>
+              <div style="width:100%; height:3px; background:var(--border-default); border-radius:3px;" title="<%= m.label %>: no data"></div>
+            <% } %>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+
+      <%/* Month labels — only show every other one to avoid crowding */%>
+      <div style="display:flex; gap:3px;">
+        <% safeHistory.forEach(function(m, idx) { %>
+        <div style="flex:1; text-align:center; font-size:0.55rem; color:var(--text-muted); overflow:hidden;">
+          <%= idx % 3 === 0 ? m.label : '' %>
+        </div>
+        <% }); %>
+      </div>
+
+      <% if (vals.length >= 2) { %>
+        <%
+          const first  = vals[0][b.key];
+          const last   = vals[vals.length - 1][b.key];
+          const trend  = last - first;
+          const tCls   = trend > 0.05 ? 'calib-hist-delta-up' : trend < -0.05 ? 'calib-hist-delta-down' : 'calib-hist-delta-flat';
+          const tIcon  = trend > 0.05 ? '↑' : trend < -0.05 ? '↓' : '→';
+        %>
+        <p style="margin:0.5rem 0 0; font-size:0.75rem; color:var(--text-muted);">
+          12-month trend: <span class="<%= tCls %>"><%= tIcon %> <%= (trend > 0 ? '+' : '') + trend.toFixed(2) %></span>
+          &nbsp;·&nbsp; Range <%= fmt(min) %> – <%= fmt(max) %>
+        </p>
+      <% } %>
+    </div>
+    <% }); %>
+  </div>
+
+  <% } %>
+</div>
