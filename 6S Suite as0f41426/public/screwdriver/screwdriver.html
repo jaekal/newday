@@ -184,6 +184,30 @@
     /* ── ESD panel ── */
     #esdPanel{display:none;padding:0}
     #esdPanel.active{display:block}
+    #goldenPartsPanel{display:none;padding:0}
+    #goldenPartsPanel.active{display:block}
+    .gp-page{padding:.4rem .75rem 1.25rem;max-width:1100px;margin:0 auto}
+    .gp-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:.35rem;margin-bottom:.65rem}
+    .gp-kpi{background:var(--surface-strong);border:1px solid var(--border);border-radius:var(--radius);padding:.45rem .6rem}
+    .gp-kpi-l{font-size:.65rem;font-weight:700;text-transform:uppercase;color:var(--fg-muted)}
+    .gp-kpi-v{font-size:1.25rem;font-weight:900}
+    .gp-card{border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);margin-bottom:.75rem;overflow:hidden}
+    .gp-card-h{display:flex;align-items:center;gap:.5rem;padding:.5rem .65rem;border-bottom:1px solid var(--border);background:var(--surface-strong);font-weight:800;font-size:.88rem}
+    .gp-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;padding:.65rem}
+    @media(max-width:720px){.gp-grid{grid-template-columns:1fr}}
+    .gp-field label{display:block;font-size:.78rem;font-weight:600;color:var(--fg-muted);margin-bottom:.2rem}
+    .gp-field input,.gp-field select,.gp-field textarea{width:100%;padding:.35rem .45rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.84rem;box-sizing:border-box}
+    .gp-table{width:100%;border-collapse:collapse;font-size:.82rem}
+    .gp-table th,.gp-table td{padding:.38rem .5rem;border-bottom:1px solid var(--border);text-align:left}
+    .gp-table th{font-size:.7rem;text-transform:uppercase;color:var(--fg-muted);background:var(--surface-strong)}
+    .gp-table tbody tr:hover{background:var(--row-hover, color-mix(in srgb, var(--accent) 6%, transparent))}
+    .gp-pill-out{display:inline-flex;align-items:center;gap:.25rem;padding:.1rem .4rem;border-radius:99px;font-size:.72rem;font-weight:700;background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn)}
+    .gp-actions{display:flex;gap:.35rem;flex-wrap:wrap}
+    .gp-btn{font-size:.78rem;padding:.28rem .55rem;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);cursor:pointer;font-weight:600}
+    .gp-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .gp-btn-primary{background:var(--accent);color:var(--accent-contrast);border-color:var(--accent)}
+    .gp-msg{font-size:.82rem;min-height:1.2rem;margin-top:.35rem}
+    .gp-msg.ok{color:var(--ok)}.gp-msg.err{color:var(--danger)}
     .esd-layout{display:grid;grid-template-columns:1fr 1fr;gap:1rem;padding:1rem;max-width:960px}
     @media(max-width:700px){.esd-layout{grid-template-columns:1fr}}
     .esd-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;box-shadow:var(--shadow)}
@@ -255,7 +279,7 @@
           <span class="sd-brand-ic" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>
           <span>Floor Tools &amp; ESD</span>
         </div>
-        <div class="brand-subtitle">Screwdrivers · Drills · Dongles · 3D Tooling · ESD Carts</div>
+        <div class="brand-subtitle">Screwdrivers · Drills · Dongles · 3D Tooling · ESD Carts · Golden sample parts</div>
       </div>
       <div class="suite-actions">
         <a href="/home" class="home-button" style="display:inline-flex;align-items:center;gap:.35rem"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> Home</a>
@@ -293,6 +317,12 @@
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
       ESD Carts
       <span class="lane-count sd-tab-badge" id="esdCheckedBadge" style="font-size:.7rem">0</span>
+    </button>
+    <button class="sd-dtab" data-panel="goldenPartsPanel" data-hash="golden"
+            role="tab" aria-selected="false" aria-controls="goldenPartsPanel">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      Golden Parts
+      <span class="sd-tab-badge" id="goldenOutBadge" style="font-size:.7rem">0</span>
     </button>
   </div>
 
@@ -591,11 +621,97 @@
     </div>
   </div>
 
+  <!-- ════════════════════
+       GOLDEN PARTS (kiosk ledger — golden_sample only)
+  ════════════════════ -->
+  <div id="goldenPartsPanel">
+    <div class="gp-page">
+      <div style="display:flex;align-items:center;gap:.5rem;padding:.35rem 0 .5rem;border-bottom:1px solid var(--border);margin-bottom:.65rem">
+        <span style="font-size:.72rem;color:var(--fg-muted)">Same ledger as Technician Kiosk · golden sample borrows only</span>
+        <a href="/kiosk" class="btn-secondary" style="font-size:.72rem;padding:.2rem .5rem;text-decoration:none;margin-left:auto">Open Kiosk</a>
+      </div>
+      <div class="gp-kpis" aria-label="Golden parts summary">
+        <div class="gp-kpi">
+          <div class="gp-kpi-l">Out on floor</div>
+          <div class="gp-kpi-v" id="gpKpiOut">0</div>
+        </div>
+        <div class="gp-kpi">
+          <div class="gp-kpi-l">Past expected return</div>
+          <div class="gp-kpi-v" id="gpKpiLate" style="color:var(--danger)">0</div>
+        </div>
+        <div class="gp-kpi">
+          <div class="gp-kpi-l">Last refresh</div>
+          <div class="gp-kpi-v" style="font-size:.85rem;font-weight:700" id="gpKpiTime">—</div>
+        </div>
+      </div>
+      <div class="gp-grid">
+        <div class="gp-card">
+          <div class="gp-card-h">Check out (borrow)</div>
+          <div style="padding:.65rem">
+            <div class="gp-field"><label for="gpCoPart">Part serial</label><input id="gpCoPart" type="text" autocomplete="off" placeholder="Scan or type SN"/></div>
+            <div class="gp-field" style="margin-top:.45rem"><label for="gpCoTarget">Target server</label><input id="gpCoTarget" type="text" autocomplete="off" placeholder="SN / asset / hostname"/></div>
+            <div class="gp-field" style="margin-top:.45rem"><label for="gpCoDonor">Donor server <span style="opacity:.65">(opt.)</span></label><input id="gpCoDonor" type="text" autocomplete="off"/></div>
+            <div class="gp-field" style="margin-top:.45rem"><label for="gpCoNotes">Notes <span style="opacity:.65">(opt.)</span></label><textarea id="gpCoNotes" rows="2" maxlength="2000"></textarea></div>
+            <div class="gp-actions" style="margin-top:.55rem">
+              <button type="button" class="gp-btn gp-btn-primary" id="gpCoSubmit">Log borrow</button>
+            </div>
+            <div class="gp-msg" id="gpCoMsg"></div>
+          </div>
+        </div>
+        <div class="gp-card">
+          <div class="gp-card-h">Check in (return)</div>
+          <div style="padding:.65rem">
+            <div class="gp-field"><label for="gpRetSelect">Active borrow</label><select id="gpRetSelect"><option value="">Load list…</option></select></div>
+            <div class="gp-field" style="margin-top:.45rem"><label for="gpRetPart">Or part serial <span style="opacity:.65">(unique)</span></label><input id="gpRetPart" type="text" autocomplete="off"/></div>
+            <div class="gp-field" style="margin-top:.45rem"><label for="gpRetCond">Condition</label>
+              <select id="gpRetCond">
+                <option value="Good">Good</option>
+                <option value="Damaged">Damaged</option>
+                <option value="Consumed">Consumed</option>
+                <option value="Not returned — logged">Not returned — logged</option>
+              </select>
+            </div>
+            <div class="gp-field" style="margin-top:.45rem"><label for="gpRetNotes">Notes <span style="opacity:.65">(opt.)</span></label><textarea id="gpRetNotes" rows="2" maxlength="2000"></textarea></div>
+            <div class="gp-actions" style="margin-top:.55rem">
+              <button type="button" class="gp-btn gp-btn-primary" id="gpRetSubmit">Log return</button>
+            </div>
+            <div class="gp-msg" id="gpRetMsg"></div>
+          </div>
+        </div>
+      </div>
+      <div class="gp-card">
+        <div class="gp-card-h" style="justify-content:space-between">
+          <span>Open golden borrows</span>
+          <button type="button" class="gp-btn" id="gpRefreshBtn">Refresh</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="gp-table" aria-live="polite">
+            <thead>
+              <tr>
+                <th>Part SN</th>
+                <th>Target server</th>
+                <th>Operator</th>
+                <th>Out since</th>
+                <th>Duration</th>
+                <th>Expected</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="gpTableBody">
+              <tr><td colspan="7" style="text-align:center;padding:1.2rem;color:var(--fg-muted)">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
  <script src="/nav.js"></script>
 <script src="/js/suite-icons.js"></script>
 <script src="/socket.io/socket.io.js" defer></script>
 <script type="module" src="/screwdriver/main.js" defer></script>
 <script type="module" src="/screwdriver/esd-panel.js" defer></script>
+<script src="/screwdriver/golden-parts-panel.js" defer></script>
 
 </body>
 </html>

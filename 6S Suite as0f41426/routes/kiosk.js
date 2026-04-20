@@ -12,6 +12,13 @@ import idempotency from '../middleware/idempotency.js';
 import { apiLimiter } from '../middleware/rateLimit.js';
 import { requireRole } from '../middleware/roleCheck.js';
 import taskService from '../services/taskService.js';
+import {
+  createPartBorrow,
+  readPartBorrowLines,
+  returnPartBorrow,
+  listOpenPartBorrows,
+  ensurePartBorrowFile,
+} from '../services/partBorrows.js';
 import { resolveEmployeeIdSet } from '../utils/employeeAliases.js';
 import { withQueue } from '../utils/writeQueue.js';
 
@@ -140,6 +147,7 @@ async function ensureFiles() {
   if (!fs.existsSync(INSPECTION_PATH)) {
     await fsp.writeFile(INSPECTION_PATH, '');
   }
+  await ensurePartBorrowFile();
 }
 
 const upload = multer({
@@ -259,6 +267,25 @@ const inspectionSchema = Joi.object({
     missingScrewPositions: Joi.string().allow(''),
     otherIssues: Joi.string().allow(''),
   }).required(),
+});
+
+const partBorrowCreateSchema = Joi.object({
+  targetServerSn: Joi.string().trim().min(1).max(120).required(),
+  donorServerSn: Joi.string().trim().allow('').max(120),
+  partSn: Joi.string().trim().min(1).max(120).required(),
+  purpose: Joi.string()
+    .trim()
+    .valid('golden_sample', 'cross_server_validation', 'other')
+    .required(),
+  notes: Joi.string().trim().allow('').max(2000),
+  expectedReturnHours: Joi.number().integer().min(1).max(720).allow(null),
+});
+
+const partBorrowReturnSchema = Joi.object({
+  borrowId: Joi.string().trim().allow(''),
+  partSn: Joi.string().trim().allow('').max(120),
+  condition: Joi.string().trim().valid('Good', 'Damaged', 'Consumed', 'Not returned — logged').required(),
+  notes: Joi.string().trim().allow('').max(2000),
 });
 
 export default function kioskRouter(io /*, app */) {
@@ -533,6 +560,73 @@ export default function kioskRouter(io /*, app */) {
     }
   );
 
+  /* ---------- Part borrows (golden sample & cross-server validation) ---------- */
+  router.post(
+    '/part-borrows',
+    apiLimiter,
+    idempotency(),
+    express.json(),
+    async (req, res, next) => {
+      try {
+        await ensureFiles();
+
+        const { error, value } = partBorrowCreateSchema.validate(req.body || {}, {
+          abortEarly: false,
+          allowUnknown: false,
+        });
+
+        if (error) {
+          return res.status(400).json({
+            message: 'Invalid part borrow request',
+            details: error.details,
+          });
+        }
+
+        const user = req.session?.user || {};
+        const actor = getActor(req);
+        const result = await createPartBorrow({ value, user, actor, io });
+        res.status(result.status).json(result.body);
+      } catch (e) {
+        next(e);
+      }
+    }
+  );
+
+  router.post(
+    '/part-borrows/return',
+    apiLimiter,
+    idempotency(),
+    express.json(),
+    async (req, res, next) => {
+      try {
+        await ensureFiles();
+
+        const { error, value } = partBorrowReturnSchema.validate(req.body || {}, {
+          abortEarly: false,
+          allowUnknown: false,
+        });
+
+        if (error) {
+          return res.status(400).json({
+            message: 'Invalid part return',
+            details: error.details,
+          });
+        }
+
+        const actor = getActor(req);
+        const result = await returnPartBorrow({
+          value,
+          actor,
+          sessionUser: req.session?.user || {},
+          io,
+        });
+        res.status(result.status).json(result.body);
+      } catch (e) {
+        next(e);
+      }
+    }
+  );
+
   /* ---------- Optional list endpoints (management/lead/admin only) ---------- */
   router.get('/suggestions', requireManagementRead, apiLimiter, async (_req, res, next) => {
     try {
@@ -582,10 +676,11 @@ export default function kioskRouter(io /*, app */) {
       ].map((v) => String(v || '').trim().toLowerCase()).filter(Boolean);
       const acceptedIds = await resolveEmployeeIdSet([requestedTechId, ...sessionIds]);
 
-      const [suggestions, tickets, inspections, tasks] = await Promise.all([
+      const [suggestions, tickets, inspections, borrowLines, tasks] = await Promise.all([
         readJsonLines(SUG_PATH),
         readJsonLines(TCK_PATH),
         readJsonLines(INSPECTION_PATH),
+        readPartBorrowLines(),
         taskService.getAll(),
       ]);
 
@@ -635,10 +730,22 @@ export default function kioskRouter(io /*, app */) {
           at: item.submittedAt || item.at,
         }));
 
+      const openBorrows = listOpenPartBorrows(borrowLines);
+      const matchedPartBorrows = openBorrows
+        .filter((b) => matchesTech(b.operatorId) || matchesTech(b.techId) || matchesTech(b.username))
+        .map((item) => ({
+          ...item,
+          type: 'partBorrow',
+          title: `Part borrow: ${item.partSn || ''} → ${item.targetServerSn || ''}`.trim(),
+          status: 'out',
+          at: item.borrowedAt,
+        }));
+
       res.json({
         suggestions: matchedSuggestions,
         tickets: matchedTickets,
         inspections: matchedInspections,
+        partBorrows: matchedPartBorrows,
       });
     } catch (e) {
       next(e);

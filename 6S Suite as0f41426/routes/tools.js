@@ -2,8 +2,17 @@
 import express from 'express';
 import Joi from 'joi';
 
+import idempotency from '../middleware/idempotency.js';
+import { apiLimiter } from '../middleware/rateLimit.js';
+import { requireAnyTool } from '../middleware/roleCheck.js';
+
 // Tool service (CRUD/checkout/return for tools dataset)
 import toolService from '../services/toolService.js';
+import {
+  createPartBorrow,
+  listOpenGoldenSampleBorrows,
+  returnPartBorrow,
+} from '../services/partBorrows.js';
 
 // Inventory adapter (JSON or Sequelize) used by /tools/return convenience endpoint
 import inventoryRepo from '../services/inventoryRepo.js';
@@ -74,6 +83,29 @@ const kioskReturnSchema = Joi.object({
   qty: Joi.number().integer().min(1).default(1),
   operatorId: Joi.string().allow(''),
 });
+
+/** Golden-sample part borrows (same ledger as kiosk; purpose forced server-side). */
+const goldenFloorBorrowSchema = Joi.object({
+  targetServerSn: Joi.string().trim().min(1).max(120).required(),
+  donorServerSn: Joi.string().trim().allow('').max(120),
+  partSn: Joi.string().trim().min(1).max(120).required(),
+  notes: Joi.string().trim().allow('').max(2000),
+  expectedReturnHours: Joi.number().integer().min(1).max(720).allow(null),
+});
+
+const goldenFloorReturnSchema = Joi.object({
+  borrowId: Joi.string().trim().allow(''),
+  partSn: Joi.string().trim().allow('').max(120),
+  condition: Joi.string().trim().valid('Good', 'Damaged', 'Consumed', 'Not returned — logged').required(),
+  notes: Joi.string().trim().allow('').max(2000),
+});
+
+function sessionActor(req) {
+  const u = req.session?.user || {};
+  return String(
+    u.techId || u.employeeId || u.id || u.username || u.email || u.name || 'anonymous'
+  ).trim();
+}
 
 const validate = (schema) => (req, res, next) => {
   const { error, value } = schema.validate(
@@ -242,6 +274,67 @@ export default function toolsRouter(io /*, app */) {
 
     return toolService.returnTool(io)(req, res, next);
   }));
+
+  /** Golden sample parts — read open borrows (Command Floor / Floor Tools tab) */
+  router.get(
+    '/golden-parts',
+    requireAnyTool('screwdriver', 'kiosk'),
+    apiLimiter,
+    ah(async (_req, res) => {
+      const borrows = await listOpenGoldenSampleBorrows();
+      res.json({ borrows });
+    })
+  );
+
+  /** Log a golden-sample borrow (same JSONL as /kiosk/part-borrows; purpose = golden_sample). */
+  router.post(
+    '/golden-parts/borrow',
+    requireAnyTool('screwdriver', 'kiosk'),
+    apiLimiter,
+    idempotency(),
+    express.json(),
+    ah(async (req, res) => {
+      const { error, value } = goldenFloorBorrowSchema.validate(req.body || {}, {
+        abortEarly: false,
+        allowUnknown: false,
+      });
+      if (error) {
+        return res.status(400).json({ message: 'Invalid golden part borrow', details: error.details });
+      }
+      const user = req.session?.user || {};
+      const actor = sessionActor(req);
+      const valueWithPurpose = { ...value, purpose: 'golden_sample' };
+      const result = await createPartBorrow({ value: valueWithPurpose, user, actor, io });
+      res.status(result.status).json(result.body);
+    })
+  );
+
+  /** Return a golden-sample borrow (operator must match borrow record). */
+  router.post(
+    '/golden-parts/return',
+    requireAnyTool('screwdriver', 'kiosk'),
+    apiLimiter,
+    idempotency(),
+    express.json(),
+    ah(async (req, res) => {
+      const { error, value } = goldenFloorReturnSchema.validate(req.body || {}, {
+        abortEarly: false,
+        allowUnknown: false,
+      });
+      if (error) {
+        return res.status(400).json({ message: 'Invalid golden part return', details: error.details });
+      }
+      const actor = sessionActor(req);
+      const result = await returnPartBorrow({
+        value,
+        actor,
+        sessionUser: req.session?.user || {},
+        io,
+        allowedPurposes: ['golden_sample'],
+      });
+      res.status(result.status).json(result.body);
+    })
+  );
 
   /** Bulk tools checkout/return (tools dataset) with validation */
   router.post('/bulk/checkout', validate(bulkCheckoutSchema), toolService.bulkCheckout(io));

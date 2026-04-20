@@ -25,6 +25,57 @@ let durTimer     = null;
 
 const $ = id => document.getElementById(id);
 
+let cfMainView = 'tools';
+let cfGoldenRows = [];
+
+function getCsrfToken() {
+  const meta = document.querySelector('meta[name="csrf-token"]')?.content || '';
+  if (meta) return meta;
+  const m = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : '';
+}
+
+async function fetchJsonWithCsrf(url, opts = {}, _csrfRetry = false) {
+  const method = String(opts.method || 'GET').toUpperCase();
+  const isUnsafe = !['GET', 'HEAD', 'OPTIONS'].includes(method);
+  const headers = { Accept: 'application/json', ...(opts.headers || {}) };
+  if (opts.body && typeof opts.body === 'object' && !(opts.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
+  if (isUnsafe) {
+    const t = getCsrfToken();
+    if (t) {
+      headers['X-CSRF-Token'] = t;
+      headers['X-XSRF-TOKEN'] = t;
+    }
+  }
+  const body =
+    opts.body && typeof opts.body === 'object' && !(opts.body instanceof FormData)
+      ? JSON.stringify(opts.body)
+      : opts.body;
+  const r = await fetch(url, { credentials: 'include', ...opts, headers, body });
+  if (r.status === 403 && isUnsafe && !_csrfRetry) {
+    let msg = '';
+    try {
+      const ct = r.headers.get('content-type') || '';
+      msg = ct.includes('application/json')
+        ? (await r.clone().json())?.message || ''
+        : await r.clone().text();
+    } catch { /* ignore */ }
+    if (/csrf/i.test(msg || '')) {
+      try {
+        await fetch('/auth/whoami', {
+          method: 'GET',
+          credentials: 'include',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+      } catch { /* ignore */ }
+      return fetchJsonWithCsrf(url, opts, true);
+    }
+  }
+  return r;
+}
+
 /* ── Duration helpers ───────────────────────────────────────────── */
 function durMs(tool) {
   if (tool.status !== 'being used' || !tool.timestamp) return 0;
@@ -495,6 +546,158 @@ function initExport() {
   });
 }
 
+/* ── Golden parts (Command Floor — same ledger as kiosk, golden_sample only) ─ */
+function initRegisterViewStrip() {
+  $('cfRegisterViewStrip')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-cf-main]');
+    if (!btn) return;
+    const v = btn.dataset.cfMain;
+    cfMainView = v;
+    $('cfRegisterViewStrip')
+      ?.querySelectorAll('[data-cf-main]')
+      .forEach((b) => b.classList.toggle('active', b === btn));
+    document.querySelectorAll('.cf-tools-only').forEach((el) => {
+      el.style.display = v === 'tools' ? '' : 'none';
+    });
+    const goldenBlock = $('cfGoldenRegisterBlock');
+    const toolsBlock = $('cfToolsRegisterBlock');
+    if (toolsBlock) toolsBlock.style.display = v === 'tools' ? '' : 'none';
+    if (goldenBlock) goldenBlock.style.display = v === 'golden' ? 'block' : 'none';
+    const title = $('cfRegisterTitle');
+    if (title) title.textContent = v === 'golden' ? 'Golden parts' : 'Tool register';
+    if (v === 'golden') loadCfGoldenParts();
+    else applyFilters();
+  });
+}
+
+function renderCfGoldenKpi() {
+  const tc = $('toolCount');
+  if (tc && cfMainView === 'golden') {
+    tc.textContent = `${cfGoldenRows.length} open`;
+    tc.style.visibility = '';
+  } else if (tc && cfMainView === 'tools') {
+    tc.style.visibility = '';
+  }
+}
+
+async function loadCfGoldenParts() {
+  const tbody = $('cfGpBody');
+  if (!tbody) return;
+  try {
+    const r = await fetchJsonWithCsrf('/tools/golden-parts', { method: 'GET' });
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).message || r.statusText);
+    const data = await r.json();
+    cfGoldenRows = Array.isArray(data.borrows) ? data.borrows : [];
+    renderCfGoldenKpi();
+    const sel = $('cfGpRetSel');
+    if (sel) {
+      sel.replaceChildren();
+      const h = document.createElement('option');
+      h.value = '';
+      h.textContent = cfGoldenRows.length ? 'Select borrow…' : 'No open borrows';
+      sel.appendChild(h);
+      for (const b of cfGoldenRows) {
+        const o = document.createElement('option');
+        o.value = String(b.id || '').trim();
+        o.textContent = `${b.partSn || ''} → ${b.targetServerSn || ''}`.trim();
+        sel.appendChild(o);
+      }
+    }
+    if (!cfGoldenRows.length) {
+      tbody.innerHTML =
+        '<tr><td colspan="6" style="text-align:center;padding:1.5rem;color:#94A3B8">No open golden sample borrows.</td></tr>';
+      return;
+    }
+    const now = Date.now();
+    tbody.innerHTML = '';
+    const frag = document.createDocumentFragment();
+    cfGoldenRows.forEach((b) => {
+      const t0 = Date.parse(b.borrowedAt || '');
+      const ms = Number.isNaN(t0) ? 0 : Math.max(0, now - t0);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="mono" style="font-weight:600">${esc(b.partSn || '')}</td>
+        <td>${esc(b.targetServerSn || '')}</td>
+        <td>${esc(b.operatorName || b.operatorId || '—')}</td>
+        <td>${esc(fmtTime(b.borrowedAt))}</td>
+        <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${esc(durLabel(ms))}</td>
+        <td><button type="button" class="cf-rq-action" data-cf-gp-ret="${esc(b.id)}"
+          style="background:rgba(245,158,11,.1);color:#92400E;border-color:rgba(245,158,11,.3)">↩ Return</button></td>`;
+      frag.appendChild(tr);
+    });
+    tbody.appendChild(frag);
+    tbody.onclick = (e) => {
+      const b = e.target.closest('[data-cf-gp-ret]');
+      if (!b) return;
+      const id = b.getAttribute('data-cf-gp-ret');
+      const s = $('cfGpRetSel');
+      if (s) s.value = id;
+      $('cfGpRetPart').value = '';
+    };
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:1rem;color:#B91C1C">${esc(
+      err.message || 'Load failed'
+    )}</td></tr>`;
+  }
+}
+
+async function cfGoldenBorrow() {
+  const msg = $('cfGpBorrowMsg');
+  const partSn = $('cfGpPart')?.value?.trim();
+  const targetServerSn = $('cfGpTarget')?.value?.trim();
+  const notes = $('cfGpNotes')?.value?.trim() || '';
+  if (!partSn || !targetServerSn) {
+    if (msg) msg.innerHTML = '<span style="color:#B91C1C">Part serial and target server required.</span>';
+    return;
+  }
+  try {
+    const r = await fetchJsonWithCsrf('/tools/golden-parts/borrow', {
+      method: 'POST',
+      body: { partSn, targetServerSn, donorServerSn: '', notes, expectedReturnHours: null },
+    });
+    const body = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(body.message || r.statusText);
+    if (msg) msg.innerHTML = '<span style="color:#15803D">Borrow logged.</span>';
+    $('cfGpPart').value = '';
+    $('cfGpTarget').value = '';
+    $('cfGpNotes').value = '';
+    await loadCfGoldenParts();
+  } catch (e) {
+    if (msg) msg.innerHTML = `<span style="color:#B91C1C">${esc(e.message)}</span>`;
+  }
+}
+
+async function cfGoldenReturn() {
+  const msg = $('cfGpReturnMsg');
+  const borrowId = $('cfGpRetSel')?.value?.trim() || '';
+  const partSn = $('cfGpRetPart')?.value?.trim() || '';
+  const condition = $('cfGpRetCond')?.value || 'Good';
+  const notes = '';
+  if (!borrowId && !partSn) {
+    if (msg) msg.innerHTML = '<span style="color:#B91C1C">Select a borrow or enter part serial.</span>';
+    return;
+  }
+  try {
+    const r = await fetchJsonWithCsrf('/tools/golden-parts/return', {
+      method: 'POST',
+      body: { borrowId, partSn, condition, notes },
+    });
+    const body = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(body.message || r.statusText);
+    if (msg) msg.innerHTML = '<span style="color:#15803D">Return logged.</span>';
+    $('cfGpRetPart').value = '';
+    await loadCfGoldenParts();
+  } catch (e) {
+    if (msg) msg.innerHTML = `<span style="color:#B91C1C">${esc(e.message)}</span>`;
+  }
+}
+
+function initCfGoldenActions() {
+  $('cfGpBorrowBtn')?.addEventListener('click', () => cfGoldenBorrow());
+  $('cfGpReturnBtn')?.addEventListener('click', () => cfGoldenReturn());
+  $('cfGpRefreshBtn')?.addEventListener('click', () => loadCfGoldenParts());
+}
+
 /* ── Socket live ────────────────────────────────────────────────── */
 function connectSocket() {
   try {
@@ -517,6 +720,12 @@ function connectSocket() {
       });
     });
     s.on('toolsUpdated', () => loadData());
+    s.on('kiosk:part.borrow', () => {
+      if (cfMainView === 'golden') loadCfGoldenParts();
+    });
+    s.on('kiosk:part.return', () => {
+      if (cfMainView === 'golden') loadCfGoldenParts();
+    });
     s.on('connect',      () => setTimeout(loadData, 600));
   } catch {}
 }
@@ -530,6 +739,8 @@ document.addEventListener('keydown', e => {
 
 /* ── Building context (read-only — set on home page) ─────────────────────
    activeBuilding reads suite.building.v1; badge injected by /js/building.js */
+  initRegisterViewStrip();
+  initCfGoldenActions();
   await loadData();
   connectSocket();
   document.addEventListener('visibilitychange', () => {

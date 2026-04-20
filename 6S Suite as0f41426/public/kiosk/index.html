@@ -110,6 +110,7 @@
             <button id="myItemsBtn" class="btn btn-primary utility-action-btn utility-action-btn--checkouts" type="button" title="View items you currently have checked out">Active Checkouts</button>
             <a href="/history/" class="btn btn-secondary utility-action-btn utility-action-btn--history" id="historyBtn" title="View history">History</a>
             <button class="btn btn-secondary utility-action-btn utility-action-btn--equipment" data-modal-open="equipmentCheckoutModal" type="button" title="Log test equipment usage">Test Equipment</button>
+            <button class="btn btn-secondary utility-action-btn utility-action-btn--parts" data-modal-open="partBorrowModal" type="button" title="Borrow or return parts for validation">Part Borrow</button>
           </div>
         </div>
       </section>
@@ -323,7 +324,110 @@
     </div>
   </div>
 
+  <!-- Part borrow / return (golden sample & cross-server validation) -->
+  <div id="partBorrowModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="partBorrowTitle" style="max-width:560px">
+      <h2 id="partBorrowTitle" style="font-size:1.4rem;font-weight:800;margin-bottom:.5rem">Part Borrow</h2>
+      <p id="partBorrowUserBlurb" style="margin-bottom:.75rem;font-size:.9rem;color:var(--fg-muted)">
+        Logged-in operator will be stamped on each submission.
+      </p>
 
+      <div style="display:flex;gap:4px;margin-bottom:1rem">
+        <button type="button" class="inv-btn pb-tab active" data-pb-tab="borrow" style="padding:.35rem .75rem;font-size:.85rem">Borrow</button>
+        <button type="button" class="inv-btn pb-tab" data-pb-tab="return" style="padding:.35rem .75rem;font-size:.85rem">Return</button>
+      </div>
+
+      <div id="pbBorrowPane">
+        <p style="margin-bottom:.75rem;font-size:.9rem;color:var(--fg-muted)">
+          Record when you pull a serial-tracked part for a <strong style="color:var(--fg)">golden sample</strong> or to <strong style="color:var(--fg)">validate components</strong> using hardware from another server. Returns close the loop for traceability.
+        </p>
+        <form id="partBorrowForm" autocomplete="off">
+          <label style="display:block;margin-bottom:.75rem">
+            <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Purpose *</span>
+            <select id="pbPurpose" name="purpose" required style="width:100%;padding:.55rem .6rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.95rem">
+              <option value="golden_sample">Golden sample</option>
+              <option value="cross_server_validation">Cross-server component validation</option>
+              <option value="other">Other (explain in notes)</option>
+            </select>
+          </label>
+          <label style="display:block;margin-bottom:.75rem">
+            <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Target server (SN / asset / hostname) *</span>
+            <input type="text" id="pbTargetServer" name="targetServerSn" maxlength="120" required placeholder="Server the part is being used on" autocomplete="off"
+                   style="width:100%;padding:.5rem .55rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.95rem"/>
+          </label>
+          <label style="display:block;margin-bottom:.75rem">
+            <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Donor server <span style="opacity:.65">(optional)</span></span>
+            <input type="text" id="pbDonorServer" name="donorServerSn" maxlength="120" placeholder="If the part is coming from another server" autocomplete="off"
+                   style="width:100%;padding:.5rem .55rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.95rem"/>
+          </label>
+          <label style="display:block;margin-bottom:.75rem">
+            <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Part serial *</span>
+            <input type="text" id="pbPartSn" name="partSn" maxlength="120" required placeholder="Scan or type part SN" autocomplete="off"
+                   style="width:100%;padding:.5rem .55rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.95rem"/>
+          </label>
+          <label style="display:block;margin-bottom:.75rem">
+            <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Expected return <span style="opacity:.65">(optional)</span></span>
+            <select id="pbExpectedHours" name="expectedReturnHours" style="width:100%;padding:.55rem .6rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.95rem">
+              <option value="">Not set</option>
+              <option value="4">4 hours</option>
+              <option value="8">8 hours (shift)</option>
+              <option value="12">12 hours</option>
+              <option value="24">24 hours</option>
+              <option value="72">3 days</option>
+              <option value="168">7 days</option>
+            </select>
+          </label>
+          <label style="display:block;margin-bottom:.75rem">
+            <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Notes <span style="opacity:.65">(optional)</span></span>
+            <textarea id="pbNotes" name="notes" rows="2" maxlength="2000" placeholder="Slot, test plan, WO, or other context" style="width:100%"></textarea>
+          </label>
+          <p id="pbBorrowHint" class="input-hint"></p>
+          <div class="buttons-row" style="margin-top:1rem;justify-content:flex-end;gap:.5rem">
+            <button type="button" class="btn btn-secondary" data-modal-close="partBorrowModal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Log borrow</button>
+          </div>
+        </form>
+      </div>
+
+      <div id="pbReturnPane" style="display:none">
+        <p style="margin-bottom:.75rem;font-size:.9rem;color:var(--fg-muted)">
+          Close the borrow when the part is back in its controlled path, consumed on a golden build, or handed off with documentation.
+        </p>
+        <form id="partReturnForm" autocomplete="off">
+          <label style="display:block;margin-bottom:.75rem">
+            <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Active borrow *</span>
+            <select id="pbReturnBorrowSelect" style="width:100%;padding:.55rem .6rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.95rem">
+              <option value="">Loading…</option>
+            </select>
+          </label>
+          <p style="margin:0 0 .5rem;font-size:.78rem;color:var(--fg-muted)">If the list is empty, you have no open borrows under this Tech ID.</p>
+          <label style="display:block;margin-bottom:.75rem">
+            <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Or part serial only <span style="opacity:.65">(when unique)</span></span>
+            <input type="text" id="pbReturnPartSn" maxlength="120" placeholder="Same serial you borrowed" autocomplete="off"
+                   style="width:100%;padding:.5rem .55rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.95rem"/>
+          </label>
+          <label style="display:block;margin-bottom:.75rem">
+            <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Condition *</span>
+            <select id="pbReturnCondition" required style="width:100%;padding:.55rem .6rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--fg);font-size:.95rem">
+              <option value="Good">Good — re-stocked / re-installed</option>
+              <option value="Damaged">Damaged — needs MR or scrap path</option>
+              <option value="Consumed">Consumed — used on golden / engineering unit</option>
+              <option value="Not returned — logged">Not returned — documented handoff</option>
+            </select>
+          </label>
+          <label style="display:block;margin-bottom:.75rem">
+            <span style="font-size:.9rem;display:block;margin-bottom:.25rem">Return notes <span style="opacity:.65">(optional)</span></span>
+            <textarea id="pbReturnNotes" rows="2" maxlength="2000" placeholder="Where it went, MR #, or verifier" style="width:100%"></textarea>
+          </label>
+          <p id="pbReturnHint" class="input-hint"></p>
+          <div class="buttons-row" style="margin-top:1rem;justify-content:flex-end;gap:.5rem">
+            <button type="button" class="btn btn-secondary" data-modal-close="partBorrowModal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Log return</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 
   <!-- Suggestion Box -->
   <div id="suggestModal" class="modal-backdrop" aria-hidden="true">

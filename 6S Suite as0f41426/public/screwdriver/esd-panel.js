@@ -12,7 +12,8 @@ const fmtDur = ms => {
 // ── Tab switching with URL hash (#10) ─────────────────────────────────────
 const panels = {
   toolPanel: document.getElementById('toolPanel'),
-  esdPanel:  document.getElementById('esdPanel')
+  esdPanel: document.getElementById('esdPanel'),
+  goldenPartsPanel: document.getElementById('goldenPartsPanel'),
 };
 
 function activateTab(panelId) {
@@ -21,8 +22,14 @@ function activateTab(panelId) {
     b.classList.toggle('active', match);
     b.setAttribute('aria-selected', String(match));
   });
-  Object.entries(panels).forEach(([id, el]) => el.classList.toggle('active', id === panelId));
+  Object.entries(panels).forEach(([id, el]) => {
+    if (!el) return;
+    el.classList.toggle('active', id === panelId);
+  });
   if (panelId === 'esdPanel') loadESD();
+  if (panelId === 'goldenPartsPanel') {
+    window.dispatchEvent(new CustomEvent('golden-parts:open'));
+  }
 }
 
 document.querySelectorAll('.sd-dtab').forEach(btn => {
@@ -35,7 +42,7 @@ document.querySelectorAll('.sd-dtab').forEach(btn => {
 });
 
 // Restore from URL hash or localStorage
-const hashMap = { tools: 'toolPanel', esd: 'esdPanel' };
+const hashMap = { tools: 'toolPanel', esd: 'esdPanel', golden: 'goldenPartsPanel' };
 const initHash = (location.hash.replace('#','') in hashMap)
   ? hashMap[location.hash.replace('#','')]
   : (localStorage.getItem('sd-panel') || 'toolPanel');

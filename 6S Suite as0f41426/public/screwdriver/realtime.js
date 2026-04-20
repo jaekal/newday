@@ -52,6 +52,14 @@ export function connectSocket(onUpdate, { debounceTime = 500 } = {}) {
     socket.on(evt, debouncedRefresh)
   );
 
+  ['kiosk:part.borrow', 'kiosk:part.return'].forEach((evt) =>
+    socket.on(evt, () => {
+      try {
+        window.dispatchEvent(new CustomEvent('golden-parts:refresh'));
+      } catch { /* ignore */ }
+    })
+  );
+
   // On reconnect, always do a full refresh to catch anything missed offline
   socket.on('connect', () => {
     // Small delay so the server is ready

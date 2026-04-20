@@ -108,8 +108,15 @@
         </div>
       </div>
 
+      <!-- Register view: floor tools vs golden parts (same ledger as kiosk; golden_sample only) -->
+      <div class="cf-cat-strip cf-span-all cf-fade-up-5" id="cfRegisterViewStrip" role="toolbar" aria-label="Register view" style="margin-bottom:0">
+        <button type="button" class="cf-cat-pill active" data-cf-main="tools">Screwdriver register</button>
+        <button type="button" class="cf-cat-pill" data-cf-main="golden">Golden parts</button>
+        <span style="font-size:11px;color:#94A3B8;margin-left:.35rem;align-self:center">Golden parts: kiosk golden-sample borrows only.</span>
+      </div>
+
       <!-- Filter strip -->
-      <div class="cf-cat-strip cf-span-all cf-fade-up-5" id="filterStrip" role="toolbar" aria-label="Filter tools">
+      <div class="cf-cat-strip cf-span-all cf-fade-up-5 cf-tools-only" id="filterStrip" role="toolbar" aria-label="Filter tools">
         <button class="cf-cat-pill active" data-tf="">All</button>
         <button class="cf-cat-pill" data-tf="available">Available</button>
         <button class="cf-cat-pill" data-tf="out">Checked out</button>
@@ -129,9 +136,9 @@
       <!-- Tool table (cols 1-3) -->
       <div class="cf-panel cf-span-3 cf-fade-up-5" style="grid-row:3">
         <div class="cf-panel-header">
-          <span class="cf-panel-title">Tool register</span>
+          <span class="cf-panel-title" id="cfRegisterTitle">Tool register</span>
           <span class="cf-panel-count" id="toolCount">loading…</span>
-          <div class="cf-panel-right">
+          <div class="cf-panel-right cf-tools-only">
             <div class="cf-tab-strip" id="toolTabs" role="tablist">
               <button class="cf-tab active" data-sort-preset=""         role="tab" aria-selected="true">All</button>
               <button class="cf-tab"        data-sort-preset="duration" role="tab" aria-selected="false">By duration</button>
@@ -139,7 +146,8 @@
             </div>
           </div>
         </div>
-        <div class="cf-table-scroll" role="region" aria-label="Tool table" tabindex="0">
+        <div id="cfToolsRegisterBlock">
+        <div class="cf-table-scroll cf-tools-only" role="region" aria-label="Tool table" tabindex="0">
           <table class="cf-table" id="toolTable" aria-live="polite">
             <colgroup>
               <col style="width:125px"><col style="width:90px"><col style="width:75px">
@@ -163,9 +171,65 @@
             </tbody>
           </table>
         </div>
-        <div class="cf-table-footer">
+        <div class="cf-table-footer cf-tools-only">
           <span class="cf-table-footer-info" id="pgInfo">—</span>
           <div class="cf-pg-btns" id="pgBtns" role="navigation" aria-label="Pagination"></div>
+        </div>
+        </div>
+
+        <div id="cfGoldenRegisterBlock" style="display:none;padding:0 14px 14px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+            <div style="border:1px solid #E2E8F0;border-radius:10px;padding:12px;background:#fff">
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#64748B;margin-bottom:8px">Borrow (checkout)</div>
+              <label style="display:block;font-size:10.5px;color:#64748B;margin-bottom:4px">Part serial</label>
+              <input id="cfGpPart" type="text" style="width:100%;padding:7px 10px;border:1px solid #E2E8F0;border-radius:6px;margin-bottom:8px;font-size:12.5px"/>
+              <label style="display:block;font-size:10.5px;color:#64748B;margin-bottom:4px">Target server</label>
+              <input id="cfGpTarget" type="text" style="width:100%;padding:7px 10px;border:1px solid #E2E8F0;border-radius:6px;margin-bottom:8px;font-size:12.5px"/>
+              <label style="display:block;font-size:10.5px;color:#64748B;margin-bottom:4px">Notes (optional)</label>
+              <textarea id="cfGpNotes" rows="2" maxlength="2000" style="width:100%;padding:7px 10px;border:1px solid #E2E8F0;border-radius:6px;font-size:12.5px;resize:vertical;box-sizing:border-box"></textarea>
+              <button type="button" class="cf-modal-btn primary" id="cfGpBorrowBtn" style="margin-top:10px;width:100%">Log borrow</button>
+              <div id="cfGpBorrowMsg" style="font-size:11.5px;margin-top:6px;min-height:1.1rem"></div>
+            </div>
+            <div style="border:1px solid #E2E8F0;border-radius:10px;padding:12px;background:#fff">
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:#64748B;margin-bottom:8px">Return (check in)</div>
+              <label style="display:block;font-size:10.5px;color:#64748B;margin-bottom:4px">Active borrow</label>
+              <select id="cfGpRetSel" style="width:100%;padding:7px 10px;border:1px solid #E2E8F0;border-radius:6px;margin-bottom:8px;font-size:12.5px"></select>
+              <label style="display:block;font-size:10.5px;color:#64748B;margin-bottom:4px">Or part serial</label>
+              <input id="cfGpRetPart" type="text" style="width:100%;padding:7px 10px;border:1px solid #E2E8F0;border-radius:6px;margin-bottom:8px;font-size:12.5px"/>
+              <label style="display:block;font-size:10.5px;color:#64748B;margin-bottom:4px">Condition</label>
+              <select id="cfGpRetCond" style="width:100%;padding:7px 10px;border:1px solid #E2E8F0;border-radius:6px;margin-bottom:8px;font-size:12.5px">
+                <option value="Good">Good</option>
+                <option value="Damaged">Damaged</option>
+                <option value="Consumed">Consumed</option>
+                <option value="Not returned — logged">Not returned — logged</option>
+              </select>
+              <button type="button" class="cf-modal-btn primary" id="cfGpReturnBtn" style="margin-top:10px;width:100%">Log return</button>
+              <div id="cfGpReturnMsg" style="font-size:11.5px;margin-top:6px;min-height:1.1rem"></div>
+            </div>
+          </div>
+          <div style="border:1px solid #E2E8F0;border-radius:10px;overflow:hidden;background:#fff">
+            <div style="padding:10px 14px;border-bottom:1px solid #E2E8F0;display:flex;justify-content:space-between;align-items:center;background:#F8FAFC">
+              <span style="font-size:12.5px;font-weight:700;color:#1E293B">Open golden borrows</span>
+              <button type="button" class="cf-modal-btn cancel" id="cfGpRefreshBtn" style="font-size:11px;padding:5px 10px">Refresh</button>
+            </div>
+            <div style="overflow-x:auto">
+              <table class="cf-table" style="margin:0">
+                <thead>
+                  <tr>
+                    <th>Part SN</th>
+                    <th>Target server</th>
+                    <th>Operator</th>
+                    <th>Out since</th>
+                    <th>Duration</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="cfGpBody">
+                  <tr><td colspan="6" style="text-align:center;padding:1.5rem;color:#94A3B8">Switch to this tab to load.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 

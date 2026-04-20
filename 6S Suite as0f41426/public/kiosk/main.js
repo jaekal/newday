@@ -300,12 +300,16 @@ function jobDedupeKey(job) {
   const { type, payload } = job;
   if (!type || !payload) return null;
   const resource =
+    payload.borrowId ||
+    (type === 'partBorrow'
+      ? `${payload.partSn || ''}:${payload.targetServerSn || ''}:${payload.purpose || ''}`
+      : '') ||
     payload.code    ||
     payload.cartId  ||
     payload.text    ||   // suggestion text
     payload.description || // ticket description
     '';
-  return `${type}:${String(resource).slice(0, 64)}`;
+  return `${type}:${String(resource).slice(0, 120)}`;
 }
 
 function enqueue(job) {
@@ -371,39 +375,56 @@ function writeActive(operatorId, arr) {
   try { localStorage.setItem(key, JSON.stringify(arr)); } catch {}
 }
 
-function updateActiveOnCheckout({ operatorId, code, cartId, kind }) {
+function updateActiveOnCheckout({ operatorId, code, cartId, kind, borrowId, partSn, targetServerSn }) {
   if (!operatorId) return;
   const key = operatorId;
   const current = readActive(key);
-  const idField = kind === 'cart' ? 'cartId' : 'code';
   const idValue = cartId || code;
-  if (!idValue) return;
+  if (kind === 'partBorrow') {
+    if (!borrowId) return;
+  } else if (!idValue) return;
 
-  const existingIdx = current.findIndex(
-    x => x.kind === kind && (x.code === idValue || x.cartId === idValue)
-  );
+  const existingIdx = current.findIndex((x) => {
+    if (kind === 'partBorrow') {
+      return x.kind === 'partBorrow' && String(x.borrowId) === String(borrowId);
+    }
+    return x.kind === kind && (x.code === idValue || x.cartId === idValue);
+  });
   const nowIso = new Date().toISOString();
-  const rec = {
-    kind,
-    code: kind === 'tool' ? idValue : undefined,
-    cartId: kind === 'cart' ? idValue : undefined,
-    status: 'out',
-    since: nowIso
-  };
+  const rec =
+    kind === 'partBorrow'
+      ? {
+          kind: 'partBorrow',
+          borrowId,
+          partSn: partSn || '',
+          targetServerSn: targetServerSn || '',
+          status: 'out',
+          since: nowIso,
+        }
+      : {
+          kind,
+          code: kind === 'cart' ? undefined : idValue,
+          cartId: kind === 'cart' ? idValue : undefined,
+          status: 'out',
+          since: nowIso,
+        };
 
   if (existingIdx >= 0) current[existingIdx] = rec;
   else current.push(rec);
   writeActive(key, current);
 }
 
-function updateActiveOnReturn({ operatorId, code, cartId, kind }) {
+function updateActiveOnReturn({ operatorId, code, cartId, kind, borrowId }) {
   if (!operatorId) return;
   const key = operatorId;
   const current = readActive(key);
   const idValue = cartId || code;
-  const filtered = current.filter(
-    x => !(x.kind === kind && (x.code === idValue || x.cartId === idValue))
-  );
+  const filtered = current.filter((x) => {
+    if (kind === 'partBorrow') {
+      return !(x.kind === 'partBorrow' && String(x.borrowId) === String(borrowId));
+    }
+    return !(x.kind === kind && (x.code === idValue || x.cartId === idValue));
+  });
   writeActive(key, filtered);
 }
 
@@ -435,7 +456,8 @@ async function drainQueue() {
        if (
      (t === 'toolCheckout'      || t === 'toolReturn'       ||
       t === 'cartCheckout'      || t === 'cartReturn'       ||
-      t === 'equipmentCheckout' || t === 'equipmentReturn') &&
+      t === 'equipmentCheckout' || t === 'equipmentReturn'  ||
+      t === 'partBorrow'        || t === 'partBorrowReturn') &&
      !op
    ) {
         console.warn('[kiosk queue] Dropping invalid job with no operatorId:', job);
@@ -645,6 +667,35 @@ case 'equipmentCheckout': {
     case 'inspectionReport':
       return request('/kiosk/inspection-reports', { method: 'POST', body: payload });
 
+    case 'partBorrow': {
+      const { operatorId, ...body } = payload || {};
+      const res = await request('/kiosk/part-borrows', { method: 'POST', body });
+      const b = res?.borrow;
+      if (b?.id && operatorId) {
+        updateActiveOnCheckout({
+          operatorId,
+          kind: 'partBorrow',
+          borrowId: b.id,
+          partSn: b.partSn,
+          targetServerSn: b.targetServerSn,
+        });
+      }
+      return res;
+    }
+
+    case 'partBorrowReturn': {
+      const { operatorId, borrowId, partSn, condition, notes } = payload || {};
+      const res = await request('/kiosk/part-borrows/return', {
+        method: 'POST',
+        body: { borrowId: borrowId || '', partSn: partSn || '', condition, notes: notes || '' },
+      });
+      const closedId = res?.return?.borrowId || borrowId;
+      if (operatorId && closedId) {
+        updateActiveOnReturn({ operatorId, kind: 'partBorrow', borrowId: closedId });
+      }
+      return res;
+    }
+
     default:
       throw new Error(`Unknown job type: ${type}`);
   }
@@ -744,6 +795,10 @@ function bindModalTriggers() {
         populateInspectionHeader();
         setTimeout(() => qs('#inspectionRackSn')?.focus(), 40);
       }
+      if (modalId === 'partBorrowModal') {
+        refreshPartBorrowModal();
+        setTimeout(() => qs('#pbPurpose')?.focus(), 40);
+      }
       return;
     }
     const closeAttr = e.target.closest?.('[data-modal-close]');
@@ -763,6 +818,61 @@ function fmtTime(iso) {
   if (!iso) return '';
   try { return new Date(iso).toLocaleString(); }
   catch { return iso; }
+}
+
+async function loadPartBorrowReturnSelect() {
+  const sel = qs('#pbReturnBorrowSelect');
+  if (!sel) return;
+  const op = getLastOperator() || getCurrentOperatorId();
+  if (!op) {
+    sel.replaceChildren();
+    const o = document.createElement('option');
+    o.value = '';
+    o.textContent = 'No operator ID in session';
+    sel.appendChild(o);
+    return;
+  }
+
+  sel.replaceChildren();
+  const loading = document.createElement('option');
+  loading.value = '';
+  loading.textContent = 'Loading…';
+  sel.appendChild(loading);
+
+  try {
+    const data = await request(`/kiosk/my-items?techId=${encodeURIComponent(op)}`, { method: 'GET' });
+    const rows = Array.isArray(data?.partBorrows) ? data.partBorrows : [];
+    sel.replaceChildren();
+    const head = document.createElement('option');
+    head.value = '';
+    head.textContent = rows.length ? 'Select borrow…' : 'No open borrows';
+    sel.appendChild(head);
+    for (const b of rows) {
+      const o = document.createElement('option');
+      o.value = String(b.id || '').trim();
+      const since = fmtTime(b.borrowedAt || b.at);
+      o.textContent = `${b.partSn || ''} → ${b.targetServerSn || ''} · ${since}`.trim();
+      sel.appendChild(o);
+    }
+  } catch {
+    sel.replaceChildren();
+    const o = document.createElement('option');
+    o.value = '';
+    o.textContent = 'Unable to load — try again';
+    sel.appendChild(o);
+  }
+}
+
+async function refreshPartBorrowModal() {
+  const blurb = qs('#partBorrowUserBlurb');
+  if (blurb) {
+    const tid = getCurrentOperatorId();
+    const name = currentUser?.name || currentUser?.id || 'Unknown';
+    blurb.textContent = tid
+      ? `${name} · Tech ID ${tid} — stamped on borrow/return records.`
+      : `${name} — no Tech ID on this login; contact a lead if attribution looks wrong.`;
+  }
+  await loadPartBorrowReturnSelect();
 }
 
 function renderQueueModal() {
@@ -796,6 +906,14 @@ function renderQueueModal() {
     if (type === 'inspectionReport') {
       code = payload?.rackSn ? `Rack ${payload.rackSn}` : (payload?.area || '');
       operatorId = payload?.operatorId || '';
+    }
+    if (type === 'partBorrow') {
+      code = payload?.partSn
+        ? `${payload.partSn} → ${payload.targetServerSn || ''}`.trim()
+        : '';
+    }
+    if (type === 'partBorrowReturn') {
+      code = String(payload?.borrowId || payload?.partSn || '').trim();
     }
 
     return `
@@ -837,19 +955,30 @@ async function renderMyItemsModal() {
   }
 
   const opLc = String(op).toLowerCase();
-  const localItems = readActive(op).filter(x => x.status === 'out').map((x) => ({
-    type: x.kind === 'cart' ? 'ESD Cart' : (x.kind === 'equipment' ? 'Equipment' : 'Tool'),
-    identifier: x.kind === 'cart' ? (x.cartId || '') : (x.code || ''),
-    since: x.since || '',
-    dedupe: `${x.kind}:${x.kind === 'cart' ? (x.cartId || '') : (x.code || '')}`.toLowerCase(),
-  }));
+  const localItems = readActive(op).filter((x) => x.status === 'out').map((x) => {
+    if (x.kind === 'partBorrow') {
+      return {
+        type: 'Part borrow',
+        identifier: `${x.partSn || ''} → ${x.targetServerSn || ''}`.trim(),
+        since: x.since || '',
+        dedupe: `partborrow:${String(x.borrowId || '').toLowerCase()}`,
+      };
+    }
+    return {
+      type: x.kind === 'cart' ? 'ESD Cart' : (x.kind === 'equipment' ? 'Equipment' : 'Tool'),
+      identifier: x.kind === 'cart' ? (x.cartId || '') : (x.code || ''),
+      since: x.since || '',
+      dedupe: `${x.kind}:${x.kind === 'cart' ? (x.cartId || '') : (x.code || '')}`.toLowerCase(),
+    };
+  });
 
   let liveItems = [];
   try {
-    const [toolsRes, cartsRes, equipmentRes] = await Promise.all([
+    const [toolsRes, cartsRes, equipmentRes, myItemsRes] = await Promise.all([
       request(`/tools/api?operatorId=${encodeURIComponent(op)}&status=being+used`, { method: 'GET' }).catch(() => []),
       request('/esd-carts', { method: 'GET' }).catch(() => ({ carts: [] })),
       request('/asset-catalog/api/equipment?status=Checked+Out', { method: 'GET' }).catch(() => []),
+      request(`/kiosk/my-items?techId=${encodeURIComponent(op)}`, { method: 'GET' }).catch(() => null),
     ]);
 
     const tools = (toolsRes?.tools || toolsRes?.items || toolsRes || []).filter((t) =>
@@ -879,7 +1008,14 @@ async function renderMyItemsModal() {
       dedupe: `equipment:${String(asset.tagNumber || asset.name || '')}`.toLowerCase(),
     }));
 
-    liveItems = [...tools, ...carts, ...equipment];
+    const serverPartBorrows = (myItemsRes?.partBorrows || []).map((b) => ({
+      type: 'Part borrow',
+      identifier: `${b.partSn || ''} → ${b.targetServerSn || ''}`.trim(),
+      since: b.borrowedAt || b.at || '',
+      dedupe: `partborrow:${String(b.id || '').toLowerCase()}`,
+    }));
+
+    liveItems = [...tools, ...carts, ...equipment, ...serverPartBorrows];
   } catch {
     liveItems = [];
   }
@@ -1270,6 +1406,112 @@ function bindEquipmentCheckout() {
      }
    }
 
+function bindPartBorrow() {
+  document.querySelectorAll('.pb-tab').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      document.querySelectorAll('.pb-tab').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      const tab = btn.dataset.pbTab;
+      const borrowPane = qs('#pbBorrowPane');
+      const retPane = qs('#pbReturnPane');
+      if (borrowPane) borrowPane.style.display = tab === 'borrow' ? '' : 'none';
+      if (retPane) retPane.style.display = tab === 'return' ? '' : 'none';
+      if (tab === 'return') await loadPartBorrowReturnSelect();
+    });
+  });
+
+  const bForm = qs('#partBorrowForm');
+  if (bForm) {
+    bForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const operatorId = getCurrentOperatorId();
+      if (!operatorId) {
+        notyf.error('No Tech ID — log in with an employee-linked account.');
+        return;
+      }
+      setLastOperator(operatorId);
+      const purpose = qs('#pbPurpose')?.value;
+      const targetServerSn = qs('#pbTargetServer')?.value?.trim();
+      const donorServerSn = qs('#pbDonorServer')?.value?.trim() || '';
+      const partSn = qs('#pbPartSn')?.value?.trim();
+      const notes = qs('#pbNotes')?.value?.trim() || '';
+      const hoursRaw = qs('#pbExpectedHours')?.value;
+      const expectedReturnHours = hoursRaw ? Number(hoursRaw) : null;
+
+      if (!targetServerSn || !partSn) {
+        notyf.error('Target server and part serial are required.');
+        return;
+      }
+
+      const body = {
+        targetServerSn,
+        donorServerSn,
+        partSn,
+        purpose,
+        notes,
+        expectedReturnHours: Number.isFinite(expectedReturnHours) ? expectedReturnHours : null,
+      };
+      const job = { type: 'partBorrow', payload: { operatorId, ...body } };
+      try {
+        await dispatchJob(job);
+        notyf.success(`Borrow logged · ${partSn}`);
+        closeAllModals();
+        resetForms();
+      } catch (err) {
+        if (err?.status === 409) {
+          notyf.error(err.message || 'Part already borrowed.');
+          return;
+        }
+        if (err?.status === 400) {
+          notyf.error(err.message || 'Check required fields.');
+          return;
+        }
+        enqueue(job);
+        notyf.error('Offline or error — borrow queued.');
+      }
+    });
+  }
+
+  const rForm = qs('#partReturnForm');
+  if (rForm) {
+    rForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const operatorId = getCurrentOperatorId();
+      if (!operatorId) {
+        notyf.error('No Tech ID — log in with an employee-linked account.');
+        return;
+      }
+      setLastOperator(operatorId);
+      const borrowId = qs('#pbReturnBorrowSelect')?.value?.trim() || '';
+      const partSn = qs('#pbReturnPartSn')?.value?.trim() || '';
+      const condition = qs('#pbReturnCondition')?.value || 'Good';
+      const notes = qs('#pbReturnNotes')?.value?.trim() || '';
+
+      if (!borrowId && !partSn) {
+        notyf.error('Pick your borrow from the list or type the part serial.');
+        return;
+      }
+
+      const job = {
+        type: 'partBorrowReturn',
+        payload: { operatorId, borrowId, partSn, condition, notes },
+      };
+      try {
+        await dispatchJob(job);
+        notyf.success('Return logged.');
+        closeAllModals();
+        resetForms();
+      } catch (err) {
+        if (err?.status === 404 || err?.status === 403 || err?.status === 409) {
+          notyf.error(err.message || 'Unable to complete return.');
+          return;
+        }
+        enqueue(job);
+        notyf.error('Offline or error — return queued.');
+      }
+    });
+  }
+}
 
 
 function bindSuggestion() {
@@ -1982,7 +2224,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   drainQueue();
   wireQueueModal();
   wireMyItemsModal();
-bindCartReturn();
-bindEquipmentCheckout();
+  bindCartReturn();
+  bindEquipmentCheckout();
+  bindPartBorrow();
   qs('.kiosk-card')?.focus?.();
 });
